@@ -18,6 +18,14 @@
 
 ## Model Convention
 1. 구조체 이름 앞에 GR 붙이기 (예. GRUser) 
+2. Firebase에 저장할 때 컬렉션 타입(collection("컬렉션이름"))의 컬렉션이름은 복수형으로 표현 (예. db.collection("users").document(authResult.user.uid)))
+3. 구조체, 클래스, 열거형은 기본적으로 단수형으로 표현. 
+4. 실제로 값이 여러개가 들어가는 변수는 복수형으로 표현 (예. 배열타입 characters: [사자, 쿼카, 염소]) 
+   (목적: ForEach 구문을 쓸 때 혼동 방지. "ForEach(characters, id: \.self) { character in" 라는 식으로 쓰기 위해) 
+                    
+
+## Code Convention
+1. 들여쓰기 통일하기 2칸? 4칸? 
 
 
 
