@@ -34,7 +34,7 @@ struct LoginView: View {
             ZStack {
                 VStack(spacing: 20) {
                     // 로고나 앱 이름
-                    Text("NARKI")
+                    Text("구르릉")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                     
