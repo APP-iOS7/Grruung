@@ -22,10 +22,15 @@ struct ParkTestView: View {
     
     // 전체 캐릭터 슬롯
     private var characterList: [GRCharacter] {
-        let unlockedCharacters = garaCharacter
+        var unlockedCharacters = garaCharacter
         let lockedCount = maxDexCount - unlockedCharacters.count
+        let extraCharacter = GRCharacter(species: "", name: "", imageName: "plus")
         
         if lockedCount > 0 {
+            unlockedCharacters.append(extraCharacter)
+            if lockedCount == 1 {
+                return unlockedCharacters
+            }
             // Array repeat 썼더니 같은 인스턴스로 인식해서 map으로 변경
             let lockedCharacters = (0..<lockedCount).map { _ in
                 GRCharacter(species: "", name: "", imageName: "lock.fill")
@@ -59,6 +64,27 @@ struct ParkTestView: View {
                                     .foregroundColor(.gray)
                                 
                                 Text("잠금")
+                                    .foregroundStyle(.black)
+                                    .bold()
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                Text(" ")
+                                    .foregroundStyle(.gray)
+                                    .font(.caption)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        } else if character.imageName == "plus" {
+                            VStack {
+                                Image(systemName: character.imageName)
+                                    .scaledToFit()
+                                    .foregroundStyle(.black)
+                                    .frame(height: 180)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.black.opacity(0.3))
+                                    .cornerRadius(10)
+                                    .foregroundColor(.gray)
+                                
+                                Text(" ")
                                     .foregroundStyle(.black)
                                     .bold()
                                     .frame(maxWidth: .infinity, alignment: .leading)
