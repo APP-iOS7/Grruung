@@ -9,7 +9,11 @@ import SwiftUI
 
 struct NoTestView: View {
     var body: some View {
-        Text("Hello, World!")
+        NavigationStack {
+            NavigationLink(destination: CharacterDetailView()) {
+                Text("Go to Character Detail")
+            }
+        }
     }
 }
 
