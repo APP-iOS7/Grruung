@@ -164,8 +164,9 @@ class CharacterDetailViewModel: ObservableObject {
                         createdAt: createdAt,
                         updatedAt: updatedAt
                     )
-                    self.posts = fefetchedPosts
+                    fefetchedPosts.append(post)
                 }
+                self.posts = fefetchedPosts
             }
     }
     
