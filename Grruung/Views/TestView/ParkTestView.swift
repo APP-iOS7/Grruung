@@ -8,11 +8,12 @@
 import SwiftUI
 
 struct ParkTestView: View {
-    private let maxDexCount: Int = 10
+    private let maxDexCount: Int = 20
     @State private var isFull: Bool = false
     
     // 더미 데이터
     let garaCharacter: [GRCharacter] = [
+        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
@@ -23,14 +24,12 @@ struct ParkTestView: View {
     // 전체 캐릭터 슬롯
     private var characterList: [GRCharacter] {
         var unlockedCharacters = garaCharacter
-        let lockedCount = maxDexCount - unlockedCharacters.count
+        let lockedCount = maxDexCount - unlockedCharacters.count - 1
         let extraCharacter = GRCharacter(species: "", name: "", imageName: "plus")
         
         if lockedCount > 0 {
             unlockedCharacters.append(extraCharacter)
-            if lockedCount == 1 {
-                return unlockedCharacters
-            }
+            
             // Array repeat 썼더니 같은 인스턴스로 인식해서 map으로 변경
             let lockedCharacters = (0..<lockedCount).map { _ in
                 GRCharacter(species: "", name: "", imageName: "lock.fill")
