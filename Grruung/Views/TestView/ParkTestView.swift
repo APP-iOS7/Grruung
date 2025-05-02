@@ -100,11 +100,12 @@ struct ParkTestView: View {
                                     Image(systemName: character.imageName)
                                         .resizable()
                                         .scaledToFit()
+                                        .foregroundStyle(.black)
                                         .frame(height: 180)
                                         .frame(maxWidth: .infinity)
-                                        .background(Color.gray.opacity(0.5))
+                                        .background(Color.black.opacity(0.3))
                                         .cornerRadius(10)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.gray)
                                     
                                     Text(character.name)
                                         .foregroundStyle(.black)
@@ -117,6 +118,7 @@ struct ParkTestView: View {
                                         .font(.caption)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
+                                .padding(.bottom, 15)
                             }
                         }
                     }
