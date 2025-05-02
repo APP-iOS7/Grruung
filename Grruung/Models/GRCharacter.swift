@@ -9,9 +9,10 @@ import SwiftUICore
 
 struct GRCharacter: Identifiable, Hashable {
     let id: UUID = UUID()
-    var species: String = ""
-    var name: String = ""
-    var imageName: String = ""
+    var species: String
+    var name: String
+    var imageName: String
+    var birthDate: Date
     
     var characterUUID: UUID {
         return id
@@ -24,9 +25,10 @@ struct GRCharacter: Identifiable, Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    init(species: String, name: String, imageName: String) {
+    init(species: String, name: String, imageName: String, birthDate: Date = Date()) {
         self.species = species
         self.name = name
         self.imageName = imageName
+        self.birthDate = birthDate
     }
 }

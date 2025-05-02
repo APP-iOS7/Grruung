@@ -113,7 +113,7 @@ struct ParkTestView: View {
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                     
-                                    Text("1살 (02월 14일 생)")
+                                    Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
                                         .foregroundStyle(.gray)
                                         .font(.caption)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -126,6 +126,27 @@ struct ParkTestView: View {
             }
             .navigationTitle("캐릭터 도감")
         }
+    }
+    
+    func formatToMonthDay(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM월 dd일"
+        return formatter.string(from: date)
+    }
+    
+    func calculateAge(_ birthDate: Date) -> Int {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
+        
+        // 생일이 안 지났으면 1살 빼기
+        if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
+           now < birthdayThisYear {
+            return age - 1
+        }
+        
+        return age
     }
 }
 
