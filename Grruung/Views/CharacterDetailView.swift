@@ -39,7 +39,6 @@ struct CharacterDetailView: View {
     // ------- 더미 데이터 끝 -------
     
     var body: some View {
-        
         ScrollView {
             VStack {
                 // 캐릭터 정보 영역
@@ -56,8 +55,8 @@ struct CharacterDetailView: View {
                     }
                     .padding(.trailing, 20)
                 }
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
+                //                .background(Color(.systemGray6))
+                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
@@ -65,7 +64,7 @@ struct CharacterDetailView: View {
                 VStack {
                     Text("성장 과정 🐾")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 10)
+//                        .padding(.leading, 10)
                         .padding(.top, 10)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -87,8 +86,8 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
+                //                .background(Color(.systemGray6))
+                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
@@ -96,7 +95,7 @@ struct CharacterDetailView: View {
                 VStack {
                     Text("성장 기록 📔")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 10)
+//                        .padding(.leading, 5)
                         .padding(.top, 10)
                     
                     HStack {
@@ -111,7 +110,8 @@ struct CharacterDetailView: View {
                             // 뷰모델의 loadPost() 함수를 호출하는데 현재 날짜의 달 보다 다음 달로 매개변수 전달
                             print("다음 기록 버튼 클릭됨")
                         }
-                    }.padding(.bottom, 10)
+                    }
+                    .padding(.bottom, 10)
                     
                     HStack {
                         VStack {
@@ -139,13 +139,12 @@ struct CharacterDetailView: View {
                             Text("같이 걷기: 20.5 km")
                         }
                         .padding(.trailing, 20)
-                        
                         Spacer()
                     }
                     .padding(.bottom, 30)
                 }
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
+                //                .background(Color(.systemGray6))
+                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
@@ -154,10 +153,9 @@ struct CharacterDetailView: View {
                     Text("들려준 이야기 📖")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, 10)
-                        .padding(.top, 10)
+
                     
-                    
-                    LazyVStack {
+                    List {
                         ForEach(storyItems.indices, id: \.self) { index in
                             NavigationLink(destination: Text("\(storyItems[index].title)")) {
                                 HStack {
@@ -177,44 +175,57 @@ struct CharacterDetailView: View {
                                 }
                                 Spacer()
                             }
-                            .background(Color(.white))
-                            .cornerRadius(8)
-                            .padding(.horizontal)
-                            
+                            .listRowInsets(EdgeInsets())
+                            .padding(.vertical, 4)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    print("삭제 버튼 클릭됨 \(storyItems[index].title )")
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    print("수정 버튼 클릭됨 \(storyItems[index].title )")
+                                } label: {
+                                    Image(systemName: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                         }
-                    }
-                    .padding(.bottom, 15)
-                }
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-                .padding(.horizontal)
-                .padding(.bottom, 30)
-                
-                Spacer()
-            } // end of VStack
-            .navigationTitle("\(nameDummy)").navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: {
-                            print("이름 바꿔주기 버튼 클릭 됨")
-                        }) {
-                            Text("이름 바꿔주기")
-                        }
+                        .listRowBackground(Color.white)
                         
-                        Button(action: {
-                            print("동산으로 보내기 버튼 클릭 됨")
-                        }) {
-                            Text("동산으로 보내기")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
+                    .listStyle(PlainListStyle())
+                    .frame(height: 350)
+                    .padding(.horizontal)
+                }
+            }
+            .padding(.bottom, 30)
+            Spacer()
+        } // end of VStack
+        .navigationTitle("\(nameDummy)").navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button(action: {
+                        print("이름 바꿔주기 버튼 클릭 됨")
+                    }) {
+                        Text("이름 바꿔주기")
+                    }
+                    Button(action: {
+                        print("동산으로 보내기 버튼 클릭 됨")
+                    }) {
+                        Text("동산으로 보내기")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }
     }
 }
+
 
 #Preview {
     NavigationStack {
