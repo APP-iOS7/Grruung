@@ -12,8 +12,15 @@ struct ChatPetView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var showSettings = false
     @FocusState private var isInputFocused: Bool
+    @State private var showVoiceChatLive = false
+    
+    // 캐릭터와 프롬프트 직접 저장
+    let character: GRCharacter
+    let prompt: String
     
     init(character: GRCharacter, prompt: String) {
+        self.character = character
+        self.prompt = prompt
         _viewModel = StateObject(wrappedValue: ChatPetViewModel(character: character, prompt: prompt))
     }
     
@@ -72,6 +79,12 @@ struct ChatPetView: View {
                     dismissButton: .default(Text("확인"))
                 )
             }
+            .sheet(isPresented: $showVoiceChatLive) {
+                VoiceChatLiveView(
+                    character: character,
+                    prompt: prompt
+                )
+            }
         }
     }
     
@@ -117,16 +130,22 @@ struct ChatPetView: View {
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color(UIColor.systemGray6))
+                        .cornerRadius(20)
                 }
                 
-                // 음성 입력 버튼
-                Button(action: {
-                    if viewModel.isListening {
+                // 음성 관련 옵션 메뉴
+                Menu {
+                    // 키보드 모드 (현재 화면)
+                    Button("키보드로 대화") {
+                        // 이미 키보드 모드이므로 아무 작업 안함
                         viewModel.stopListening()
-                    } else {
-                        viewModel.startListening()
                     }
-                }) {
+                    
+                    // 음성 대화 모드
+                    Button("음성으로 대화") {
+                        showVoiceChatLive = true
+                    }
+                } label: {
                     Image(systemName: viewModel.isListening ? "mic.fill" : "mic")
                         .font(.system(size: 20))
                         .foregroundStyle(viewModel.isListening ? .red : .primary)
