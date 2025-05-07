@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct AlertView: View {
+    @Binding var isPresented: Bool // 팝업 제어용
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.3)
@@ -39,34 +39,32 @@ struct AlertView: View {
                     .padding(.horizontal)
 
                 // 버튼들
-                HStack {
-                    Button(action: {}) {
-                        Text("Yes")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.cyan)
-                            .foregroundColor(.black)
-                            .cornerRadius(10)
+                HStack(spacing: 12) {
+                    // 감성 Confirm 버튼
+                    AnimatedConfirmButton {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            isPresented = false
+                        }
                     }
-                    Button(action: {}) {
-                        Text("No")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                }
-                .padding(.horizontal)
-            }
+
+                    // No 버튼
+                    AnimatedCancelButton {
+                                            isPresented = false
+                                        }
+                                    }
+                                    .frame(height: 50)
+                                    .padding(.horizontal)
+                                }
             .padding()
             .background(Color.white)
             .cornerRadius(20)
             .padding(.horizontal, 30)
+            .frame(maxWidth: 300)
         }
     }
 }
 
-#Preview {
-    AlertView()
-}
+//
+//#Preview {
+//    AlertView()
+//}

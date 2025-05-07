@@ -11,6 +11,7 @@ struct StoreView: View {
     let tabs = ["Tab 1", "Tab 2", "Tab 3", "Tab 4", "Tab 5"]
     let tabImages = ["pill", "fork.knife", "heart.circle.fill", "sun.max.fill", "camera"]
     @State private var selectedTab = 0
+    @State private var showAlert = false
     
     var body: some View {
         NavigationView {
@@ -41,12 +42,32 @@ struct StoreView: View {
                     .foregroundColor(.white)
                 
                 Spacer()
+                
+                Button(action: {
+                    withAnimation {
+                        showAlert = true
+                    }
+                }) {
+                    Text("상품 구매")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.cyan)
+                        .foregroundColor(.black)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                }
             }
             .navigationTitle("Store")
         }
-    }
-}
+        if showAlert {
+            AlertView(isPresented: $showAlert)
+                .transition(.scale.combined(with: .opacity))
+                .zIndex(1)
+        }
 
+                }
+            }
 #Preview {
     StoreView()
         .preferredColorScheme(.dark)
