@@ -10,22 +10,43 @@ import SwiftUI
 struct CharDexView: View {
     private let maxDexCount: Int = 20
     @State private var isFull: Bool = false
+    @State private var sortType: SortType = .original
     
     // 더미 데이터
     let garaCharacter: [GRCharacter] = [
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
+        GRCharacter(species: "고양이사자", name: "구릉이1", imageName: "hare"),
+        GRCharacter(species: "고양이사자", name: "구릉이2", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare", birthDate:Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
+        GRCharacter(species: "고양이사자", name: "구릉이3", imageName: "hare", birthDate:Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
                     birthDate:Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
+        GRCharacter(species: "고양이사자", name: "구릉이4", imageName: "hare"),
+        GRCharacter(species: "고양이사자", name: "구릉이5", imageName: "hare"),
     ]
+    
+    enum SortType {
+        case original
+        case createdAscending
+        case createdDescending
+        case alphabet
+    }
+    // 데이터 정렬
+    var sortedCharacterList: [GRCharacter] {
+        switch sortType {
+        case .original:
+            return garaCharacter
+        case .createdAscending:
+            return garaCharacter.sorted { $0.birthDate > $1.birthDate }
+        case .createdDescending:
+            return garaCharacter.sorted { $0.birthDate < $1.birthDate }
+        case .alphabet:
+            return garaCharacter.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        }
+    }
     
     // 전체 캐릭터 슬롯
     private var characterList: [GRCharacter] {
-        var unlockedCharacters = garaCharacter
+        var unlockedCharacters = sortedCharacterList
         let lockedCount = maxDexCount - unlockedCharacters.count - 1
         let extraCharacter = GRCharacter(species: "", name: "", imageName: "plus")
         
@@ -37,7 +58,7 @@ struct CharDexView: View {
                 GRCharacter(species: "", name: "", imageName: "lock.fill")
             }
             return unlockedCharacters + lockedCharacters
-        } else if lockedCount == 0{
+        } else if lockedCount == 0 {
             unlockedCharacters.append(extraCharacter)
             return unlockedCharacters
         } else {
@@ -136,30 +157,64 @@ struct CharDexView: View {
                 .padding()
             }
             .navigationTitle("캐릭터 도감")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            sortType = .original
+                        } label: {
+                            Label("기본", systemImage: sortType == .original ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .alphabet
+                        } label: {
+                            Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdAscending
+                        } label: {
+                            Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdDescending
+                        } label: {
+                            Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
+                        }
+                        
+                    } label: {
+                        Label("정렬", systemImage: "arrow.up.arrow.down")
+                    }
+                }
+            }
         }
     }
     
-    func formatToMonthDay(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM월 dd일"
-        return formatter.string(from: date)
-    }
-    
-    func calculateAge(_ birthDate: Date) -> Int {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
-        
-        // 생일이 안 지났으면 1살 빼기
-        if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
-           now < birthdayThisYear {
-            return age - 1
-        }
-        
-        return age
-    }
 }
+
+func formatToMonthDay(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MM월 dd일"
+    return formatter.string(from: date)
+}
+
+func calculateAge(_ birthDate: Date) -> Int {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
+    
+    // 생일이 안 지났으면 1살 빼기
+    if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
+       now < birthdayThisYear {
+        return age - 1
+    }
+    
+    return age
+}
+
 
 #Preview {
     CharDexView()
