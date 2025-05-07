@@ -10,15 +10,15 @@ import SwiftUI
 struct CharDexView: View {
     private let maxDexCount: Int = 20
     @State private var isFull: Bool = false
-
+    
     // 더미 데이터
     let garaCharacter: [GRCharacter] = [
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
-            birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare", birthDate:Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
-            birthDate:Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
+                    birthDate:Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare"),
     ]
@@ -37,7 +37,11 @@ struct CharDexView: View {
                 GRCharacter(species: "", name: "", imageName: "lock.fill")
             }
             return unlockedCharacters + lockedCharacters
+        } else if lockedCount == 0{
+            unlockedCharacters.append(extraCharacter)
+            return unlockedCharacters
         } else {
+            
         }
         return unlockedCharacters
     }
@@ -75,6 +79,7 @@ struct CharDexView: View {
                                     .font(.caption)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .padding(.bottom, 16)
                         } else if character.imageName == "plus" {
                             VStack {
                                 Image(systemName: character.imageName)
@@ -97,6 +102,7 @@ struct CharDexView: View {
                                     .font(.caption)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .padding(.bottom, 16)
                         } else {
                             // 보유한 캐릭터 슬롯
                             NavigationLink(destination: DetailView(character: character)) {
