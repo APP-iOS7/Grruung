@@ -35,42 +35,47 @@ struct VoiceChatLiveView: View {
             VStack {
                 // 펫 이미지 및 대화 영역
                 ZStack {
-                    // 펫 이미지
-                    Circle()
-                        .fill(Color.blue.opacity(0.1))
-                        .frame(width: 200, height: 200)
-                        .overlay(
-                            Image(systemName: "pawprint.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 100, height: 100)
-                                .foregroundColor(.blue)
+                    VStack {
+                        
+                        
+                        // 펫 이미지
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 200, height: 200)
+                            .overlay(
+                                Image(systemName: "pawprint.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 100, height: 100)
+                                    .foregroundColor(.blue)
                                 // 말할 때 바운스 애니메이션
-                                .scaleEffect(viewModel.isSpeaking ? 1.1 : 1.0)
-                                .animation(.spring(response: 0.3), value: viewModel.isSpeaking)
-                        )
-                    
-                    // 말풍선 (실시간으로 나타났다 사라짐)
-                    if showSpeechBubble && viewModel.showSubtitle {
-                        VStack {
-                            Spacer()
-                            
-                            Text(currentSpeech)
-                                .padding()
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(16)
-                                .transition(.opacity)
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 32)
+                                    .scaleEffect(viewModel.isSpeaking ? 1.1 : 1.0)
+                                    .animation(.spring(response: 0.3), value: viewModel.isSpeaking)
+                            )
+                        
+                        // 펫 이름
+                        Text(character.name)
+                            .font(.headline)
+                            .padding(.top, 8)
+                        
+                        // 말풍선 (실시간으로 나타났다 사라짐)
+                        if showSpeechBubble && viewModel.showSubtitle {
+                            VStack {
+                                Spacer()
+                                
+                                Text(currentSpeech)
+                                    .padding()
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(16)
+                                    .transition(.opacity)
+                                    .padding(.horizontal, 24)
+                                    .padding(.bottom, 32)
+                            }
                         }
                     }
                 }
                 .padding(.top, 40)
                 
-                // 펫 이름
-                Text(character.name)
-                    .font(.headline)
-                    .padding(.top, 8)
                 
                 Spacer()
                 
