@@ -8,11 +8,18 @@
 import SwiftUI
 
 struct CharDexView: View {
+    // 최대 도감의 캐릭터 갯수
     private let maxDexCount: Int = 20
-    @State private var isFull: Bool = false
+    // 정렬 상태
     @State private var sortType: SortType = .original
     
-    // 더미 데이터
+    // 그리드 레이아웃
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
+    // 더미 데이터(테스트용)
     let garaCharacter: [GRCharacter] = [
         GRCharacter(species: "고양이사자", name: "구릉이1", imageName: "hare"),
         GRCharacter(species: "고양이사자", name: "구릉이2", imageName: "hare",
@@ -24,13 +31,14 @@ struct CharDexView: View {
         GRCharacter(species: "고양이사자", name: "구릉이5", imageName: "hare"),
     ]
     
+    // 정렬 종류
     enum SortType {
         case original
         case createdAscending
         case createdDescending
         case alphabet
     }
-    // 데이터 정렬
+    // 데이터 정렬 연산 프로퍼티
     var sortedCharacterList: [GRCharacter] {
         switch sortType {
         case .original:
@@ -67,11 +75,6 @@ struct CharDexView: View {
         return unlockedCharacters
     }
     
-    let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
-    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -102,6 +105,7 @@ struct CharDexView: View {
                             }
                             .padding(.bottom, 16)
                         } else if character.imageName == "plus" {
+                            // 추가할 수 있음을 나타내는 표시
                             VStack {
                                 Image(systemName: character.imageName)
                                     .scaledToFit()
@@ -194,33 +198,7 @@ struct CharDexView: View {
     
 }
 
-func formatToMonthDay(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MM월 dd일"
-    return formatter.string(from: date)
-}
-
-func calculateAge(_ birthDate: Date) -> Int {
-    let calendar = Calendar.current
-    let now = Date()
-    
-    let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
-    
-    // 생일이 안 지났으면 1살 빼기
-    if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
-       now < birthdayThisYear {
-        return age - 1
-    }
-    
-    return age
-}
-
-
-#Preview {
-    CharDexView()
-}
-
-// 임시 디테일 뷰
+// 임시 디테일 뷰(테스트 용)
 struct DetailView: View {
     var character: GRCharacter
     
@@ -246,4 +224,31 @@ struct DetailView: View {
         .navigationTitle(character.name)
         .padding()
     }
+}
+
+// Date타입을 00월 00일 포맷으로 리턴하는 함수
+func formatToMonthDay(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MM월 dd일"
+    return formatter.string(from: date)
+}
+
+// 나이를 계산하는 함수
+func calculateAge(_ birthDate: Date) -> Int {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
+    
+    // 생일이 안 지났으면 1살 빼기
+    if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
+       now < birthdayThisYear {
+        return age - 1
+    }
+    
+    return age
+}
+
+#Preview {
+    CharDexView()
 }
