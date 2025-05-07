@@ -8,13 +8,30 @@
 import SwiftUI
 import PhotosUI
 
+
+// 더미 데이터 모델
+
+// --- 더미 데이터 끝
+
+enum ViewMode {
+    case create
+    case read
+    case edit
+}
+
 struct WriteStoryView: View {
     
+    @State var currentMode: ViewMode
+    @State private var postToDisplay: GRPost?
     @State private var diaryText: String = ""
     // PhotosPicker에서 선택된 항목을 저장할 상태 변수 (단일 이미지 선택)
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     // 선택된 이미지 데이터를 저장할 상태 변수
     @State private var selectedImageData: Data? = nil
+    @State private var existingImageUrl: String? = nil
+    
+    @StateObject private var viewModel = WriteStoryViewModel()
+    @Environment(\.dismiss) var dismiss
     
     private var isPlaceholderVisible: Bool {
         diaryText.isEmpty
@@ -24,6 +41,17 @@ struct WriteStoryView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy년 MM월 dd일"
         return formatter.string(from: Date())
+    }
+    
+    private var navigationTitle: String {
+        switch currentMode {
+        case .create:
+            return "이야기 들려주기"
+        case .read:
+            return "이야기 보기"
+        case .edit:
+            return "이야기 다시 들려주기"
+        }
     }
     
     var body: some View {
@@ -41,11 +69,9 @@ struct WriteStoryView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
-//                                .rotationEffect(.degrees(-15))
                                 .padding(.leading)
                             
                         } else {
-                            // 선택된 이미지가 없을 때 플레이스 홀더 이미지 표시
                             Image(systemName: "photo.on.rectangle.angled")
                                 .resizable()
                                 .scaledToFit()
@@ -66,8 +92,8 @@ struct WriteStoryView: View {
                         }
                     }
                 }
-                
                 .padding(.leading, 20)
+                
                 Spacer()
                 
                 Text(currentDateString)
@@ -75,35 +101,33 @@ struct WriteStoryView: View {
                     .fontWeight(.medium)
                     .padding(.trailing)
                 
-                Spacer() // Push date towards the center/right
+                Spacer()
             }
-            .padding(.top) // Add padding above the HStack
+            .padding(.top)
             
-            // TextEditor for multi-line input
+            
             ZStack(alignment: .topLeading) {
-                // TextEditor itself
-                TextEditor(text: $diaryText)
-                    .frame(minHeight: 150) // Give it some minimum height
-                    .border(Color.clear) // Hide default border if any
                 
-                // Placeholder Text - shown only if diaryText is empty
+                TextEditor(text: $diaryText)
+                    .frame(minHeight: 150)
+                    .border(Color.clear)
+                
                 if isPlaceholderVisible {
                     Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
                         .foregroundColor(Color(UIColor.placeholderText))
                         .padding(.top, 8)
                         .padding(.leading, 5)
-                        .allowsHitTesting(false) // Make placeholder non-interactive
+                        .allowsHitTesting(false)
                 }
             }
-            .padding(.horizontal) // Add horizontal padding to the text editor area
+            .padding(.horizontal)
             
-            Spacer() // Pushes content to the top
+            Spacer()
         }
-        .navigationTitle("이야기 들려주기") // Hide the default large navigation title area
-        .navigationBarTitleDisplayMode(.inline) // Use inline style for title if needed
+        .navigationTitle(navigationTitle)
+        .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(trailing:
                                 Button("저장") {
-            // Action for the save button
             print("Save button tapped!")
             print("Diary Text: \(diaryText)")
             
@@ -124,6 +148,6 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView()
+        WriteStoryView(currentMode: .edit)
     }
 }
