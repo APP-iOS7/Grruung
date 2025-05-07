@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1E3C95CB2DCB54C100674BBD /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = 1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */; };
 		8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B32DC25F1200E346BF /* FirebaseAnalytics */; };
 		8A7831B62DC25F1200E346BF /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B52DC25F1200E346BF /* FirebaseAuth */; };
 		8A7831B82DC25F1200E346BF /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B72DC25F1200E346BF /* FirebaseDatabase */; };
@@ -32,6 +33,7 @@
 			files = (
 				8A7831B82DC25F1200E346BF /* FirebaseDatabase in Frameworks */,
 				8A7831BA2DC25F1200E346BF /* FirebaseFirestore in Frameworks */,
+				1E3C95CB2DCB54C100674BBD /* FirebaseVertexAI in Frameworks */,
 				8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */,
 				8A7831B62DC25F1200E346BF /* FirebaseAuth in Frameworks */,
 			);
@@ -80,6 +82,7 @@
 				8A7831B52DC25F1200E346BF /* FirebaseAuth */,
 				8A7831B72DC25F1200E346BF /* FirebaseDatabase */,
 				8A7831B92DC25F1200E346BF /* FirebaseFirestore */,
+				1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */,
 			);
 			productName = Grruung;
 			productReference = 8A02B20E2DC1FEEE0064A296 /* Grruung.app */;
@@ -355,6 +358,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseVertexAI;
+		};
 		8A7831B32DC25F1200E346BF /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
