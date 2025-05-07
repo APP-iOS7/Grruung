@@ -25,6 +25,7 @@ class FirebaseService {
         return auth.currentUser?.uid
     }
     
+    // MARK: - 캐릭터 관련 메서드
     // Firestore에서 사용자의 모든 캐릭터 목록을 가져옴
     func fetchUserCharacters(completion: @escaping ([GRCharacter]?, Error?) -> Void) {
         guard let userID = getCurrentUserID() else {
@@ -155,5 +156,69 @@ class FirebaseService {
         }
     }
     
+    // MARK: - 채팅 메시지 관련 메서드
     // Firestore에 채팅 메시지를 저장
+    func saveChatMessage(_ message: ChatMessage, characterID: String, completion: @escaping (Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        let messageData: [String: Any] = [
+            "text": message.text,
+            "isFromPet": message.isFromPet,
+            "timestamp": Timestamp(date: message.timestamp)
+        ]
+        
+        db.collection("usres").document(userID)
+            .collection("characters").document(characterID)
+            .collection("messages").document(message.id)
+            .setData(messageData) { error in
+                completion(error)
+            }
+    }
+    
+    // Firestore에서 특정 캐릭터와의 채팅 메시지를 가져옴.
+    func fetchChatMessages(characterID: String, limit: Int = 50, completion: @escaping ([ChatMessage]?, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .collection("messages")
+            .order(by: "timestamp", descending: true)
+            .limit(to: limit)
+            .getDocuments { (snapshot, error) in
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    completion([], nil)
+                    return
+                }
+                
+                var messages: [ChatMessage] = []
+                
+                for document in documents {
+                    let data = document.data()
+                    
+                    let text = data["text"] as? String ?? ""
+                    let isFromPet = data["isFromPet"] as? Bool ?? false
+                    let timestampData = data["timestamp"] as? Timestamp
+                    let timestamp = timestampData?.dateValue() ?? Date()
+                    
+                    let message = ChatMessage(text: text, isFromPet: isFromPet, timestamp: timestamp)
+                    messages.append(message)
+                }
+                
+                // 시간순으로 정렬
+                messages.sort { $0.timestamp < $1.timestamp }
+                
+                completion(messages, nil)
+            }
+    }
 }
