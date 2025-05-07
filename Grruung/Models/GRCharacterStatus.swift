@@ -37,7 +37,7 @@ struct GRCharacterStatus {
     var activity: Int = 0
     
     /// 거주지
-    var address: String = ""
+    var address: Address = .userHome
     
     /// 외모
     var appearance: String = ""
@@ -55,4 +55,11 @@ struct GRCharacterStatus {
     
     /// 청결도
     var clean: Int = 0
+}
+
+/// 캐릭터 거주지 종류
+enum Address: String, Codable, CaseIterable {
+    case userHome = "메인"
+    case paradise = "동산"
+    case space = "우주"
 }
