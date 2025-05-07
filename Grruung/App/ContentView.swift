@@ -42,9 +42,8 @@ struct ContentView: View {
     }
 }
 
-/// 메인 탭 뷰 (HomeView를 대체)
+// 메인 탭 뷰 (HomeView를 대체)
 struct MainTabView: View {
-    // MARK: - 0. 프로퍼티
     @State private var selectedTab: Tab = .home
     
     // 탭 아이템 정의
@@ -52,7 +51,6 @@ struct MainTabView: View {
         case home, character, shop, myPage
     }
     
-    // MARK: - 1. 바디
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView()
