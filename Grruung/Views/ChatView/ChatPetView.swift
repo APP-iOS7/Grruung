@@ -10,7 +10,6 @@ import SwiftUI
 struct ChatPetView: View {
     @StateObject private var viewModel: ChatPetViewModel
     @Environment(\.presentationMode) var presentationMode
-    @State private var showSettings = false
     @FocusState private var isInputFocused: Bool
     @State private var showVoiceChatLive = false
     
@@ -51,17 +50,6 @@ struct ChatPetView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showSettings = true
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showSettings) {
-                voiceSettingsView
             }
             .alert(item: Binding<AlertItem?>(
                 get: {
@@ -133,19 +121,10 @@ struct ChatPetView: View {
                         .cornerRadius(20)
                 }
                 
-                // 음성 관련 옵션 메뉴
-                Menu {
-                    // 키보드 모드 (현재 화면)
-                    Button("키보드로 대화") {
-                        // 이미 키보드 모드이므로 아무 작업 안함
-                        viewModel.stopListening()
-                    }
-                    
-                    // 음성 대화 모드
-                    Button("음성으로 대화") {
+                // 음성 대화 모드
+                Button(action: {
                         showVoiceChatLive = true
-                    }
-                } label: {
+                }) {
                     Image(systemName: viewModel.isListening ? "mic.fill" : "mic")
                         .font(.system(size: 20))
                         .foregroundStyle(viewModel.isListening ? .red : .primary)
@@ -171,37 +150,6 @@ struct ChatPetView: View {
         }
     }
     
-    private var voiceSettingsView: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("음성 설정")) {
-                    // 자막 온/오프
-                    Toggle("자막", isOn: $viewModel.showSubtitle)
-                        .toggleStyle(SwitchToggleStyle(tint: .green))
-                    
-                    Picker("음성", selection: $viewModel.voiceGender) {
-                        Text("남성").tag(SpeechService.VoiceGender.male)
-                        Text("여성").tag(SpeechService.VoiceGender.female)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    
-                    Picker("음성 타입", selection: $viewModel.voiceType) {
-                        Text("사람 목소리").tag(SpeechService.VoiceType.human)
-                        Text("동물 소리").tag(SpeechService.VoiceType.animal)
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-            }
-            .navigationTitle("설정")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("닫기") {
-                        showSettings = false
-                    }
-                }
-            }
-        }
-    }
 }
 
 

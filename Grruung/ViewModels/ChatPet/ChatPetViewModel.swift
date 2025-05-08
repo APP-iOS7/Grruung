@@ -19,6 +19,7 @@ class ChatPetViewModel: ObservableObject {
     @Published var voiceType: SpeechService.VoiceType = .human
     @Published var isSpeaking: Bool = false
     @Published var isListening: Bool = false
+    @Published var speechEnabled: Bool = false
     
     // 서비스
     private let vertexService = VertexAIService.shared
@@ -144,7 +145,7 @@ class ChatPetViewModel: ObservableObject {
         addMessage(message)
         
         // 음성으로 인사말 재생
-        if showSubtitle && !greeting.isEmpty {
+        if showSubtitle && speechEnabled && !greeting.isEmpty {
             speakMessage(greeting)
         }
     }
@@ -219,7 +220,7 @@ class ChatPetViewModel: ObservableObject {
                     let petMessage = ChatMessage(text: defaultResponse, isFromPet: true)
                     self.addMessage(petMessage)
                     
-                    if self.showSubtitle {
+                    if self.showSubtitle && self.speechEnabled {
                         self.speakMessage(defaultResponse)
                     }
                 }
@@ -231,6 +232,9 @@ class ChatPetViewModel: ObservableObject {
     // MARK: 음성 관련 메서드
     // 텍스트를 음성으로 말합니다.
     func speakMessage(_ text: String) {
+        // 음성 비활성화시 재생되지 않음
+        guard speechEnabled else { return }
+        
         // 음성 타입 설정
         speechService.setVoiceType(voiceType)
         
