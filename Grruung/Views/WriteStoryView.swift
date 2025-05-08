@@ -21,20 +21,21 @@ enum ViewMode {
 
 struct WriteStoryView: View {
     
-    @State var currentMode: ViewMode
-    @State private var postToDisplay: GRPost?
-    @State private var diaryText: String = ""
-    // PhotosPicker에서 선택된 항목을 저장할 상태 변수 (단일 이미지 선택)
-    @State private var selectedPhotoItem: PhotosPickerItem? = nil
-    // 선택된 이미지 데이터를 저장할 상태 변수
-    @State private var selectedImageData: Data? = nil
-    @State private var existingImageUrl: String? = nil
-    
     @StateObject private var viewModel = WriteStoryViewModel()
     @Environment(\.dismiss) var dismiss
     
+    var currentMode: ViewMode
+    var postID: String?
+    
+    @State private var currentPost: GRPost? = nil
+    
+    @State private var postBody: String = ""
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var selectedImageData: Data? = nil // 새로 선택/변경한 이미지 데이터
+    @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
+    
     private var isPlaceholderVisible: Bool {
-        diaryText.isEmpty
+        postBody.isEmpty
     }
     
     private var currentDateString: String {
@@ -55,7 +56,6 @@ struct WriteStoryView: View {
     }
     
     var body: some View {
-        
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 PhotosPicker(
@@ -108,7 +108,7 @@ struct WriteStoryView: View {
             
             ZStack(alignment: .topLeading) {
                 
-                TextEditor(text: $diaryText)
+                TextEditor(text: $postBody)
                     .frame(minHeight: 150)
                     .border(Color.clear)
                 
@@ -126,23 +126,106 @@ struct WriteStoryView: View {
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarItems(trailing:
-                                Button("저장") {
-            print("Save button tapped!")
-            print("Diary Text: \(diaryText)")
-            
-            if let imageData = selectedImageData {
-                print("Image data size: \(imageData.count) bytes")
-            } else {
-                print("No image selected.")
+        .navigationBarItems(
+            trailing: Button("저장") {
+                print("Save button tapped!")
+                print("Diary Text: \(postBody)")
+                
+                if let imageData = selectedImageData {
+                    print("Image data size: \(imageData.count) bytes")
+                } else {
+                    print("No image selected.")
+                }
             }
-            
-        }
         )
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
+        .onAppear {
+        }
     }
     
-}
+    private func setupViewforCurrentMode() {
+        if currentMode == .create {
+            postBody = ""
+            selectedPhotoItem = nil
+            selectedImageData = nil
+            displayedImage = nil
+            currentPost = nil
+            
+        } else if let postIdToLoad = postID, (currentMode == .read || currentMode == .edit) {
+            Task {
+                do {
+                    let fetchedPost = try await viewModel.findPost(postID: postIdToLoad)
+                    self.currentPost = fetchedPost
+                    if let post = fetchedPost {
+                        self.postBody = post.postBody
+                        if !post.postImage.isEmpty {
+                            loadImageFrom(urlString: post.postImage)
+                        } else {
+                            self.displayedImage = nil
+                            self.selectedImageData = nil
+                        }
+                    } else {
+                        print("Post not found.")
+                    }
+                } catch {
+                    print("Error in setupViewforCurrentMode: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func loadImageFrom(urlString: String) {
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL string: \(urlString)")
+            self.displayedImage = nil
+            return
+        }
+        
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                self.displayedImage = UIImage(data: data)
+            } catch {
+                print("Error loading image: \(error)")
+                self.displayedImage = nil
+            }
+        }
+        
+    }
+    
+    private func handleSaveOrUpdate() {
+        let characterUUID = currentPost?.characterUUID ?? ""
+        
+        Task {
+            do {
+                if currentMode == .create {
+                    let newPostId = try await viewModel.createPost(
+                        characterUUID: characterUUID,
+                        postBody: postBody,
+                        imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
+                    )
+                    print("새 게시물 ID: \(newPostId)")
+                } else if currentMode == .edit, let postToEdit = currentPost, let existingPostID = postToEdit.postID {
+                    try await viewModel.editPost(
+                        postID: existingPostID,
+                        postBody: postBody,
+                        newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
+                        existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
+                    )
+                    
+                    
+                    print("게시물 수정 완료, ID: \(existingPostID)")
+                }
+                dismiss()
+            } catch {
+                print("저장/수정 중 오류 발생: \(error)")
+            }
+        }
+    }
+    
+    
+} // end of WriteStoryView
+
 
 
 
