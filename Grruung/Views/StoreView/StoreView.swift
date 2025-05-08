@@ -62,12 +62,11 @@ struct StoreView: View {
         }
         if showAlert {
             AlertView(isPresented: $showAlert)
-                .transition(.scale.combined(with: .opacity))
+                .transition(.opacity)
                 .zIndex(1)
         }
-
-                }
-            }
+    }
+}
 #Preview {
     StoreView()
         .preferredColorScheme(.dark)

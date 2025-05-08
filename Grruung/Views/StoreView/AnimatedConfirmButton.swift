@@ -7,15 +7,13 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct AnimatedConfirmButton: View {
     var onConfirm: () -> Void
-
+    
     @State private var tap = false
     @State private var press = false
     @State private var alterState = false
-
+    
     var body: some View {
         ZStack {
             Circle()
@@ -24,7 +22,7 @@ struct AnimatedConfirmButton: View {
                 .foregroundColor(Color.green)
                 .blur(radius: alterState ? 5 : 20)
                 .opacity(alterState ? 0 : 1)
-
+            
             Text("Yes")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .foregroundColor(alterState ? .clear : (tap ? Color.blue : .white))
@@ -80,7 +78,7 @@ struct AnimatedConfirmButton: View {
 
 struct AnimatedCancelButton: View {
     var onCancel: () -> Void
-
+    
     var body: some View {
         Button(action: {
             withAnimation {
@@ -97,8 +95,8 @@ struct AnimatedCancelButton: View {
                 .background(
                     ZStack {
                         // 배경색 기본
-                        Color(red: 0.85, green: 0.4, blue: 0.4)
-
+                        Color(red: 0.7, green: 0.7, blue: 0.7)
+                        
                         // 윗부분 하이라이트 선
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
@@ -112,19 +110,19 @@ struct AnimatedCancelButton: View {
                                 ),
                                 lineWidth: 1.5
                             )
-
+                        
                         // 입체감용 위 blur
                         RoundedRectangle(cornerRadius: 16)
                             .foregroundColor(.white)
                             .blur(radius: 2)
                             .offset(x: -2, y: -2)
-
+                        
                         // 입체감용 아래 blur
                         RoundedRectangle(cornerRadius: 16)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(red: 0.9, green: 0.5, blue: 0.5),
-                                             Color(red: 0.85, green: 0.4, blue: 0.4)],
+                                    colors: [Color(red: 0.75, green: 0.75, blue: 0.75),
+                                             Color(red: 0.6, green: 0.6, blue: 0.6)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
