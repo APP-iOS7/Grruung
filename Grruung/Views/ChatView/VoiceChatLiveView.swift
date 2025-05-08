@@ -14,6 +14,15 @@ struct VoiceChatLiveView: View {
     @State private var showSettings = false
     @State private var showSpeechBubble = false
     @State private var currentSpeech = ""
+    @State private var micEnabled = true // 마이크 활성화 상태
+    @State private var showSettingsPopup = false // 설정 팝업 표시 여부
+    
+    // 테스트용 대사 배열
+    private let testSpeeches = [
+        "그르릉... 안녕하세요! 오늘은 날씨가 좋네요.",
+        "냥! 무엇을 도와드릴까요? 같이 놀아요!",
+        "어흥! 배고파요. 먹을 것 주세요~"
+    ]
     
     // 캐릭터 정보 직접 저장
     private let character: GRCharacter
@@ -23,7 +32,12 @@ struct VoiceChatLiveView: View {
     init(character: GRCharacter, prompt: String) {
         self.character = character
         self.prompt = prompt
-        _viewModel = StateObject(wrappedValue: ChatPetViewModel(character: character, prompt: prompt))
+        
+        // 음성 대화 화면에서는 항상 음성이 활성화되도록 설정
+        let vm = ChatPetViewModel(character: character, prompt: prompt)
+        vm.speechEnabled = true // 음성 강제 활성화
+        
+        _viewModel = StateObject(wrappedValue: vm)
     }
     
     // MARK: - 바디
@@ -33,67 +47,82 @@ struct VoiceChatLiveView: View {
                 .ignoresSafeArea()
             
             VStack {
-                // 펫 이미지 및 대화 영역
-                ZStack {
-                    VStack {
-                        
-                        
-                        // 펫 이미지
-                        Circle()
-                            .fill(Color.blue.opacity(0.1))
-                            .frame(width: 200, height: 200)
-                            .overlay(
-                                Image(systemName: "pawprint.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 100, height: 100)
-                                    .foregroundColor(.blue)
-                                // 말할 때 바운스 애니메이션
-                                    .scaleEffect(viewModel.isSpeaking ? 1.1 : 1.0)
-                                    .animation(.spring(response: 0.3), value: viewModel.isSpeaking)
-                            )
-                        
-                        // 펫 이름
-                        Text(character.name)
-                            .font(.headline)
-                            .padding(.top, 8)
-                        
-                        // 말풍선 (실시간으로 나타났다 사라짐)
-                        if showSpeechBubble && viewModel.showSubtitle {
-                            VStack {
-                                Spacer()
-                                
-                                Text(currentSpeech)
-                                    .padding()
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(16)
-                                    .transition(.opacity)
-                                    .padding(.horizontal, 24)
-                                    .padding(.bottom, 32)
-                            }
-                        }
-                    }
+                // 상단 설정 버튼
+                Button(action: {
+                    showSettingsPopup = true
+                }) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.title2)
+                        .foregroundColor(.primary)
+                        .padding()
                 }
-                .padding(.top, 40)
-                
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 8)
                 
                 Spacer()
                 
-                // 하단 컨트롤 영역
-                HStack(spacing: 40) {
-                    // 키보드 대화 모드 버튼
+                // 펫 이미지 및 대화 영역
+                VStack(spacing: 10) {
+                    // 펫 이미지
+                    Circle()
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 200, height: 200)
+                        .overlay(
+                            Image(systemName: "pawprint.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 100, height: 100)
+                                .foregroundColor(.blue)
+                            // 말할 때 바운스 애니메이션
+                                .scaleEffect(viewModel.isSpeaking ? 1.1 : 1.0)
+                                .animation(.spring(response: 0.3), value: viewModel.isSpeaking)
+                        )
+                    
+                    // 펫 이름
+                    Text(character.name)
+                        .font(.headline)
+                        .padding(.top, 4)
+                    
+                    // 자막 테스트 버튼
+                    Button("자막 테스트") {
+                        let randomSpeech = testSpeeches.randomElement() ?? "안녕하세요!"
+                        showSpeechWithAnimation(randomSpeech)
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(20)
+                    
+                    Spacer()
+                    
+                    // 말풍선 (실시간으로 나타났다 사라짐)
+                    if showSpeechBubble && viewModel.showSubtitle {
+                        Text(currentSpeech)
+                            .padding()
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(16)
+                            .transition(.opacity)
+                            .padding(.horizontal, 24)
+                    }
+                }
+                .padding(.top, 20)
+                
+                Spacer()
+                
+                // 하단 컨트롤 영역 (와이어프레임에 맞게 수정)
+                HStack(spacing: 20) {
+                    // 대화 종료 버튼 (좌측)
                     Button(action: {
-                        // 키보드 대화 모드로 전환
                         presentationMode.wrappedValue.dismiss()
                     }) {
                         VStack(spacing: 4) {
-                            Image(systemName: "keyboard")
-                                .font(.system(size: 24))
-                            Text("키보드로 대화")
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 30))
+                            Text("대화 종료")
                                 .font(.caption)
                         }
-                        .padding()
                         .foregroundColor(.primary)
+                        .frame(width: 80)
                     }
                     
                     // 음성 인식 버튼 (중앙)
@@ -111,45 +140,24 @@ struct VoiceChatLiveView: View {
                         }
                     }
                     
-                    // 대화 종료 버튼
+                    // 마이크 켜기/끄기 버튼 (우측)
                     Button(action: {
-                        presentationMode.wrappedValue.dismiss()
+                        toggleMic()
                     }) {
                         VStack(spacing: 4) {
-                            Image(systemName: "xmark.circle")
-                                .font(.system(size: 24))
-                            Text("대화 종료")
+                            Image(systemName: micEnabled ? "mic.slash.fill" : "mic.fill")
+                                .font(.system(size: 30))
+                            Text(micEnabled ? "마이크 끄기" : "마이크 켜기")
                                 .font(.caption)
                         }
-                        .padding()
                         .foregroundColor(.primary)
+                        .frame(width: 80)
                     }
                 }
                 .padding(.bottom, 40)
             }
-            
-            // 설정 버튼 (우측 상단)
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        showSettings = true
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.title2)
-                            .foregroundColor(.primary)
-                            .padding()
-                    }
-                }
-                
-                Spacer()
-            }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showSettings) {
-            settingsView
-        }
         .onAppear {
             // 초기 인사 메시지 생성
             if !viewModel.messages.isEmpty, let firstMessage = viewModel.messages.first {
@@ -159,12 +167,91 @@ struct VoiceChatLiveView: View {
                 showSpeechWithAnimation(greeting)
             }
         }
+        .overlay(
+            Group {
+                if showSettingsPopup {
+                    ZStack {
+                        // 설정 팝업 창
+                        List {
+                            // 자막 설정 섹션
+                            Section {
+                                Toggle("자막", isOn: $viewModel.showSubtitle)
+                                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                            }
+                            
+                            // 음성 설정 섹션
+                            Section(header: Text("음성")) {
+                                Button(action: {
+                                    viewModel.voiceGender = .male
+                                }) {
+                                    HStack {
+                                        Text("남성")
+                                        Spacer()
+                                        if viewModel.voiceGender == .male {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                }
+                                .foregroundColor(.primary)
+                                
+                                Button(action: {
+                                    viewModel.voiceGender = .female
+                                }) {
+                                    HStack {
+                                        Text("여성")
+                                        Spacer()
+                                        if viewModel.voiceGender == .female {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                }
+                                .foregroundColor(.primary)
+                            }
+                        }
+                        .listStyle(InsetGroupedListStyle())
+                        .frame(width: 250, height: 250)
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
+                        .padding(.top, 5)
+                        .padding(.trailing, 10)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .background(
+                        Color.black.opacity(0.2)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                showSettingsPopup = false
+                            }
+                    )
+                }
+            }
+        )
     }
     
     // MARK: - 메서드
     
+    private func toggleMic() {
+        micEnabled.toggle()
+        
+        // 마이크를 끄면 인식도 중지
+        if !micEnabled && viewModel.isListening {
+            viewModel.stopListening()
+            viewModel.isListening = false
+        }
+        
+        // 알림 메시지 표시
+        showSpeechWithAnimation(micEnabled ? "마이크가 켜졌습니다." : "마이크가 꺼졌습니다.")
+    }
+    
+    
+    
     /// 음성 인식 토글
     private func toggleListening() {
+        // 마이크가 비활성화 상태라면 작동하지 않음
+        guard micEnabled else { return }
+        
         viewModel.isListening.toggle()
         
         if viewModel.isListening {
