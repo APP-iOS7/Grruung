@@ -9,10 +9,18 @@ import SwiftUI
 import Firebase
 import FirebaseCore
 import FirebaseFirestore
+import FirebaseAppCheck // App Check 추가
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        // ✅ AppCheck Debug Provider 먼저 지정
+#if DEBUG
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+#endif
+        
+        // Firebase 초기화
         FirebaseApp.configure()
         
         // Firestore 설정
