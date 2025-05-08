@@ -25,7 +25,9 @@ struct WriteStoryView: View {
     @Environment(\.dismiss) var dismiss
     
     var currentMode: ViewMode
+    var characterUUID: String?
     var postID: String?
+    
     
     @State private var currentPost: GRPost? = nil
     
@@ -55,9 +57,34 @@ struct WriteStoryView: View {
         }
     }
     
+    private var buttonTitle: String {
+        switch currentMode {
+        case .read:
+            return "닫기"
+        case .edit, .create:
+            return "저장"
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
+                if currentMode == .read {
+                    if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.leading)
+                        
+                    } else if let displayedImage = displayedImage {
+                        Image(uiImage: displayedImage)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.leading)
+                    }
+                } else {
                 PhotosPicker(
                     selection: $selectedPhotoItem,
                     matching: .images,
@@ -94,6 +121,7 @@ struct WriteStoryView: View {
                 }
                 .padding(.leading, 20)
                 
+            }
                 Spacer()
                 
                 Text(currentDateString)
@@ -106,30 +134,64 @@ struct WriteStoryView: View {
             .padding(.top)
             
             
-            ZStack(alignment: .topLeading) {
-                
-                TextEditor(text: $postBody)
-                    .frame(minHeight: 150)
-                    .border(Color.clear)
-                
-                if isPlaceholderVisible {
-                    Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
-                        .foregroundColor(Color(UIColor.placeholderText))
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
-                }
+            if currentMode == .read {
+                Text(currentPost?.postBody ?? "")
+                    .padding(.horizontal)
+                    .padding(.bottom, 10)
             }
-            .padding(.horizontal)
+            else {
+                
+                ZStack(alignment: .topLeading) {
+                    
+                    TextEditor(text: $postBody)
+                        .frame(minHeight: 150)
+                        .border(Color.clear)
+                    
+                    if isPlaceholderVisible {
+                        Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
+                            .foregroundColor(Color(UIColor.placeholderText))
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal)
+            }
             
             Spacer()
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(
-            trailing: Button("저장") {
-                print("Save button tapped!")
-                print("Diary Text: \(postBody)")
+            trailing: Button("\(buttonTitle)") {
+                Task {
+                    do {
+                        print("우측 상단 button tapped!")
+                        
+                        if currentMode == .create {
+                           let _ =  try await viewModel.createPost(
+                                characterUUID: characterUUID ?? "",
+                                postBody: postBody,
+                                imageData: selectedImageData
+                            )
+                        } else if currentMode == .edit {
+                            try await viewModel.editPost(
+                                postID: currentPost?.postID ?? "",
+                                postBody: postBody,
+                                newImageData: selectedImageData,
+                                existingImageUrl: currentPost?.postImage ?? ""
+                             )
+                        }
+//                        else if currentMode == .read {
+//                            
+//                        }
+                        
+                        
+                        dismiss()
+                    } catch {
+                        print("Error saving post: \(error)")
+                    }
+                }
                 
                 if let imageData = selectedImageData {
                     print("Image data size: \(imageData.count) bytes")
@@ -140,8 +202,10 @@ struct WriteStoryView: View {
         )
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onAppear {
+            setupViewforCurrentMode()
         }
     }
+    
     
     private func setupViewforCurrentMode() {
         if currentMode == .create {
@@ -224,13 +288,27 @@ struct WriteStoryView: View {
     }
     
     
+    
 } // end of WriteStoryView
 
 
 
+//
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .create)
+//    }
+//}
+
+
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .edit, postID: "pLYj75FYFJAWJCeGaty7")
+//    }
+//}
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .edit)
+        WriteStoryView(currentMode: .read, characterUUID: "characterUUID", postID: "pLYj75FYFJAWJCeGaty7")
     }
 }
