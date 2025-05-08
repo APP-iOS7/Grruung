@@ -170,7 +170,7 @@ class FirebaseService {
             "timestamp": Timestamp(date: message.timestamp)
         ]
         
-        db.collection("usres").document(userID)
+        db.collection("users").document(userID)
             .collection("characters").document(characterID)
             .collection("messages").document(message.id)
             .setData(messageData) { error in
