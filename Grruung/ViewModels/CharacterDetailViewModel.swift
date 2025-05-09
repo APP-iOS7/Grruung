@@ -35,6 +35,7 @@ struct GRCharacter {
 }
 
 struct GRPost {
+    let postID: String // Document ID
     let characterUUID: String
     var postImage: String
     var postBody: String
@@ -42,12 +43,14 @@ struct GRPost {
     var updatedAt: Date
     
     init(
+        postID: String,
         characterUUID: String,
         postImage: String,
         postBody: String,
         createdAt: Date,
         updatedAt: Date
     ){
+        self.postID = postID
         self.characterUUID = characterUUID
         self.postImage = postImage
         self.postBody = postBody
@@ -121,6 +124,20 @@ class CharacterDetailViewModel: ObservableObject {
         
     }
     
+    func deletePost(postID: String) {
+        db.collection("GRPost").document(postID).delete { error in
+            if let error = error {
+                print("Error deleting post: \(error)")
+            } else {
+                print("Post deleted successfully")
+                DispatchQueue.main.async {
+                    self.posts.removeAll { $0.postID == postID }
+                }
+            }
+        }
+    }
+    
+    
     func fetchPostsFromFirebase(characterUUID: String,year: Int, month: Int) {
         var dateComponents = DateComponents()
         dateComponents.year = year
@@ -160,12 +177,14 @@ class CharacterDetailViewModel: ObservableObject {
                 
                 self.posts = documents.compactMap { document -> GRPost? in
                     let data = document.data()
+                    let documentID = document.documentID
                     let postCharacterUUID = data["characterUUID"] as? String ?? ""
                     let postImage = data["postImage"] as? String ?? ""
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                     let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
                     
                     return GRPost(
+                        postID: documentID,
                         characterUUID: postCharacterUUID,
                         postImage: postImage,
                         postBody: data["postBody"] as? String ?? "",

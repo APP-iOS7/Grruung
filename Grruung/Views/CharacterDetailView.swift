@@ -246,6 +246,7 @@ struct CharacterDetailView: View {
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
                                         print("삭제 버튼 클릭됨 \(viewModel.posts[index].postBody)")
+                                        viewModel.deletePost(postID: viewModel.posts[index].postID)
                                     } label: {
                                         Image(systemName: "trash")
                                     }
