@@ -50,7 +50,6 @@
 				1E3C95CB2DCB54C100674BBD /* FirebaseVertexAI in Frameworks */,
 				8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */,
 				1E3C96BD2DCCA4DF00674BBD /* FirebaseAppCheck in Frameworks */,
-
 				8A7831B62DC25F1200E346BF /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
