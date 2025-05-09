@@ -7,6 +7,39 @@
 
 import SwiftUI
 
+// List의 높이를 콘텐츠에 맞게 조절하는 ViewModifier
+struct ShrinkListHeightModifier: ViewModifier {
+    let itemCount: Int
+    let estimatedRowHeight: CGFloat
+    
+    private var totalHeight: CGFloat {
+        if itemCount == 0 {
+            return 0 // 아이템이 없으면 높이는 0
+        }
+        // 전체 높이 = 아이템 개수 * 각 행의 예상 높이
+        // PlainListStyle의 경우, 구분선은 매우 얇거나 행 높이 내에 포함될 수 있습니다.
+        // 정확한 계산을 위해서는 (itemCount - 1) * separatorHeight를 더할 수 있지만,
+        // 보통은 itemCount * estimatedRowHeight로 충분합니다.
+        return CGFloat(itemCount) * estimatedRowHeight
+    }
+    
+    func body(content: Content) -> some View {
+        content.frame(height: totalHeight)
+    }
+}
+
+extension View {
+    /// List의 높이를 콘텐츠 크기에 맞추어 동적으로 조절합니다.
+    /// List가 다른 ScrollView 내부에 있을 때 이중 스크롤 문제를 방지하는 데 도움이 됩니다.
+    ///
+    /// - Parameters:
+    ///   - itemCount: 리스트에 표시될 아이템의 총 개수입니다.
+    ///   - estimatedRowHeight: 각 행의 예상 높이입니다. 행 내부의 패딩을 포함해야 합니다.
+    func shrinkToFitListContent(itemCount: Int, estimatedRowHeight: CGFloat) -> some View {
+        self.modifier(ShrinkListHeightModifier(itemCount: itemCount, estimatedRowHeight: estimatedRowHeight))
+    }
+}
+
 struct CharacterDetailView: View {
     // 더미 데이터: 모델 구현 후 삭제 예정
     let nameDummy: String = "구르릉 사자"
@@ -34,9 +67,21 @@ struct CharacterDetailView: View {
         ("장난감을 받은 날", "2025.02.10", "gift.fill"),
         ("첫 산책", "2025.02.15", "figure.walk"),
         ("친구를 만난 날", "2025.02.20", "person.2.fill"),
-        ("새로운 놀이", "2025.02.25", "gamecontroller.fill")
+        ("새로운 놀이", "2025.02.25", "gamecontroller.fill"),
+        ("첫 번째 만남", "2025.02.01", "photo.fill"),
+        ("장난감을 받은 날", "2025.02.10", "gift.fill"),
+        ("첫 산책", "2025.02.15", "figure.walk"),
+        ("친구를 만난 날", "2025.02.20", "person.2.fill"),
+        ("새로운 놀이", "2025.02.25", "gamecontroller.fill"),
     ]
     // ------- 더미 데이터 끝 -------
+    
+    // 각 List 행의 예상 높이를 계산합니다.
+    // Image: frame(height: 60) + padding(10) 상하 = 80pt
+    // HStack (row content): padding(.vertical, 4) 상하 = 8pt
+    // NavigationLink 내부 컨텐츠의 총 높이 = 80pt (이미지) + 8pt (HStack 패딩) = 88pt
+    // listRowInsets(EdgeInsets())를 사용하므로 추가적인 기본 행 패딩은 없습니다.
+    let estimatedRowHeight: CGFloat = 88.0
     
     var body: some View {
         ScrollView {
@@ -55,8 +100,6 @@ struct CharacterDetailView: View {
                     }
                     .padding(.trailing, 20)
                 }
-                //                .background(Color(.systemGray6))
-                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
@@ -64,7 +107,6 @@ struct CharacterDetailView: View {
                 VStack {
                     Text("성장 과정 🐾")
                         .frame(maxWidth: .infinity, alignment: .leading)
-//                        .padding(.leading, 10)
                         .padding(.top, 10)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -86,32 +128,25 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
-                //                .background(Color(.systemGray6))
-                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
+                
+                HStack {
+                    Button("<") {
+                        print("이전 기록 버튼 클릭됨")
+                    }
+                    Text("2025년 2월")
+                    Button(">") {
+                        print("다음 기록 버튼 클릭됨")
+                    }
+                }
+                .padding(.bottom, 10)
                 
                 // 성장 기록 영역
                 VStack {
                     Text("성장 기록 📔")
                         .frame(maxWidth: .infinity, alignment: .leading)
-//                        .padding(.leading, 5)
                         .padding(.top, 10)
-                    
-                    HStack {
-                        Button("<") {
-                            // TODO: 이전 기록 보기 (이전 데이터 없으면 비활성화)
-                            // 뷰모델의 loadPost() 함수를 호출하는데 현재 날짜의 달 보다 이전 달로 매개변수 전달
-                            print("이전 기록 버튼 클릭됨")
-                        }
-                        Text("2025년 2월")
-                        Button(">") {
-                            // TODO: 다음 기록 보기 구현 필요 (현재 해당 월과 동일하면 비활성화)
-                            // 뷰모델의 loadPost() 함수를 호출하는데 현재 날짜의 달 보다 다음 달로 매개변수 전달
-                            print("다음 기록 버튼 클릭됨")
-                        }
-                    }
-                    .padding(.bottom, 10)
                     
                     HStack {
                         VStack {
@@ -143,8 +178,6 @@ struct CharacterDetailView: View {
                     }
                     .padding(.bottom, 30)
                 }
-                //                .background(Color(.systemGray6))
-                //                .cornerRadius(12)
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
@@ -152,8 +185,8 @@ struct CharacterDetailView: View {
                 VStack {
                     Text("들려준 이야기 📖")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 10)
-
+                        .padding(.leading, 10) // VStack 내부 Text에 대한 패딩이므로 List 높이 계산과 무관
+                    
                     
                     List {
                         ForEach(storyItems.indices, id: \.self) { index in
@@ -163,7 +196,7 @@ struct CharacterDetailView: View {
                                         .resizable()
                                         .scaledToFit()
                                         .frame(width: 60, height: 60)
-                                        .padding(10)
+                                        .padding(10) // 이 패딩이 행 높이에 기여
                                     
                                     VStack(alignment: .leading) {
                                         Text(storyItems[index].date)
@@ -175,16 +208,16 @@ struct CharacterDetailView: View {
                                 }
                                 Spacer()
                             }
-                            .listRowInsets(EdgeInsets())
-                            .padding(.vertical, 4)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            .listRowInsets(EdgeInsets()) // 기본 행 패딩 제거
+                            .padding(.vertical, 4) // HStack 자체의 수직 패딩, 행 높이에 기여
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     print("삭제 버튼 클릭됨 \(storyItems[index].title )")
                                 } label: {
                                     Image(systemName: "trash")
                                 }
                             }
-                            .swipeActions(edge: .leading) {
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
                                 Button {
                                     print("수정 버튼 클릭됨 \(storyItems[index].title )")
                                 } label: {
@@ -197,13 +230,15 @@ struct CharacterDetailView: View {
                         
                     }
                     .listStyle(PlainListStyle())
-                    .frame(height: 350)
-                    .padding(.horizontal)
+                    // .frame(height: 200) // 이전 고정 높이 대신 아래 modifier 사용
+                    .padding(.horizontal) // List 좌우 패딩, 높이 계산과 무관
+                    // 여기에 새로운 modifier를 적용합니다.
+                    .shrinkToFitListContent(itemCount: storyItems.count, estimatedRowHeight: estimatedRowHeight)
                 }
             }
             .padding(.bottom, 30)
             Spacer()
-        } // end of VStack
+        } // end of ScrollView
         .navigationTitle("\(nameDummy)").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -227,8 +262,9 @@ struct CharacterDetailView: View {
 }
 
 
+
 #Preview {
-    NavigationStack {
+    NavigationView { // 네비게이션 바 테스트를 위해 NavigationView 추가
         CharacterDetailView()
     }
 }
