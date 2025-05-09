@@ -13,6 +13,7 @@ struct SettingView: View {
     var body: some View {
         NavigationStack {
             List {
+                /*
                 NavigationLink(destination: TestAIView()) {
                     Text("고지용 테스트 뷰")
                         .foregroundStyle(.blue)
@@ -37,6 +38,7 @@ struct SettingView: View {
                     Text("천수빈 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
+                */
                 
                 Button(action: {
                     authService.signOut()
