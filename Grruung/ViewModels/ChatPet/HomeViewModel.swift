@@ -16,16 +16,32 @@ class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
-    // 상태 표시용 프로퍼티
+    // MARK: - 상태 표시용 프로퍼티
+    // 퍼센트로 표현된 값들 (UI의 ProgressView용)
     @Published var satietyPercent: CGFloat = 0.5
     @Published var staminaPercent: CGFloat = 0.5
     @Published var activityPercent: CGFloat = 0.5
     @Published var expPercent: CGFloat = 0.5
     
-    // 테스트 모드 프로퍼티
+    // MARK: - 실제 스텟 값들 (0-100 Int)
+    @Published var satietyValue: Int = 50
+    @Published var staminaValue: Int = 50
+    @Published var activityValue: Int = 50
+    
+    // 히든 스텟 값들
+    @Published var healthyValue: Int = 50
+    @Published var cleanValue: Int = 50
+    @Published var affectionValue: Int = 50
+    
+    // 경험치 관련 값
+    @Published var expValue: Int = 0
+    @Published var expMaxValue: Int = 100
+    
+    // MARK: - 테스트 모드 프로퍼티
     @Published var testMode: Bool = false
     @Published var testSpecies: PetSpecies = .ligerCat
     @Published var testPhase: CharacterPhase = .infant
+    @Published var testName: String = ""
     
     // 서비스
     private let firebaseService = FirebaseService.shared
@@ -45,7 +61,7 @@ class HomeViewModel: ObservableObject {
             .compactMap { $0 }
             .sink { [weak self] character in
                 guard let self = self else { return }
-                self.updateStatusPercentages(character.status)
+                self.updateStatusValues(character.status)
             }
             .store(in: &cancellables)
     }
@@ -79,30 +95,72 @@ class HomeViewModel: ObservableObject {
     }
     
     /// 테스트용 캐릭터를 생성하고 선택합니다.
-    func createTestCharacter() {
-        let name = testSpecies == .ligerCat ? "냥냥이" : "꾸꾸"
+    func createTestCharacter(
+        name: String? = nil,
+        satiety: Int = 70,
+        stamina: Int = 60,
+        activity: Int = 80,
+        affection: Int = 90,
+        healthy: Int = 85,
+        clean: Int = 75
+    ) {
+        // 이름 설정 (입력된 이름이 없으면 기본 이름 사용)
+        let characterName = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? testSpecies.defaultName
+        
+        // 상태 생성
         let status = GRCharacterStatus(
             level: levelForPhase(testPhase),
+            exp: expValue,
+            expToNextLevel: expMaxValue,
             phase: testPhase,
-            satiety: 70,
-            stamina: 60,
-            activity: 80,
-            affection: 90,
-            healthy: 85,
-            clean: 75
+            satiety: satiety,
+            stamina: stamina,
+            activity: activity,
+            affection: affection,
+            healthy: healthy,
+            clean: clean
         )
         
+        // 캐릭터 생성
         let character = GRCharacter(
             species: testSpecies,
-            name: name,
+            name: characterName,
             image: "\(testSpecies.rawValue)_\(testPhase.rawValue)",
             status: status
         )
         
+        // 선택된 캐릭터로 설정
         selectedCharacter = character
         
         // 테스트 모드 설정
         testMode = true
+    }
+    
+    /// 테스트용 캐릭터를 Firestore에 저장합니다.
+    func saveTestCharacterToFirestore() {
+        guard let character = selectedCharacter, testMode else {
+            errorMessage = "저장할 테스트 캐릭터가 없습니다."
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
+        firebaseService.saveCharacter(character) { [weak self] error in
+            guard let self = self else { return }
+            
+            self.isLoading = false
+            
+            if let error = error {
+                self.errorMessage = "저장 실패: \(error.localizedDescription)"
+            } else {
+                // 테스트 모드 해제 (이제 실제 캐릭터)
+                self.testMode = false
+                
+                // 캐릭터 목록 다시 로드
+                self.loadCharacters()
+            }
+        }
     }
     
     /// 캐릭터 성장 단계에 맞는 레벨을 반환합니다.
@@ -126,8 +184,14 @@ class HomeViewModel: ObservableObject {
     // MARK: - 4. 상태 업데이트 메서드
     
     /// 캐릭터 상태를 업데이트합니다.
-    func updateSelectedCharacter(satiety: Int? = nil, stamina: Int? = nil, activity: Int? = nil,
-                                 affection: Int? = nil, healthy: Int? = nil, clean: Int? = nil) {
+    func updateSelectedCharacter(
+        satiety: Int? = nil,
+        stamina: Int? = nil,
+        activity: Int? = nil,
+        affection: Int? = nil,
+        healthy: Int? = nil,
+        clean: Int? = nil
+    ) {
         guard var character = selectedCharacter else { return }
         
         // 상태 업데이트
@@ -185,8 +249,23 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 5. 상태 표시 메서드
     
-    /// 캐릭터 상태에 따라 상태 퍼센트를 업데이트합니다.
-    private func updateStatusPercentages(_ status: GRCharacterStatus) {
+    /// 캐릭터 상태에 따라 상태 퍼센트와 실제 값을 업데이트합니다.
+    private func updateStatusValues(_ status: GRCharacterStatus) {
+        // 기본 스텟 값 업데이트
+        satietyValue = status.satiety
+        staminaValue = status.stamina
+        activityValue = status.activity
+        
+        // 히든 스텟 값 업데이트
+        healthyValue = status.healthy
+        cleanValue = status.clean
+        affectionValue = status.affection
+        
+        // 경험치 값 업데이트
+        expValue = status.exp
+        expMaxValue = status.expToNextLevel
+        
+        // UI용 퍼센트 값 업데이트
         satietyPercent = CGFloat(status.satiety) / 100.0
         staminaPercent = CGFloat(status.stamina) / 100.0
         activityPercent = CGFloat(status.activity) / 100.0
