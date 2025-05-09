@@ -42,11 +42,9 @@ extension View {
 
 struct CharacterDetailView: View {
     // 더미 데이터: 모델 구현 후 삭제 예정
-    let nameDummy: String = "구르릉 사자"
     let meetDateDummy: String = "2025년 02월 14일"
     let addressDummy: String = "〇〇의 아이폰"
     let ageDummy: Int = 45
-    let imageDummy: String = "cat.fill"
     
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
@@ -58,49 +56,50 @@ struct CharacterDetailView: View {
         ("노년기", "bird.fill")
     ]
     
-    // 현재 성장 단계 (인덱스 기준) - 예시로 청년기(3)으로 설정
+    // 현재 성장 단계 (인덱스 기준)
     let currentStageIndex: Int = 5
     
-    // CharacterDetailView 구조체 내에 추가할 더미 데이터
-    let storyItems: [(title: String, date: String, image: String)] = [
-        ("첫 번째 만남", "2025.02.01", "photo.fill"),
-        ("장난감을 받은 날", "2025.02.10", "gift.fill"),
-        ("첫 산책", "2025.02.15", "figure.walk"),
-        ("친구를 만난 날", "2025.02.20", "person.2.fill"),
-        ("새로운 놀이", "2025.02.25", "gamecontroller.fill"),
-        ("첫 번째 만남", "2025.02.01", "photo.fill"),
-        ("장난감을 받은 날", "2025.02.10", "gift.fill"),
-        ("첫 산책", "2025.02.15", "figure.walk"),
-        ("친구를 만난 날", "2025.02.20", "person.2.fill"),
-        ("새로운 놀이", "2025.02.25", "gamecontroller.fill"),
-    ]
-    // ------- 더미 데이터 끝 -------
-    
     // 각 List 행의 예상 높이를 계산합니다.
-    // Image: frame(height: 60) + padding(10) 상하 = 80pt
-    // HStack (row content): padding(.vertical, 4) 상하 = 8pt
-    // NavigationLink 내부 컨텐츠의 총 높이 = 80pt (이미지) + 8pt (HStack 패딩) = 88pt
-    // listRowInsets(EdgeInsets())를 사용하므로 추가적인 기본 행 패딩은 없습니다.
     let estimatedRowHeight: CGFloat = 88.0
     
-    
-    @StateObject private var viewModel = CharacterDetailViewModel()
+    @StateObject private var viewModel: CharacterDetailViewModel
     @Environment(\.dismiss) var dismiss
     
     @State private var searchDate: Date = Date()
     var characterUUID: String
     
+    // 초기화 메서드를 수정하여 characterUUID를 전달
+    init(characterUUID: String) {
+        self.characterUUID = characterUUID
+        self._viewModel = StateObject(wrappedValue: CharacterDetailViewModel(characterUUID: characterUUID))
+    }
     
     var body: some View {
         ScrollView {
             VStack {
                 // 캐릭터 정보 영역
                 HStack {
-                    Image(systemName: "\(imageDummy)")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
+                    if !viewModel.character.image.isEmpty {
+                        AsyncImage(url: URL(string: viewModel.character.image)) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                        } placeholder: {
+                            Image(systemName: "photo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                        }
                         .padding()
+                    } else {
+                        Image(systemName: "photo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .padding()
+                    }
+                    
                     VStack(alignment: .leading) {
                         Text("떨어진 날: \(meetDateDummy)")
                         Text("사는 곳: \(addressDummy)")
@@ -142,14 +141,14 @@ struct CharacterDetailView: View {
                 HStack {
                     Button("<") {
                         searchDate = searchDate.addingTimeInterval(-30 * 24 * 60 * 60)
-                                                    viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
+                        viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
                         print("이전 기록 버튼 클릭됨")
                     }
                     Text("\(searchDateString(date: searchDate))")
                         
                     Button(">") {
                         searchDate = searchDate.addingTimeInterval(30 * 24 * 60 * 60)
-                                                  viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
+                        viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
                         print("다음 기록 버튼 클릭됨")
                     }
                 }
@@ -194,65 +193,89 @@ struct CharacterDetailView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 20)
                 
-                // 들려준 이야기 영역
+                // 들려준 이야기 영역 - Firebase 데이터 사용하도록 수정
                 VStack {
                     Text("들려준 이야기 📖")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 10) // VStack 내부 Text에 대한 패딩이므로 List 높이 계산과 무관
+                        .padding(.leading, 10)
                     
-                    
-                    List {
-                        ForEach(storyItems.indices, id: \.self) { index in
-                            NavigationLink(destination: Text("\(storyItems[index].title)")) {
-                                HStack {
-                                    Image(systemName: storyItems[index].image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 60, height: 60)
-                                        .padding(10) // 이 패딩이 행 높이에 기여
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(storyItems[index].date)
-                                            .font(.headline)
-                                        Text(storyItems[index].title)
-                                            .font(.subheadline)
+                    if viewModel.posts.isEmpty {
+                        Text("이번 달에 기록된 이야기가 없습니다.")
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        List {
+                            ForEach(viewModel.posts.indices, id: \.self) { index in
+                                NavigationLink(destination: Text("\(viewModel.posts[index].postBody)")) {
+                                    HStack {
+                                        if !viewModel.posts[index].postImage.isEmpty {
+                                            AsyncImage(url: URL(string: viewModel.posts[index].postImage)) { image in
+                                                image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 60, height: 60)
+                                                    .padding(10)
+                                            } placeholder: {
+                                                Image(systemName: "photo")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 60, height: 60)
+                                                    .padding(10)
+                                            }
+                                        } else {
+                                            Image(systemName: "photo")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 60, height: 60)
+                                                .padding(10)
+                                        }
                                         
+                                        VStack(alignment: .leading) {
+                                            Text(formatDate(viewModel.posts[index].createdAt))
+                                                .font(.headline)
+                                            Text(viewModel.posts[index].postBody)
+                                                .font(.subheadline)
+                                                .lineLimit(2)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .listRowInsets(EdgeInsets())
+                                .padding(.vertical, 4)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        print("삭제 버튼 클릭됨 \(viewModel.posts[index].postBody)")
+                                    } label: {
+                                        Image(systemName: "trash")
                                     }
                                 }
-                                Spacer()
-                            }
-                            .listRowInsets(EdgeInsets()) // 기본 행 패딩 제거
-                            .padding(.vertical, 4) // HStack 자체의 수직 패딩, 행 높이에 기여
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    print("삭제 버튼 클릭됨 \(storyItems[index].title )")
-                                } label: {
-                                    Image(systemName: "trash")
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    Button {
+                                        print("수정 버튼 클릭됨 \(viewModel.posts[index].postBody)")
+                                    } label: {
+                                        Image(systemName: "pencil")
+                                    }
+                                    .tint(.blue)
                                 }
                             }
-                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                Button {
-                                    print("수정 버튼 클릭됨 \(storyItems[index].title )")
-                                } label: {
-                                    Image(systemName: "pencil")
-                                }
-                                .tint(.blue)
-                            }
+                            .listRowBackground(Color.white)
                         }
-                        .listRowBackground(Color.white)
-                        
+                        .listStyle(PlainListStyle())
+                        .padding(.horizontal)
+                        .shrinkToFitListContent(itemCount: viewModel.posts.count, estimatedRowHeight: estimatedRowHeight)
                     }
-                    .listStyle(PlainListStyle())
-                    // .frame(height: 200) // 이전 고정 높이 대신 아래 modifier 사용
-                    .padding(.horizontal) // List 좌우 패딩, 높이 계산과 무관
-                    // 여기에 새로운 modifier를 적용합니다.
-                    .shrinkToFitListContent(itemCount: storyItems.count, estimatedRowHeight: estimatedRowHeight)
                 }
             }
             .padding(.bottom, 30)
+            
             Spacer()
+            
         } // end of ScrollView
-        .navigationTitle("\(nameDummy)").navigationBarTitleDisplayMode(.inline)
+        
+        .navigationTitle("\(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)")
+        .navigationBarTitleDisplayMode(.inline)
+        
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
@@ -279,6 +302,12 @@ struct CharacterDetailView: View {
         return formatter.string(from: date)
     }
     
+    // 포스트 날짜 포맷팅을 위한 새로운 함수
+    func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter.string(from: date)
+    }
 }
 
 
@@ -288,4 +317,3 @@ struct CharacterDetailView: View {
         CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
     }
 }
-

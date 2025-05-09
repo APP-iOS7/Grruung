@@ -66,7 +66,7 @@ class CharacterDetailViewModel: ObservableObject {
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
-    init() {
+    init(characterUUID: String = "") {
 #if DEBUG
         // Firebase Emulator 설정
         let settings = Firestore.firestore().settings
@@ -79,8 +79,13 @@ class CharacterDetailViewModel: ObservableObject {
         Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
 #endif
         
-        
         self.character = GRCharacter()
+        
+        // 초기화시 UUID가 제공되면 데이터 로드
+        if !characterUUID.isEmpty {
+            self.loadCharacter(characterUUID: characterUUID)
+            self.loadPost(characterUUID: characterUUID, searchDate: Date())
+        }
     }
     
     func loadCharacter(characterUUID: String) {
