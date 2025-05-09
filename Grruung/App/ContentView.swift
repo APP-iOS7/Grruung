@@ -14,7 +14,7 @@ struct ContentView: View {
         Group {
             if authService.authenticationState == .authenticated {
                 // 로그인된 상태 = 홈 화면 표시
-                HomeView()
+                MainTabView()
             } else {
                 // 비로그인 상태 = 로그인 화면 표시
                 LoginView()
@@ -38,6 +38,48 @@ struct ContentView: View {
                 // 로그아웃 시
                 // TODO: 사용자정보 리셋
             }
+        }
+    }
+}
+
+// 메인 탭 뷰 (HomeView를 대체)
+struct MainTabView: View {
+    @State private var selectedTab: Tab = .home
+    
+    // 탭 아이템 정의
+    enum Tab {
+        case home, character, shop, myPage
+    }
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            HomeView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("홈")
+                }
+                .tag(Tab.home)
+            
+            Text("캐릭터 도감 화면")
+                .tabItem {
+                    Image(systemName: "pawprint.fill")
+                    Text("캐릭터")
+                }
+                .tag(Tab.character)
+            
+            Text("상점 화면")
+                .tabItem {
+                    Image(systemName: "cart.fill")
+                    Text("상점")
+                }
+                .tag(Tab.shop)
+            
+            Text("마이페이지 화면")
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("마이페이지")
+                }
+                .tag(Tab.myPage)
         }
     }
 }
