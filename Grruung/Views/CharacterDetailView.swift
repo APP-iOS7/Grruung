@@ -83,6 +83,14 @@ struct CharacterDetailView: View {
     // listRowInsets(EdgeInsets())를 사용하므로 추가적인 기본 행 패딩은 없습니다.
     let estimatedRowHeight: CGFloat = 88.0
     
+    
+    @StateObject private var viewModel = CharacterDetailViewModel()
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var searchDate: Date = Date()
+    var characterUUID: String
+    
+    
     var body: some View {
         ScrollView {
             VStack {
@@ -133,10 +141,15 @@ struct CharacterDetailView: View {
                 
                 HStack {
                     Button("<") {
+                        searchDate = searchDate.addingTimeInterval(-30 * 24 * 60 * 60)
+                                                    viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
                         print("이전 기록 버튼 클릭됨")
                     }
-                    Text("2025년 2월")
+                    Text("\(searchDateString(date: searchDate))")
+                        
                     Button(">") {
+                        searchDate = searchDate.addingTimeInterval(30 * 24 * 60 * 60)
+                                                  viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
                         print("다음 기록 버튼 클릭됨")
                     }
                 }
@@ -259,13 +272,20 @@ struct CharacterDetailView: View {
             }
         }
     }
+    
+    func searchDateString(date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy년 MM월"
+        return formatter.string(from: date)
+    }
+    
 }
 
 
 
 #Preview {
     NavigationView { // 네비게이션 바 테스트를 위해 NavigationView 추가
-        CharacterDetailView()
+        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
     }
 }
 
