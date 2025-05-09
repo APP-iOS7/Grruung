@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CharDexView: View {
     // 생성 가능한 최대 캐릭터 수
-    private let maxDexCount: Int = 10
+    private let maxDexCount: Int = 20
     // 초기 생성 가능한 캐릭터 수
     @State private var unlockCount: Int = 5
     // 정렬 타입 변수
@@ -36,8 +36,8 @@ struct CharDexView: View {
                     birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
         GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
-//        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
-//                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
+        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
     ]
     
     enum SortType {
@@ -114,7 +114,7 @@ struct CharDexView: View {
                 }
                 .padding()
             }
-            .navigationTitle("캐릭터 도감")
+            .navigationTitle("캐릭터 동산")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
