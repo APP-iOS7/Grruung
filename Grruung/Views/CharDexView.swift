@@ -29,14 +29,15 @@ struct CharDexView: View {
     
     // 임시 데이터(테스트 용)
     @State private var garaCharacters: [GRCharacter] = [
-        GRCharacter(species: "고양이사자", name: "구릉이1", imageName: "hare"),
-        GRCharacter(species: "고양이사자", name: "구릉이2", imageName: "hare",
+        GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
-        GRCharacter(species: "고양이사자", name: "구릉이3", imageName: "hare",
+        GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+        GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
+        GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
-        GRCharacter(species: "고양이사자", name: "구르릉", imageName: "hare",
+        GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
     ]
     
@@ -69,7 +70,7 @@ struct CharDexView: View {
         
         // "plus" 슬롯 추가
         let plusCharacters = (0..<addableCount).map { _ in
-            GRCharacter(species: "", name: "", imageName: "plus")
+            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "plus", birthDate: Date())
         }
         
         // 현재까지 채워진 슬롯 수 = 캐릭터 + plus
@@ -78,7 +79,7 @@ struct CharDexView: View {
         // 나머지 잠금 슬롯 수
         let lockedCount = max(0, maxDexCount - filledCount)
         let lockedCharacters = (0..<lockedCount).map { _ in
-            GRCharacter(species: "", name: "", imageName: "lock.fill")
+            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "lock.fill", birthDate: Date())
         }
 
         return hasCharacters + plusCharacters + lockedCharacters
@@ -251,7 +252,7 @@ struct DetailView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text(character.species)
+            Text(character.species.rawValue)
                 .font(.title)
                 .foregroundStyle(.gray)
 

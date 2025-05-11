@@ -133,7 +133,7 @@ struct HomeTestView: View {
             ZStack {
                 // 펫 이미지 (또는 빈 공간)
                 if let character = viewModel.selectedCharacter {
-                    Image(character.image)
+                    Image(character.imageName)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
