@@ -14,14 +14,18 @@ struct CharDexView: View {
     @State private var unlockCount: Int = 5
     // 정렬 타입 변수
     @State private var sortType: SortType = .original
-    
-    @State private var showingAlert = false
-    
-    // 잠금해제 관련 변수
-    @State private var showingUnlockAlert = false
+    // 잠금 해제 티켓의 수(테스트 용)
+    @State private var unlockTicketCount: Int = 3
     // 잠금 그리드 클릭 위치
     @State private var selectedLockedIndex: Int? = nil
-
+    
+    // 잠금해제 alert 변수
+    @State private var showingUnlockAlert = false
+    // 생성 가능한 캐릭터 수가 부족한 경우 alert 변수
+    @State private var showingNotEnoughAlert = false
+    // 잠금 해제 티켓의 수가 부족한 경우 alert 변수
+    @State private var showingNotEnoughTicketAlert = false
+    
     let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
@@ -60,10 +64,10 @@ struct CharDexView: View {
             return garaCharacters.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         }
     }
-
+    
     private var characterSlots: [GRCharacter] {
-        var hasCharacters = sortedCharacterSlots
-
+        let hasCharacters = sortedCharacterSlots
+        
         // 생성 가능한 슬롯 수 = unlockCount - 현재 캐릭터 수
         let addableCount = max(0, unlockCount - hasCharacters.count)
         
@@ -80,10 +84,10 @@ struct CharDexView: View {
         let lockedCharacters = (0..<lockedCount).map { _ in
             GRCharacter(species: "", name: "", imageName: "lock.fill")
         }
-
+        
         return hasCharacters + plusCharacters + lockedCharacters
     }
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -98,7 +102,7 @@ struct CharDexView: View {
                     Capsule()
                         .fill(Color.brown.opacity(0.5))
                 })
-
+                
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(characterSlots.enumerated()), id: \.element.id) { index, character in
                         if character.imageName == "lock.fill" {
@@ -123,25 +127,25 @@ struct CharDexView: View {
                         } label: {
                             Label("기본", systemImage: sortType == .original ? "checkmark" : "")
                         }
-
+                        
                         Button {
                             sortType = .alphabet
                         } label: {
                             Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
                         }
-
+                        
                         Button {
                             sortType = .createdAscending
                         } label: {
                             Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
                         }
-
+                        
                         Button {
                             sortType = .createdDescending
                         } label: {
                             Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
                         }
-
+                        
                     } label: {
                         Label("정렬", systemImage: "arrow.up.arrow.down")
                     }
@@ -149,21 +153,27 @@ struct CharDexView: View {
             }
             .alert("슬롯을 해제합니다.", isPresented: $showingUnlockAlert) {
                 Button("해제", role: .destructive) {
-                    if unlockCount < maxDexCount {
-                        unlockCount += 1
+                    if unlockTicketCount <= 0 {
+                        showingNotEnoughTicketAlert = true
+                    } else {
+                        if unlockCount < maxDexCount {
+                            unlockCount += 1
+                            unlockTicketCount -= 1
+                        }
                     }
+                    
                 }
                 Button("취소", role: .cancel) {}
             }
-            .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingAlert) {
-                Button("확인", role: .destructive) {
-
-                }
-                Button("취소", role: .cancel) {}
+            .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
+                Button("확인", role: .cancel) {}
+            }
+            .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
+                Button("확인", role: .cancel) {}
             }
             .onAppear {
                 if unlockCount == garaCharacters.count {
-                    showingAlert = true
+                    showingNotEnoughAlert = true
                 }
             }
         }
@@ -177,13 +187,13 @@ struct CharDexView: View {
                 .frame(width: 100, height: 100, alignment: .center)
                 .aspectRatio(contentMode: .fit)
                 .foregroundStyle(.black)
-
+            
             Text(character.name)
                 .foregroundStyle(.black)
                 .bold()
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
-
+            
             Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
                 .foregroundStyle(.gray)
                 .font(.caption)
@@ -237,7 +247,7 @@ struct CharDexView: View {
 // 임시 디테일 뷰
 struct DetailView: View {
     var character: GRCharacter
-
+    
     var body: some View {
         VStack {
             Image(systemName: character.imageName)
@@ -246,15 +256,15 @@ struct DetailView: View {
                 .frame(height: 200)
                 .frame(maxWidth: .infinity)
                 .padding()
-
+            
             Text(character.name)
                 .font(.largeTitle)
                 .bold()
-
+            
             Text(character.species)
                 .font(.title)
                 .foregroundStyle(.gray)
-
+            
             Spacer()
         }
         .navigationTitle(character.name)
@@ -273,14 +283,14 @@ func formatToMonthDay(_ date: Date) -> String {
 func calculateAge(_ birthDate: Date) -> Int {
     let calendar = Calendar.current
     let now = Date()
-
+    
     let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
-
+    
     if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
        now < birthdayThisYear {
         return age - 1
     }
-
+    
     return age
 }
 
