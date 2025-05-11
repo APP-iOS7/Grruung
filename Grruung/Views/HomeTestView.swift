@@ -8,7 +8,7 @@
 import SwiftUI
 
 /// 홈 화면 뷰
-struct HomeView: View {
+struct HomeTestView: View {
     // MARK: - 0. 프로퍼티
     @StateObject private var viewModel = HomeViewModel()
     @State private var showChatPet = false
@@ -416,5 +416,5 @@ struct AlertItem: Identifiable {
 }
 
 #Preview {
-    HomeView()
+    HomeTestView()
 }
