@@ -6,35 +6,29 @@
 //
 
 import SwiftUI
+import Firebase
 import FirebaseCore
-import FirebaseAppCheck
-import FirebaseAppCheckInterop // App Attest Provider 사용을 위해 필요 (경우에 따라 필요)
+import FirebaseFirestore
+import FirebaseAppCheck // App Check 추가
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // Firebase 초기화 전에 App Check 제공자 설정
-        let providerFactory = GRAppCheckProviderFactory() 
         
-        AppCheck.setAppCheckProviderFactory(providerFactory) // 설정한 제공자 팩토리로 App Check 설정
+        // ✅ AppCheck Debug Provider 먼저 지정
+#if DEBUG
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+#endif
         
+        // Firebase 초기화
         FirebaseApp.configure()
         
-        print("Firebase와 App Check 초기화 완료")
+        // Firestore 설정
+        let settings = FirestoreSettings()
+        settings.isPersistenceEnabled = true
+        Firestore.firestore().settings = settings
+        
         return true
-    }
-}
-
-class GRAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
-    func createProvider(with app: FirebaseApp) -> AppCheckProvider? {
-    // 디버그 빌드에서는 DebugProvider를, 릴리스 빌드에서는 AppAttestProvider를 사용하도록 설정
-    #if targetEnvironment(simulator)
-        // 시뮬레이터에서는 DebugProvider 사용
-        return AppCheckDebugProvider(app: app)
-    #else
-        // 실제 기기에서는 App Attest Provider 사용
-        return AppAttestProvider(app: app)
-    #endif
     }
 }
 
