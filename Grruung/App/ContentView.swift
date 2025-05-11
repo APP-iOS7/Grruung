@@ -44,42 +44,40 @@ struct ContentView: View {
 
 // 메인 탭 뷰 (HomeView를 대체)
 struct MainTabView: View {
-    @State private var selectedTab: Tab = .home
+    // @State private var selectedTab: Tab = .home
+    @State private var selectedTab = 0
     
     // 탭 아이템 정의
-    enum Tab {
-        case home, character, shop, myPage
-    }
+//    enum Tab {
+//        case home, test, character, shop, myPage
+//    }
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeTestView()
-                .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("홈")
-                }
-                .tag(Tab.home)
+            // 홈 탭
+            Tab("홈", systemImage: "house.fill", value: 0) {
+                HomeView()
+            }
             
-            Text("캐릭터 도감 화면")
-                .tabItem {
-                    Image(systemName: "pawprint.fill")
-                    Text("캐릭터")
-                }
-                .tag(Tab.character)
+            // 테스트 탭
+            Tab("테스트", systemImage: "house.fill", value: 1) {
+                HomeTestView()
+            }
             
-            Text("상점 화면")
-                .tabItem {
-                    Image(systemName: "cart.fill")
-                    Text("상점")
-                }
-                .tag(Tab.shop)
+            // 캐릭터 도감 탭
+            Tab("캐릭터", systemImage: "teddybear.fill", value: 2) {
+                Text("캐릭터 도감")
+            }
             
-            Text("마이페이지 화면")
-                .tabItem {
-                    Image(systemName: "person.fill")
-                    Text("마이페이지")
-                }
-                .tag(Tab.myPage)
+            // 상점 탭
+            Tab("상점", systemImage: "cart.fill", value: 3) {
+                Text("상점")
+            }
+            
+            // 마이페이지 탭
+            Tab("마이페이지", systemImage: "person.circle.fill", value: 4) {
+                SettingView()
+            }
         }
     }
 }

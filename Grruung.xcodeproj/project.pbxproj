@@ -295,7 +295,7 @@
 				ENABLE_PREVIEWS = YES;
 				FIR_APP_CHECK_DEBUG_TOKEN = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Grruung/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성 대화를 위해 마이크 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성 인식을 위해 음성 인식 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -331,7 +331,7 @@
 				ENABLE_PREVIEWS = YES;
 				FIR_APP_CHECK_DEBUG_TOKEN = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Grruung/Info.plist;
+				INFOPLIST_FILE = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성 대화를 위해 마이크 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성 인식을 위해 음성 인식 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
