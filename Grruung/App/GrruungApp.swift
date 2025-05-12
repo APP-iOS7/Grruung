@@ -25,7 +25,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Firestore 설정
         let settings = FirestoreSettings()
-        settings.isPersistenceEnabled = true
+        settings.cacheSettings = PersistentCacheSettings()
         Firestore.firestore().settings = settings
         
         return true

@@ -7,34 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1E3C95CB2DCB54C100674BBD /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = 1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */; };
-		1E3C96BD2DCCA4DF00674BBD /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 1E3C96BC2DCCA4DF00674BBD /* FirebaseAppCheck */; };
 		8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B32DC25F1200E346BF /* FirebaseAnalytics */; };
 		8A7831B62DC25F1200E346BF /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B52DC25F1200E346BF /* FirebaseAuth */; };
 		8A7831B82DC25F1200E346BF /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B72DC25F1200E346BF /* FirebaseDatabase */; };
 		8A7831BA2DC25F1200E346BF /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8A7831B92DC25F1200E346BF /* FirebaseFirestore */; };
+		8A89AA512DD1794600025A29 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 8A89AA502DD1794600025A29 /* FirebaseAppCheck */; };
+		8A89AA532DD1794F00025A29 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 8A89AA522DD1794F00025A29 /* FirebaseStorage */; };
+		8A89AA552DD1795300025A29 /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = 8A89AA542DD1795300025A29 /* FirebaseVertexAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8A02B20E2DC1FEEE0064A296 /* Grruung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Grruung.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		1E3C96BF2DCCB13000674BBD /* Exceptions for "Grruung" folder in "Grruung" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 8A02B20D2DC1FEEE0064A296 /* Grruung */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8A02B2102DC1FEEE0064A296 /* Grruung */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				1E3C96BF2DCCB13000674BBD /* Exceptions for "Grruung" folder in "Grruung" target */,
-			);
 			path = Grruung;
 			sourceTree = "<group>";
 		};
@@ -47,28 +35,22 @@
 			files = (
 				8A7831B82DC25F1200E346BF /* FirebaseDatabase in Frameworks */,
 				8A7831BA2DC25F1200E346BF /* FirebaseFirestore in Frameworks */,
-				1E3C95CB2DCB54C100674BBD /* FirebaseVertexAI in Frameworks */,
 				8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */,
-				1E3C96BD2DCCA4DF00674BBD /* FirebaseAppCheck in Frameworks */,
+				8A89AA512DD1794600025A29 /* FirebaseAppCheck in Frameworks */,
+				8A89AA552DD1795300025A29 /* FirebaseVertexAI in Frameworks */,
 				8A7831B62DC25F1200E346BF /* FirebaseAuth in Frameworks */,
+				8A89AA532DD1794F00025A29 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1E3C96BB2DCCA4DF00674BBD /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		8A02B2052DC1FEEE0064A296 = {
 			isa = PBXGroup;
 			children = (
 				8A02B2102DC1FEEE0064A296 /* Grruung */,
-				1E3C96BB2DCCA4DF00674BBD /* Frameworks */,
+				8A89AA4F2DD1794600025A29 /* Frameworks */,
 				8A02B20F2DC1FEEE0064A296 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,6 +61,13 @@
 				8A02B20E2DC1FEEE0064A296 /* Grruung.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8A89AA4F2DD1794600025A29 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -105,8 +94,9 @@
 				8A7831B52DC25F1200E346BF /* FirebaseAuth */,
 				8A7831B72DC25F1200E346BF /* FirebaseDatabase */,
 				8A7831B92DC25F1200E346BF /* FirebaseFirestore */,
-				1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */,
-				1E3C96BC2DCCA4DF00674BBD /* FirebaseAppCheck */,
+				8A89AA502DD1794600025A29 /* FirebaseAppCheck */,
+				8A89AA522DD1794F00025A29 /* FirebaseStorage */,
+				8A89AA542DD1795300025A29 /* FirebaseVertexAI */,
 			);
 			productName = Grruung;
 			productReference = 8A02B20E2DC1FEEE0064A296 /* Grruung.app */;
@@ -172,8 +162,6 @@
 /* Begin XCBuildConfiguration section */
 		8A02B21A2DC1FEEF0064A296 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = 8A02B2102DC1FEEE0064A296 /* Grruung */;
-			baseConfigurationReferenceRelativePath = Debug.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -237,8 +225,6 @@
 		};
 		8A02B21B2DC1FEEF0064A296 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = 8A02B2102DC1FEEE0064A296 /* Grruung */;
-			baseConfigurationReferenceRelativePath = Release.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -295,22 +281,15 @@
 		};
 		8A02B21D2DC1FEEF0064A296 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = 8A02B2102DC1FEEE0064A296 /* Grruung */;
-			baseConfigurationReferenceRelativePath = Debug.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Grruung/Grruung.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Grruung/Preview Content\"";
-				DEVELOPMENT_TEAM = 59FP2PXRXK;
+				DEVELOPMENT_TEAM = QFY346K4GK;
 				ENABLE_PREVIEWS = YES;
-				FIR_APP_CHECK_DEBUG_TOKEN = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Grruung/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성 대화를 위해 마이크 접근 권한이 필요합니다.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성 인식을 위해 음성 인식 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -331,22 +310,15 @@
 		};
 		8A02B21E2DC1FEEF0064A296 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReferenceAnchor = 8A02B2102DC1FEEE0064A296 /* Grruung */;
-			baseConfigurationReferenceRelativePath = Release.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Grruung/Grruung.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Grruung/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = QFY346K4GK;
 				ENABLE_PREVIEWS = YES;
-				FIR_APP_CHECK_DEBUG_TOKEN = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Grruung/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "음성 대화를 위해 마이크 접근 권한이 필요합니다.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "음성 인식을 위해 음성 인식 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -400,15 +372,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		1E3C95CA2DCB54C100674BBD /* FirebaseVertexAI */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = FirebaseVertexAI;
-		};
-		1E3C96BC2DCCA4DF00674BBD /* FirebaseAppCheck */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAppCheck;
-		};
 		8A7831B32DC25F1200E346BF /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -428,6 +391,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		8A89AA502DD1794600025A29 /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		8A89AA522DD1794F00025A29 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		8A89AA542DD1795300025A29 /* FirebaseVertexAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A7831B22DC25F1200E346BF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseVertexAI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

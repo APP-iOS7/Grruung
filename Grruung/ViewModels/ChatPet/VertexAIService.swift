@@ -28,7 +28,7 @@ class VertexAIService {
     private func setupModel() {
         do {
             // Firebase Vertex AI 초기화
-            let vertex = try VertexAI.vertexAI()
+            let vertex = VertexAI.vertexAI()
             // 가장 가벼운 Gemini 모델 사용
             model = vertex.generativeModel(modelName: "gemini-2.0-flash")
             print("[VertexAI] 모델 초기화 성공")

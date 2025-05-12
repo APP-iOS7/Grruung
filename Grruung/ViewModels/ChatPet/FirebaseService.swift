@@ -52,9 +52,9 @@ class FirebaseService {
                     
                     let id = document.documentID
                     let speciesRaw = data["species"] as? String ?? ""
-                    let species = PetSpecies(rawValue: speciesRaw) ?? .ligerCat
+                    let species = PetSpecies(rawValue: speciesRaw) ?? .CatLion
                     let name = data["name"] as? String ?? "이름 없음"
-                    let image = data["image"] as? String ?? ""
+                    let imageName = data["image"] as? String ?? ""
                     
                     // 상태 정보 파싱
                     let statusData = data["status"] as? [String: Any] ?? [:]
@@ -94,7 +94,8 @@ class FirebaseService {
                         id: id,
                         species: species,
                         name: name,
-                        image: image,
+                        imageName: imageName,
+                        birthDate: birthDate,
                         status: status
                     )
                     
@@ -132,7 +133,7 @@ class FirebaseService {
         let characterData: [String: Any] = [
             "species": character.species.rawValue,
             "name": character.name,
-            "image": character.image,
+            "image": character.imageName,
             "status": statusData,
             "updatedAt": Timestamp(date: Date()),
         ]

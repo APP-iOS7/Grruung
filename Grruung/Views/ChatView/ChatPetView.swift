@@ -90,7 +90,7 @@ struct ChatPetView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 8)
                 // 새 메시지가 추가될 때마다 스크롤
-                .onChange(of: viewModel.messages.count) { _ in
+                .onChange(of: viewModel.messages.count) {
                     if let lastMessage = viewModel.messages.last {
                         withAnimation {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)

@@ -116,25 +116,25 @@ class ChatPetViewModel: ObservableObject {
         case .egg:
             greeting = "알 속에서 꿈틀거리고 있어요..."
         case .infant:
-            if character.species == .ligerCat {
+            if character.species == .CatLion {
                 greeting = "냥...! 안녕하세요!"
             } else {
                 greeting = "꾸잉...! 안녕하세요!"
             }
         case .child:
-            if character.species == .ligerCat {
+            if character.species == .CatLion {
                 greeting = "어흥! 안녕하세요 주인님! 저는 \(character.name)이에요. 냥!"
             } else {
                 greeting = "히히! 안녕하세요 주인님! 저는 \(character.name)이에요. 꾸잉!"
             }
         case .adolescent:
-            if character.species == .ligerCat {
+            if character.species == .CatLion {
                 greeting = "그르릉~ 안녕하세요! 오늘은 무엇을 하고 싶으신가요?"
             } else {
                 greeting = "꾸잉~ 안녕하세요! 오늘은 무엇을 하고 싶으신가요?"
             }
         case .adult, .elder:
-            if character.species == .ligerCat {
+            if character.species == .CatLion {
                 greeting = "그르릉... 반갑습니다. 오랜만이네요. 무슨 이야기를 나눌까요?"
             } else {
                 greeting = "꾸잉... 반갑습니다. 오랜만이네요. 무슨 이야기를 나눌까요?"
@@ -211,7 +211,7 @@ class ChatPetViewModel: ObservableObject {
                     // 응답 생성 실패 시 기본 메시지
                     let defaultResponse: String
                     
-                    if self.character.species == .ligerCat {
+                    if self.character.species == .CatLion {
                         defaultResponse = "냥...? (무슨 말인지 잘 이해하지 못한 것 같아요)"
                     } else {
                         defaultResponse = "꾸잉...? (무슨 말인지 잘 이해하지 못한 것 같아요)"

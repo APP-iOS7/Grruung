@@ -68,10 +68,12 @@ class ImageManager {
             // 동물 아이콘
             let symbolName: String
             switch species {
-            case .ligerCat:
+            case .CatLion:
                 symbolName = "cat.fill"
             case .quokka:
                 symbolName = "hare.fill"
+            case .Undefined:
+                symbolName = "questionmark"
             }
             
             if let image = UIImage(systemName: symbolName) {

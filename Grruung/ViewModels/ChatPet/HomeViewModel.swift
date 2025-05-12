@@ -24,7 +24,7 @@ class HomeViewModel: ObservableObject {
     
     // 테스트 모드 프로퍼티
     @Published var testMode: Bool = false
-    @Published var testSpecies: PetSpecies = .ligerCat
+    @Published var testSpecies: PetSpecies = .CatLion
     @Published var testPhase: CharacterPhase = .infant
     
     // 서비스
@@ -80,7 +80,7 @@ class HomeViewModel: ObservableObject {
     
     /// 테스트용 캐릭터를 생성하고 선택합니다.
     func createTestCharacter() {
-        let name = testSpecies == .ligerCat ? "냥냥이" : "꾸꾸"
+        let name = testSpecies == .CatLion ? "냥냥이" : "꾸꾸"
         let status = GRCharacterStatus(
             level: levelForPhase(testPhase),
             phase: testPhase,
@@ -95,8 +95,10 @@ class HomeViewModel: ObservableObject {
         let character = GRCharacter(
             species: testSpecies,
             name: name,
-            image: "\(testSpecies.rawValue)_\(testPhase.rawValue)",
+            imageName: "\(testSpecies.rawValue)_\(testPhase.rawValue)",
+            birthDate: Date(),
             status: status
+            
         )
         
         selectedCharacter = character

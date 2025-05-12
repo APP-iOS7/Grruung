@@ -3,9 +3,11 @@
 //  Grruung
 //
 //  Created by KimJunsoo on 5/7/25.
+//  Created by mwpark on 5/1/25.
 //
 
 import Foundation
+import SwiftUICore
 
 // 캐릭터 정보를 담는 구조체
 struct GRCharacter: Identifiable {
@@ -13,18 +15,22 @@ struct GRCharacter: Identifiable {
     let id: String // characterUUID
     var species: PetSpecies
     var name: String
-    var image: String // 이미지 경로 또는 URL
+    var imageName: String // 이미지 파일 이름 (SF Symbol 또는 Asset 이름)
+    var birthDate: Date // 캐릭터 상태 정보
     var status: GRCharacterStatus
+    
     
     init(id: String = UUID().uuidString,
          species: PetSpecies,
          name: String,
-         image: String,
+         imageName: String,
+         birthDate: Date,
          status: GRCharacterStatus = GRCharacterStatus()) {
         self.id = id
         self.species = species
         self.name = name
-        self.image = image
+        self.imageName = imageName
+        self.birthDate = birthDate
         self.status = status
     }
     
@@ -70,7 +76,9 @@ struct GRCharacter: Identifiable {
         let statusDescription = status.getStatusDescription()
         
         switch species {
-        case .ligerCat:
+        case .Undefined:
+            return "캐릭터가 없습니다"
+        case .CatLion:
             switch status.phase {
             case .egg:
                 return "알 속에서 꿈틀거리고 있어요."
@@ -117,17 +125,21 @@ struct GRCharacter: Identifiable {
             case .adolescent, .adult, .elder:
                 return "꾸잉... \(statusDescription) 상태예요."
             }
+
         }
     }
 }
 
 enum PetSpecies: String, Codable, CaseIterable {
-    case ligerCat = "고양이사자"
+    case Undefined = "미정"
+    case CatLion = "고양이사자"
     case quokka = "쿼카"
     
     var defaultName: String {
         switch self {
-        case .ligerCat:
+        case .Undefined:
+            return "캐릭터 미정"
+        case .CatLion:
             return "냥냥이"
         case .quokka:
             return "꾸꾸"
