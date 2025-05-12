@@ -27,12 +27,17 @@ struct WriteStoryView: View {
     @State private var currentPost: GRPost? = nil
     
     @State private var postBody: String = ""
+    @State private var postTitle: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil // 새로 선택/변경한 이미지 데이터
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
     
     private var isPlaceholderVisible: Bool {
         postBody.isEmpty
+    }
+    
+    private var isTitlePlaceholderVisible: Bool {
+        postTitle.isEmpty
     }
     
     private var currentDateString: String {
@@ -130,17 +135,43 @@ struct WriteStoryView: View {
             
             
             if currentMode == .read {
+                // 읽기 모드에서는 제목과 내용을 표시만 함
+                Text(currentPost?.postTitle ?? "")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.horizontal)
+                
                 Text(currentPost?.postBody ?? "")
                     .padding(.horizontal)
                     .padding(.bottom, 10)
             }
             else {
-                
+                // 제목 입력 필드
                 ZStack(alignment: .topLeading) {
+                    TextField("", text: $postTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(8)
                     
+                    if isTitlePlaceholderVisible {
+                        Text("제목을 입력해주세요")
+                            .foregroundColor(Color(UIColor.placeholderText))
+                            .font(.title2)
+                            .padding()
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // 내용 입력 필드
+                ZStack(alignment: .topLeading) {
                     TextEditor(text: $postBody)
                         .frame(minHeight: 150)
                         .border(Color.clear)
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(8)
                     
                     if isPlaceholderVisible {
                         Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
@@ -167,12 +198,14 @@ struct WriteStoryView: View {
                             if currentMode == .create {
                                 let _ =  try await viewModel.createPost(
                                     characterUUID: characterUUID,
+                                    postTitle: postTitle,
                                     postBody: postBody,
                                     imageData: selectedImageData
                                 )
                             } else if currentMode == .edit {
                                 try await viewModel.editPost(
                                     postID: currentPost?.postID ?? "",
+                                    postTitle: postTitle,
                                     postBody: postBody,
                                     newImageData: selectedImageData,
                                     existingImageUrl: currentPost?.postImage ?? ""
@@ -215,6 +248,7 @@ struct WriteStoryView: View {
                     self.currentPost = fetchedPost
                     if let post = fetchedPost {
                         self.postBody = post.postBody
+                        self.postTitle = post.postTitle
                         if !post.postImage.isEmpty {
                             loadImageFrom(urlString: post.postImage)
                         } else {
@@ -258,6 +292,7 @@ struct WriteStoryView: View {
                 if currentMode == .create {
                     let newPostId = try await viewModel.createPost(
                         characterUUID: characterUUID,
+                        postTitle: postTitle,
                         postBody: postBody,
                         imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
                     )
@@ -265,6 +300,7 @@ struct WriteStoryView: View {
                 } else if currentMode == .edit, let postToEdit = currentPost {
                     try await viewModel.editPost(
                         postID: postToEdit.postID,
+                        postTitle: postTitle,
                         postBody: postBody,
                         newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
                         existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
@@ -279,14 +315,8 @@ struct WriteStoryView: View {
             }
         }
     }
-    
-    
-    
 } // end of WriteStoryView
 
-
-
-//
 #Preview {
     NavigationStack {
         WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
@@ -296,12 +326,13 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
+        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
     }
 }
 
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
-    }
-}
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
+//    }
+//}
+//

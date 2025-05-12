@@ -27,13 +27,13 @@ class WriteStoryViewModel: ObservableObject {
 //        settings.isPersistenceEnabled = false
 //        settings.isSSLEnabled = false
 //        db.settings = settings
-//        
+//
 //        // Storage Emulator 설정
 //        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
 //#endif
     }
     
-    func createPost(characterUUID: String, postBody: String, imageData: Data?) async throws -> String {
+    func createPost(characterUUID: String, postTitle: String, postBody: String, imageData: Data?) async throws -> String {
         
         var imageUrlToSave: String = ""
         if let data = imageData {
@@ -44,6 +44,7 @@ class WriteStoryViewModel: ObservableObject {
         
         let newPostData: [String: Any] = [
             "characterUUID": characterUUID,
+            "postTitle": postTitle,
             "postImage": imageUrlToSave,
             "postBody": postBody,
             "createdAt": Timestamp(date: Date()),
@@ -59,7 +60,7 @@ class WriteStoryViewModel: ObservableObject {
         }
     }
     
-    func editPost(postID: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
+    func editPost(postID: String, postTitle: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
         
         var imageUrlToSave = existingImageUrl ?? ""
         if let data = newImageData {
@@ -69,6 +70,7 @@ class WriteStoryViewModel: ObservableObject {
         
         do {
             try await db.collection("GRPost").document(postID).updateData([
+                "postTitle": postTitle,
                 "postImage": imageUrlToSave,
                 "postBody": postBody,
                 "updatedAt": Timestamp(date: Date())
