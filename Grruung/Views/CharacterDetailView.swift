@@ -83,6 +83,7 @@ struct CharacterDetailView: View {
     
     @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
     
+    
     var body: some View {
         ScrollView {
             VStack {
@@ -104,6 +105,10 @@ struct CharacterDetailView: View {
             Spacer()
             
         } // end of ScrollView
+        .onAppear {
+            print("CharacterDetailView appeared. Refreshing data for character: \(characterUUID) and date: \(searchDateString(date: searchDate))")
+            viewModel.loadPost(characterUUID: self.characterUUID, searchDate: self.searchDate)
+        }
         .navigationDestination(item: $selectedPostForEdit) { post in
             WriteStoryView(
                 currentMode: .edit,
@@ -304,7 +309,6 @@ struct CharacterDetailView: View {
                                         .lineLimit(1)
                                     Text(formatDate(viewModel.posts[index].createdAt))
                                         .font(.subheadline)
-                                    
                                 }
                             }
                             
