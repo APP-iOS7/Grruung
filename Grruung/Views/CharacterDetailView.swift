@@ -28,6 +28,13 @@ struct ShrinkListHeightModifier: ViewModifier {
     }
 }
 
+struct PostIdentifier: Hashable, Identifiable {
+    let characterUUID: String
+    let postID: String
+    var id: String { "\(characterUUID)-\(postID)" }
+    
+}
+
 extension View {
     /// List의 높이를 콘텐츠 크기에 맞추어 동적으로 조절합니다.
     /// List가 다른 ScrollView 내부에 있을 때 이중 스크롤 문제를 방지하는 데 도움이 됩니다.
@@ -74,7 +81,7 @@ struct CharacterDetailView: View {
         self._viewModel = StateObject(wrappedValue: CharacterDetailViewModel(characterUUID: characterUUID))
     }
     
-    @State private var selectedPostForEdit: (String, String)? // (characterUUID, postID)
+    @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
     
     var body: some View {
         ScrollView {
@@ -97,7 +104,13 @@ struct CharacterDetailView: View {
             Spacer()
             
         } // end of ScrollView
-        
+        .navigationDestination(item: $selectedPostForEdit) { post in
+            WriteStoryView(
+                currentMode: .edit,
+                characterUUID: post.characterUUID,
+                postID: post.postID
+            )
+        }
         .navigationTitle("\(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)")
         .navigationBarTitleDisplayMode(.inline)
         
@@ -122,6 +135,7 @@ struct CharacterDetailView: View {
         }
     }
     
+    // MARK: - 캐릭터 정보 영역
     private var characterInfoSection: some View {
         HStack {
             if !viewModel.character.image.isEmpty {
@@ -156,6 +170,7 @@ struct CharacterDetailView: View {
         .padding(.bottom, 20)
     }
     
+    // MARK: - 성장 과정 영역
     private var growthProgressSection: some View {
         VStack {
             Text("성장 과정 🐾")
@@ -185,6 +200,7 @@ struct CharacterDetailView: View {
         .padding(.bottom, 20)
     }
     
+    // MARK: - 날짜 탐색 버튼
     private var dateNavigationSection: some View {
         HStack {
             Button("<") {
@@ -203,8 +219,8 @@ struct CharacterDetailView: View {
         .padding(.bottom, 10)
     }
     
+    // MARK: - 활동 기록 영역
     private var activitySection: some View {
-        // 성장 기록 영역
         VStack {
             Text("성장 기록 📔")
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -244,8 +260,8 @@ struct CharacterDetailView: View {
         .padding(.bottom, 20)
     }
     
+    // MARK: - 들려준 이야기 영역
     private var storyListSection: some View {
-        // 들려준 이야기 영역
         VStack {
             Text("들려준 이야기 📖")
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -308,8 +324,11 @@ struct CharacterDetailView: View {
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
                                 print("수정 버튼 클릭됨 \(viewModel.posts[index].postBody)")
-                                selectedPostForEdit = (viewModel.posts[index].characterUUID, viewModel.posts[index].postID)
                                 
+                                selectedPostForEdit = PostIdentifier(
+                                    characterUUID: characterUUID,
+                                    postID: viewModel.posts[index].postID
+                                )
                             } label: {
                                 Image(systemName: "pencil")
                             }
@@ -342,8 +361,10 @@ struct CharacterDetailView: View {
     
 } // end of CharacterDetailView
 
+
+// MARK: NavigationView 사용 시 수정 뷰로 이동 안되므로 꼭 상위 뷰에서 NavigationStack을 사용해야 함
 #Preview {
-    NavigationView { // 네비게이션 바 테스트를 위해 NavigationView 추가
+    NavigationStack {
         CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
     }
 }
