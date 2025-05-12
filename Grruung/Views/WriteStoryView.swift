@@ -92,13 +92,23 @@ struct WriteStoryView: View {
                     ){
                         Group {
                             if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                                // 사용자가 새로 선택한 이미지가 있으면 표시
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFit()
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                     .padding(.leading)
                                 
-                            } else {
+                            } else if let existingImage = displayedImage {
+                                // 새로 선택한 이미지는 없지만, 기존에 로드된 이미지가 있으면 표시
+                                Image(uiImage: existingImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(.leading)
+                            }
+                            
+                            else {
                                 Image(systemName: "photo.on.rectangle.angled")
                                     .resizable()
                                     .scaledToFit()
@@ -318,11 +328,11 @@ struct WriteStoryView: View {
 } // end of WriteStoryView
 
 
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-//    }
-//}
+#Preview {
+    NavigationStack {
+        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+    }
+}
 
 
 #Preview {

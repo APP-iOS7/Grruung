@@ -27,34 +27,39 @@ class WriteStoryViewModel: ObservableObject {
         settings.isPersistenceEnabled = false
         settings.isSSLEnabled = false
         db.settings = settings
-
+        
         // Storage Emulator 설정
         Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
 #endif
     }
+    
+    private func uploadImageToStorage(imageData: Data) async throws -> String {
+        let imageName = UUID().uuidString + ".jpg"
+        let imageRef = storage.reference().child("post_images/\(imageName)") // "post_images" 폴더에 저장
+        
+        do {
+            // 2. Firebase Storage에 이미지 데이터 업로드
+            print("Firebase Storage로 이미지 데이터 (\(imageData.count) 바이트) 업로드 중 ...")
+            let _ = try await imageRef.putDataAsync(imageData, metadata: nil) // async/await를 위해 putDataAsync 사용
+            
+            // 3. 다운로드 URL 가져오기
+            let downloadURL = try await imageRef.downloadURL()
+            let urlString = downloadURL.absoluteString
+            print("Firebase Storage에 이미지 업로드 완료: \(urlString)")
+            return urlString
+        } catch {
+            print("Firebase Storage에 이미지 업로드 실패: \(error)")
+            throw error
+        }
+    }
+    
     
     func createPost(characterUUID: String, postTitle: String, postBody: String, imageData: Data?) async throws -> String {
         
         var imageUrlToSave: String = ""
         
         if let data = imageData {
-            // 1. Firebase Storage에 이미지 고유 경로 생성
-            let imageName = UUID().uuidString + ".jpg"
-            let imageRef = storage.reference().child("post_images/\(imageName)") // "post_images" 폴더에 저장
-            
-            do {
-                // 2. Firebase Storage에 이미지 데이터 업로드
-                print("Firebase Storage로 이미지 데이터 (\(data.count) 바이트) 업로드 중 ...")
-                let _ = try await imageRef.putDataAsync(data, metadata: nil) // async/await를 위해 putDataAsync 사용
-                
-                // 3. 다운로드 URL 가져오기
-                let downloadURL = try await imageRef.downloadURL()
-                imageUrlToSave = downloadURL.absoluteString
-                print("Firebase Storage에 이미지 업로드 완료: \(imageUrlToSave)")
-            } catch {
-                print("Firebase Storage에 이미지 업로드 실패: \(error)")
-                throw error
-            }
+            imageUrlToSave = try await uploadImageToStorage(imageData: data)
         }
         
         let newPostData: [String: Any] = [
@@ -79,21 +84,43 @@ class WriteStoryViewModel: ObservableObject {
     func editPost(postID: String, postTitle: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
         
         var imageUrlToSave = existingImageUrl ?? ""
-        if let data = newImageData {
-            print("새 이미지 데이터 \(data.count) 바이트를 업로드 해야 합니다.")
-            imageUrlToSave = "https://firebasestore.googleapis.com/v0/b/grruung.appspot.com/o/your_image_name.jpg?alt=media&token=your_token"
-        }
         
-        do {
-            try await db.collection("GRPost").document(postID).updateData([
-                "postTitle": postTitle,
-                "postImage": imageUrlToSave,
-                "postBody": postBody,
-                "updatedAt": Timestamp(date: Date())
-            ])
-            print("Post updated with ID: \(postID)")
-        } catch {
-            throw error
+        if let data = newImageData {
+            print("새 이미지 데이터 \(data.count) 바이트를 업로드 중입니다...")
+            
+            
+            // 1. 기존 이미지가 있다면 Firebase Storage에서 삭제
+            //    - existingImageUrl이 비어있지 않고,
+            //    - 유효한 URL이며,
+            //    - Firebase Storage URL인 경우에만 삭제 시도
+            if let oldUrlString = existingImageUrl,
+               !oldUrlString.isEmpty,
+               let oldUrl = URL(string: oldUrlString) ,
+               oldUrl.host?.contains("firebasestorage.googleapis.com") ?? false {
+                
+                let oldImageRef = storage.reference(forURL: oldUrlString)
+                do {
+                    try await oldImageRef.delete()
+                    print("기존 이미지 삭제 완료: \(oldUrlString)")
+                } catch {
+                    print("기존 이미지 삭제 실패: \(error)")
+                }
+            }
+            
+            // 2. 새 이미지를 Firebase Storage에 업로드
+            imageUrlToSave = try await uploadImageToStorage(imageData: data)
+            
+            do {
+                try await db.collection("GRPost").document(postID).updateData([
+                    "postTitle": postTitle,
+                    "postImage": imageUrlToSave,
+                    "postBody": postBody,
+                    "updatedAt": Timestamp(date: Date())
+                ])
+                print("Post updated with ID: \(postID)")
+            } catch {
+                throw error
+            }
         }
     }
     
