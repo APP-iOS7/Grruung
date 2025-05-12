@@ -24,9 +24,9 @@ struct StoreView: View {
                             }}) {
                                 VStack {
                                     Text(tabs[index]).font(.headline)
-                                        .foregroundColor(selectedTab == index ? .white : .gray)
+                                        .foregroundColor(selectedTab == index ? GRColor.fontMainColor : .gray)
                                     Capsule()
-                                        .fill(selectedTab == index ? Color.white : Color.clear)
+                                        .fill(selectedTab == index ? GRColor.fontMainColor : Color.clear)
                                         .frame(height: 3)
                                 } .padding(.vertical, 8)
                                     .padding(.horizontal, 15)
@@ -39,7 +39,7 @@ struct StoreView: View {
                 Image(systemName: tabImages[selectedTab]).resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 100, height: 100)
-                    .foregroundColor(.white)
+                    .foregroundColor(GRColor.fontMainColor)
                 
                 Spacer()
                 

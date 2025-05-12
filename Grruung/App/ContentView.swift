@@ -71,7 +71,7 @@ struct MainTabView: View {
             
             // 상점 탭
             Tab("상점", systemImage: "cart.fill", value: 3) {
-                Text("상점")
+                StoreView()
             }
             
             // 마이페이지 탭
