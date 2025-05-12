@@ -26,6 +26,8 @@ struct CharDexView: View {
     // 잠금 해제 티켓의 수가 부족한 경우 alert 변수
     @State private var showingNotEnoughTicketAlert = false
     
+    @State private var firstAlert = true
+    
     let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
@@ -95,6 +97,7 @@ struct CharDexView: View {
                     Text("\(garaCharacters.count)")
                         .foregroundStyle(.yellow)
                     Text("/ \(maxDexCount) 수집")
+                    
                 }
                 .frame(maxWidth: 180)
                 .font(.title)
@@ -102,6 +105,20 @@ struct CharDexView: View {
                     Capsule()
                         .fill(Color.brown.opacity(0.5))
                 })
+                
+                HStack {
+                    if unlockTicketCount <= 0 {
+                        Spacer()
+                    }
+                    ForEach(0..<unlockTicketCount, id: \.self) { _ in
+                        Image(systemName: "ticket")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(.top, 8)
+                            .frame(width: 30, height: 30)
+                            .foregroundStyle(Color.brown.opacity(0.5))
+                    }
+                }
                 
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(characterSlots.enumerated()), id: \.element.id) { index, character in
@@ -166,13 +183,15 @@ struct CharDexView: View {
                 Button("취소", role: .cancel) {}
             }
             .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
-                Button("확인", role: .cancel) {}
+                Button("확인", role: .cancel) {
+                    firstAlert = false
+                }
             }
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
             }
             .onAppear {
-                if unlockCount == garaCharacters.count {
+                if unlockCount == garaCharacters.count && firstAlert {
                     showingNotEnoughAlert = true
                 }
             }
