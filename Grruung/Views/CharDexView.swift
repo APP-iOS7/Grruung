@@ -25,8 +25,10 @@ struct CharDexView: View {
     @State private var showingNotEnoughAlert = false
     // 잠금 해제 티켓의 수가 부족한 경우 alert 변수
     @State private var showingNotEnoughTicketAlert = false
-    
+    // 초기 슬롯 해제 alert
     @State private var firstAlert = true
+    // 알 수 없는 에러 alert
+    @State private var showingErrorAlert = false
     
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -204,9 +206,17 @@ struct CharDexView: View {
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
             }
+            .alert("에러 발생", isPresented: $showingErrorAlert) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("알 수 없는 에러가 발생하였습니다!")
+            }
             .onAppear {
                 if unlockCount == garaCharacters.count && firstAlert {
                     showingNotEnoughAlert = true
+                }
+                if garaCharacters.count > unlockCount {
+                    showingErrorAlert = true
                 }
             }
         }
