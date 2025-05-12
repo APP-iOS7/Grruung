@@ -223,7 +223,7 @@ struct WriteStoryView: View {
                         print("No image selected.")
                     }
                 }
-                .disabled(currentMode != .read && postBody.isEmpty)
+                .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
                 .opacity(postBody.isEmpty ? 0.5 : 1)
         )
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
@@ -317,22 +317,23 @@ struct WriteStoryView: View {
     }
 } // end of WriteStoryView
 
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-    }
-}
+
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+//    }
+//}
 
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
+        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "eW0tG0WuoZ1mr7Ft4Mec")
     }
 }
 
 //#Preview {
 //    NavigationStack {
-//        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
+//        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "eW0tG0WuoZ1mr7Ft4Mec")
 //    }
 //}
-//
+

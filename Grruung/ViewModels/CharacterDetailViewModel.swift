@@ -19,17 +19,17 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
     init(characterUUID: String = "") {
-//#if DEBUG
-//        // Firebase Emulator 설정
-//        let settings = Firestore.firestore().settings
-//        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-//        settings.isPersistenceEnabled = false
-//        settings.isSSLEnabled = false
-//        db.settings = settings
-//        
-//        // Storage Emulator 설정
-//        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-//#endif
+#if DEBUG
+        // Firebase Emulator 설정
+        let settings = Firestore.firestore().settings
+        settings.host = "localhost:8080" // Firestore emulator 기본 포트
+        settings.isPersistenceEnabled = false
+        settings.isSSLEnabled = false
+        db.settings = settings
+        
+        // Storage Emulator 설정
+        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
+#endif
         
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
