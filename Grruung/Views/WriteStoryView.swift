@@ -8,11 +8,6 @@
 import SwiftUI
 import PhotosUI
 
-
-// 더미 데이터 모델
-
-// --- 더미 데이터 끝
-
 enum ViewMode {
     case create
     case read
@@ -25,7 +20,7 @@ struct WriteStoryView: View {
     @Environment(\.dismiss) var dismiss
     
     var currentMode: ViewMode
-    var characterUUID: String?
+    var characterUUID: String
     var postID: String?
     
     
@@ -85,43 +80,43 @@ struct WriteStoryView: View {
                             .padding(.leading)
                     }
                 } else {
-                PhotosPicker(
-                    selection: $selectedPhotoItem,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ){
-                    Group {
-                        if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .padding(.leading)
-                            
-                        } else {
-                            Image(systemName: "photo.on.rectangle.angled")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 100, height: 100)
-                                .rotationEffect(.degrees(-15))
-                                .foregroundColor(.gray)
-                                .padding(.leading)
+                    PhotosPicker(
+                        selection: $selectedPhotoItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ){
+                        Group {
+                            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(.leading)
+                                
+                            } else {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 100, height: 100)
+                                    .rotationEffect(.degrees(-15))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading)
+                            }
                         }
                     }
-                }
-                .onChange(of: selectedPhotoItem) { _,newItem in
-                    Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                            selectedImageData = data
-                        } else {
-                            print("이미지 로딩 중 오류 발생")
-                            selectedImageData = nil
+                    .onChange(of: selectedPhotoItem) { _,newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                selectedImageData = data
+                            } else {
+                                print("이미지 로딩 중 오류 발생")
+                                selectedImageData = nil
+                            }
                         }
                     }
+                    .padding(.leading, 20)
+                    
                 }
-                .padding(.leading, 20)
-                
-            }
                 Spacer()
                 
                 Text(currentDateString)
@@ -169,7 +164,7 @@ struct WriteStoryView: View {
                         print("우측 상단 button tapped!")
                         
                         if currentMode == .create {
-                           let _ =  try await viewModel.createPost(
+                            let _ =  try await viewModel.createPost(
                                 characterUUID: characterUUID ?? "",
                                 postBody: postBody,
                                 imageData: selectedImageData
@@ -180,11 +175,11 @@ struct WriteStoryView: View {
                                 postBody: postBody,
                                 newImageData: selectedImageData,
                                 existingImageUrl: currentPost?.postImage ?? ""
-                             )
+                            )
                         }
-//                        else if currentMode == .read {
-//                            
-//                        }
+                        //                        else if currentMode == .read {
+                        //
+                        //                        }
                         
                         
                         dismiss()
@@ -270,16 +265,15 @@ struct WriteStoryView: View {
                     )
                     print("새 게시물 ID: \(newPostId)")
                 } else if currentMode == .edit, let postToEdit = currentPost {
-                    let existingPostID = postToEdit.postID
                     try await viewModel.editPost(
-                        postID: existingPostID,
+                        postID: postToEdit.postID,
                         postBody: postBody,
                         newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
                         existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
                     )
                     
                     
-                    print("게시물 수정 완료, ID: \(existingPostID)")
+                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
                 }
                 dismiss()
             } catch {
@@ -295,21 +289,21 @@ struct WriteStoryView: View {
 
 
 //
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .create)
-//    }
-//}
+#Preview {
+    NavigationStack {
+        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+    }
+}
 
-
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .edit, postID: "pLYj75FYFJAWJCeGaty7")
-//    }
-//}
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "characterUUID", postID: "pLYj75FYFJAWJCeGaty7")
+        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
+    }
+}
+
+#Preview {
+    NavigationStack {
+        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "Qs8eRdfB8DkPkMRALlds")
     }
 }

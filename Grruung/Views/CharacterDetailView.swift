@@ -52,7 +52,6 @@ struct CharacterDetailView: View {
     let meetDateDummy: String = "2025년 02월 14일"
     let addressDummy: String = "〇〇의 아이폰"
     let ageDummy: Int = 45
-    var characterUUID: String = "CF6NXxcH5HgGjzVE0nVE"
     
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
@@ -74,7 +73,7 @@ struct CharacterDetailView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var searchDate: Date = Date()
-    //var characterUUID: String
+    var characterUUID: String
     
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
@@ -83,6 +82,7 @@ struct CharacterDetailView: View {
     }
     
     @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
+    
     
     var body: some View {
         ScrollView {
@@ -105,6 +105,10 @@ struct CharacterDetailView: View {
             Spacer()
             
         } // end of ScrollView
+        .onAppear {
+            print("CharacterDetailView appeared. Refreshing data for character: \(characterUUID) and date: \(searchDateString(date: searchDate))")
+            viewModel.loadPost(characterUUID: self.characterUUID, searchDate: self.searchDate)
+        }
         .navigationDestination(item: $selectedPostForEdit) { post in
             WriteStoryView(
                 currentMode: .edit,
@@ -223,7 +227,7 @@ struct CharacterDetailView: View {
     // MARK: - 활동 기록 영역
     private var activitySection: some View {
         VStack {
-            Text("성장 기록 📔")
+            Text("함께 했던 순간 🐾")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 10)
             
@@ -275,7 +279,7 @@ struct CharacterDetailView: View {
             } else {
                 List {
                     ForEach(viewModel.posts.indices, id: \.self) { index in
-                        NavigationLink(destination: Text("\(viewModel.posts[index].postBody)")) {
+                        NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: characterUUID, postID: viewModel.posts[index].postID)) {
                             HStack {
                                 if !viewModel.posts[index].postImage.isEmpty {
                                     AsyncImage(url: URL(string: viewModel.posts[index].postImage)) { image in
@@ -305,7 +309,6 @@ struct CharacterDetailView: View {
                                         .lineLimit(1)
                                     Text(formatDate(viewModel.posts[index].createdAt))
                                         .font(.subheadline)
-                                    
                                 }
                             }
                             

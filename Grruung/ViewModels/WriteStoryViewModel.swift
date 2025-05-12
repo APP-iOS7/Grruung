@@ -11,53 +11,6 @@ import FirebaseFirestore
 import FirebaseStorage
 
 
-//// 더미 데이터
-//struct GRPost {
-//    let characterUUID: String
-//    var postImage: String
-//    var postBody: String
-//    var createdAt: Date
-//    var updatedAt: Date
-//    let postID: String?
-//    
-//    init(
-//        characterUUID: String,
-//        postImage: String,
-//        postBody: String,
-//        createdAt: Date,
-//        updatedAt: Date
-//    ){
-//        self.characterUUID = characterUUID
-//        self.postImage = postImage
-//        self.postBody = postBody
-//        self.createdAt = createdAt
-//        self.updatedAt = updatedAt
-//        self.postID = nil
-//    }
-//    
-//    // Firestore 데이터로부터 GRPost 객체 생성 시 사용
-//    init?(documentID: String, dictionary: [String: Any]) {
-//        guard
-//            let characterUUID = dictionary["characterUUID"] as? String,
-//            let postImage = dictionary["postImage"] as? String,
-//            let postBody = dictionary["postBody"] as? String,
-//            let createdAtTimestamp = dictionary["createdAt"] as? Timestamp,
-//            let updatedAtTimestamp = dictionary["updatedAt"] as? Timestamp
-//        else {
-//            print("Failed to parse GRPost from dictionary: \(dictionary)")
-//            return nil
-//        }
-//        
-//        self.postID = documentID
-//        self.characterUUID = characterUUID
-//        self.postImage = postImage
-//        self.postBody = postBody
-//        self.createdAt = createdAtTimestamp.dateValue()
-//        self.updatedAt = updatedAtTimestamp.dateValue()
-//    }
-//}
-//// 더미 데이터 끝
-
 class WriteStoryViewModel: ObservableObject {
     @Published var posts: [GRPost] = []
     
