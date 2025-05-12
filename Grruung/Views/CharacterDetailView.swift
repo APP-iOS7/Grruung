@@ -52,7 +52,7 @@ struct CharacterDetailView: View {
     let meetDateDummy: String = "2025년 02월 14일"
     let addressDummy: String = "〇〇의 아이폰"
     let ageDummy: Int = 45
-    var characterUUID: String = "1234"
+    var characterUUID: String = "CF6NXxcH5HgGjzVE0nVE"
     
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
