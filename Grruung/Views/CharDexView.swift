@@ -36,7 +36,7 @@ struct CharDexView: View {
     ]
     
     // 임시 데이터(테스트 용)
-    @State private var garaCharacters: [GRCharacter] = [
+    @State var garaCharacters: [GRCharacter] = [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
@@ -154,6 +154,11 @@ struct CharDexView: View {
             .navigationTitle("캐릭터 동산")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: CharDexSearchView(searchCharacters: garaCharacters)) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button {
                             sortType = .original
@@ -180,7 +185,7 @@ struct CharDexView: View {
                         }
                         
                     } label: {
-                        Label("정렬", systemImage: "arrow.up.arrow.down")
+                        Label("정렬", systemImage: "line.3.horizontal")
                     }
                 }
             }
@@ -303,7 +308,7 @@ struct DetailView: View {
             Text(character.name)
                 .font(.largeTitle)
                 .bold()
-
+            
             Text(character.species.rawValue)
                 .font(.title)
                 .foregroundStyle(.gray)
