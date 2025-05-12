@@ -9,10 +9,12 @@ import SwiftUI
 
 struct ParkTestView: View {
     var body: some View {
-        Text("Hello, World!")
+        CharDexView()
     }
 }
 
 #Preview {
     ParkTestView()
 }
+
+

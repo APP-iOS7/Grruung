@@ -9,7 +9,11 @@ import SwiftUI
 
 struct NoTestView: View {
     var body: some View {
-        Text("Hello, World!")
+        NavigationStack {
+            NavigationLink(destination: CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")) { // 임시 더미 characterUUID
+                Text("Go to Character Detail")
+            }
+        }
     }
 }
 
