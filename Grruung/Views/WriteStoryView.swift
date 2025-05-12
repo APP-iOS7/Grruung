@@ -183,7 +183,7 @@ struct WriteStoryView: View {
                              )
                         }
 //                        else if currentMode == .read {
-//                            
+//
 //                        }
                         
                         
@@ -269,16 +269,16 @@ struct WriteStoryView: View {
                         imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
                     )
                     print("새 게시물 ID: \(newPostId)")
-                } else if currentMode == .edit, let postToEdit = currentPost, let existingPostID = postToEdit.postID {
+                } else if currentMode == .edit, let postToEdit = currentPost {
                     try await viewModel.editPost(
-                        postID: existingPostID,
+                        postID: postToEdit.postID,
                         postBody: postBody,
                         newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
                         existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
                     )
                     
                     
-                    print("게시물 수정 완료, ID: \(existingPostID)")
+                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
                 }
                 dismiss()
             } catch {
