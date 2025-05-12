@@ -158,42 +158,40 @@ struct WriteStoryView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(
-            trailing: Button("\(buttonTitle)") {
-                Task {
-                    do {
-                        print("우측 상단 button tapped!")
-                        
-                        if currentMode == .create {
-                            let _ =  try await viewModel.createPost(
-                                characterUUID: characterUUID ?? "",
-                                postBody: postBody,
-                                imageData: selectedImageData
-                            )
-                        } else if currentMode == .edit {
-                            try await viewModel.editPost(
-                                postID: currentPost?.postID ?? "",
-                                postBody: postBody,
-                                newImageData: selectedImageData,
-                                existingImageUrl: currentPost?.postImage ?? ""
-                            )
+            trailing:
+                Button("\(buttonTitle)") {
+                    Task {
+                        do {
+                            print("우측 상단 button tapped!")
+                            
+                            if currentMode == .create {
+                                let _ =  try await viewModel.createPost(
+                                    characterUUID: characterUUID,
+                                    postBody: postBody,
+                                    imageData: selectedImageData
+                                )
+                            } else if currentMode == .edit {
+                                try await viewModel.editPost(
+                                    postID: currentPost?.postID ?? "",
+                                    postBody: postBody,
+                                    newImageData: selectedImageData,
+                                    existingImageUrl: currentPost?.postImage ?? ""
+                                )
+                            }
+                            dismiss()
+                        } catch {
+                            print("Error saving post: \(error)")
                         }
-                        //                        else if currentMode == .read {
-                        //
-                        //                        }
-                        
-                        
-                        dismiss()
-                    } catch {
-                        print("Error saving post: \(error)")
+                    }
+                    
+                    if let imageData = selectedImageData {
+                        print("Image data size: \(imageData.count) bytes")
+                    } else {
+                        print("No image selected.")
                     }
                 }
-                
-                if let imageData = selectedImageData {
-                    print("Image data size: \(imageData.count) bytes")
-                } else {
-                    print("No image selected.")
-                }
-            }
+                .disabled(currentMode != .read && postBody.isEmpty)
+                .opacity(postBody.isEmpty ? 0.5 : 1)
         )
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onAppear {
