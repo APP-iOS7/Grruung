@@ -10,57 +10,6 @@ import Combine
 import FirebaseFirestore
 import FirebaseStorage
 
-// 더미 데이터
-//struct GRCharacter {
-//    let characterUUID: String
-//    let species: String
-//    let name: String
-//    let image: String
-//    let grCharacterStatus: String
-//    
-//    init(
-//        
-//        characterUUID: String = UUID().uuidString,
-//        species: String = "",
-//        name: String = "",
-//        image: String = "",
-//        grCharacterStatus: String = ""
-//    ) {
-//        self.characterUUID = characterUUID
-//        self.species = species
-//        self.name = name
-//        self.image = image
-//        self.grCharacterStatus = grCharacterStatus
-//    }
-//}
-
-//struct GRPost {
-//    let postID: String // Document ID
-//    let characterUUID: String
-//    var postImage: String
-//    var postBody: String
-//    var createdAt: Date
-//    var updatedAt: Date
-//    
-//    init(
-//        postID: String,
-//        characterUUID: String,
-//        postImage: String,
-//        postBody: String,
-//        createdAt: Date,
-//        updatedAt: Date
-//    ){
-//        self.postID = postID
-//        self.characterUUID = characterUUID
-//        self.postImage = postImage
-//        self.postBody = postBody
-//        self.createdAt = createdAt
-//        self.updatedAt = updatedAt
-//    }
-//}
-// --- 여기까지 더미 데이터 ---
-
-
 class CharacterDetailViewModel: ObservableObject {
     
     @Published var character: GRCharacter

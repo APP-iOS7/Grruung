@@ -11,52 +11,52 @@ import FirebaseFirestore
 import FirebaseStorage
 
 
-// 더미 데이터
-struct GRPost {
-    let characterUUID: String
-    var postImage: String
-    var postBody: String
-    var createdAt: Date
-    var updatedAt: Date
-    let postID: String?
-    
-    init(
-        characterUUID: String,
-        postImage: String,
-        postBody: String,
-        createdAt: Date,
-        updatedAt: Date
-    ){
-        self.characterUUID = characterUUID
-        self.postImage = postImage
-        self.postBody = postBody
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-        self.postID = nil
-    }
-    
-    // Firestore 데이터로부터 GRPost 객체 생성 시 사용
-    init?(documentID: String, dictionary: [String: Any]) {
-        guard
-            let characterUUID = dictionary["characterUUID"] as? String,
-            let postImage = dictionary["postImage"] as? String,
-            let postBody = dictionary["postBody"] as? String,
-            let createdAtTimestamp = dictionary["createdAt"] as? Timestamp,
-            let updatedAtTimestamp = dictionary["updatedAt"] as? Timestamp
-        else {
-            print("Failed to parse GRPost from dictionary: \(dictionary)")
-            return nil
-        }
-        
-        self.postID = documentID
-        self.characterUUID = characterUUID
-        self.postImage = postImage
-        self.postBody = postBody
-        self.createdAt = createdAtTimestamp.dateValue()
-        self.updatedAt = updatedAtTimestamp.dateValue()
-    }
-}
-// 더미 데이터 끝
+//// 더미 데이터
+//struct GRPost {
+//    let characterUUID: String
+//    var postImage: String
+//    var postBody: String
+//    var createdAt: Date
+//    var updatedAt: Date
+//    let postID: String?
+//    
+//    init(
+//        characterUUID: String,
+//        postImage: String,
+//        postBody: String,
+//        createdAt: Date,
+//        updatedAt: Date
+//    ){
+//        self.characterUUID = characterUUID
+//        self.postImage = postImage
+//        self.postBody = postBody
+//        self.createdAt = createdAt
+//        self.updatedAt = updatedAt
+//        self.postID = nil
+//    }
+//    
+//    // Firestore 데이터로부터 GRPost 객체 생성 시 사용
+//    init?(documentID: String, dictionary: [String: Any]) {
+//        guard
+//            let characterUUID = dictionary["characterUUID"] as? String,
+//            let postImage = dictionary["postImage"] as? String,
+//            let postBody = dictionary["postBody"] as? String,
+//            let createdAtTimestamp = dictionary["createdAt"] as? Timestamp,
+//            let updatedAtTimestamp = dictionary["updatedAt"] as? Timestamp
+//        else {
+//            print("Failed to parse GRPost from dictionary: \(dictionary)")
+//            return nil
+//        }
+//        
+//        self.postID = documentID
+//        self.characterUUID = characterUUID
+//        self.postImage = postImage
+//        self.postBody = postBody
+//        self.createdAt = createdAtTimestamp.dateValue()
+//        self.updatedAt = updatedAtTimestamp.dateValue()
+//    }
+//}
+//// 더미 데이터 끝
 
 class WriteStoryViewModel: ObservableObject {
     @Published var posts: [GRPost] = []
@@ -67,17 +67,17 @@ class WriteStoryViewModel: ObservableObject {
     
     init() {
         
-#if DEBUG
-        // Firebase Emulator 설정
-        let settings = Firestore.firestore().settings
-        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-        settings.isPersistenceEnabled = false
-        settings.isSSLEnabled = false
-        db.settings = settings
-        
-        // Storage Emulator 설정
-        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-#endif
+//#if DEBUG
+//        // Firebase Emulator 설정
+//        let settings = Firestore.firestore().settings
+//        settings.host = "localhost:8080" // Firestore emulator 기본 포트
+//        settings.isPersistenceEnabled = false
+//        settings.isSSLEnabled = false
+//        db.settings = settings
+//        
+//        // Storage Emulator 설정
+//        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
+//#endif
     }
     
     func createPost(characterUUID: String, postBody: String, imageData: Data?) async throws -> String {
@@ -143,7 +143,13 @@ class WriteStoryViewModel: ObservableObject {
                 return nil
             }
             print("Post found with ID: \(postID)")
-            return GRPost(documentID: document.documentID, dictionary: data)
+            return GRPost(
+                postID: document.documentID,
+                characterUUID: data["characterUUID"] as? String ?? "",
+                postTitle: data["postTitle"] as? String ?? "",
+                postBody: data["postBody"] as? String ?? "",
+                postImage: data["postImage"] as? String ?? ""
+            )
         } catch {
             throw error
         }

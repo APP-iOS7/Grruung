@@ -269,7 +269,8 @@ struct WriteStoryView: View {
                         imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
                     )
                     print("새 게시물 ID: \(newPostId)")
-                } else if currentMode == .edit, let postToEdit = currentPost, let existingPostID = postToEdit.postID {
+                } else if currentMode == .edit, let postToEdit = currentPost {
+                    let existingPostID = postToEdit.postID
                     try await viewModel.editPost(
                         postID: existingPostID,
                         postBody: postBody,

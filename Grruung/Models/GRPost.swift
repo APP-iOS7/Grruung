@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 // 캐릭터에게 들려준 이야기를 담는 구조체
 struct GRPost {
@@ -32,5 +33,20 @@ struct GRPost {
         self.postImage = postImage
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+    
+    // Firestore에서 불러오기
+    static func GRPostFromFirestore(document: DocumentSnapshot) -> GRPost? {
+        guard let data = document.data() else { return nil }
+        
+        return GRPost(
+            postID: document.documentID,
+            characterUUID: data["characterUUID"] as? String ?? "",
+            postTitle: data["postTitle"] as? String ?? "",
+            postBody: data["postBody"] as? String ?? "",
+            postImage: data["postImage"] as? String ?? "",
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+            updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
+        )
     }
 }
