@@ -8,26 +8,28 @@
 import Foundation
 
 // 캐릭터에게 들려준 이야기를 담는 구조체
-struct GRPost: Identifiable {
+struct GRPost {
     
-    var id: String = UUID().uuidString
+    var postID: String = UUID().uuidString
     var characterUUID: String
     var postTitle: String
     var postBody: String
-    var postImages: [String] // 이미지 URL 또는 경로 배열
+    var postImage: String // 이미지 URL 또는 경로 배열
     var createdAt: Date
     var updatedAt: Date
     
-    init(characterUUID: String,
+    init(postID: String = UUID().uuidString,
+         characterUUID: String,
          postTitle: String,
          postBody: String,
-         postImages: [String] = [],
+         postImage: String,
          createdAt: Date = Date(),
          updatedAt: Date = Date()) {
+        self.postID = postID
         self.characterUUID = characterUUID
         self.postTitle = postTitle
         self.postBody = postBody
-        self.postImages = postImages
+        self.postImage = postImage
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

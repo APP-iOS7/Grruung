@@ -45,6 +45,7 @@ struct CharacterDetailView: View {
     let meetDateDummy: String = "2025년 02월 14일"
     let addressDummy: String = "〇〇의 아이폰"
     let ageDummy: Int = 45
+    var characterUUID: String = "1234"
     
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
@@ -66,7 +67,7 @@ struct CharacterDetailView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var searchDate: Date = Date()
-    var characterUUID: String
+    //var characterUUID: String
     
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
@@ -79,8 +80,8 @@ struct CharacterDetailView: View {
             VStack {
                 // 캐릭터 정보 영역
                 HStack {
-                    if !viewModel.character.image.isEmpty {
-                        AsyncImage(url: URL(string: viewModel.character.image)) { image in
+                    if !viewModel.character.imageName.isEmpty {
+                        AsyncImage(url: URL(string: viewModel.character.imageName)) { image in
                             image
                                 .resizable()
                                 .scaledToFit()

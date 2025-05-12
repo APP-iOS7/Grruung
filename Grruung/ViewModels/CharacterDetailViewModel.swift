@@ -11,53 +11,53 @@ import FirebaseFirestore
 import FirebaseStorage
 
 // 더미 데이터
-struct GRCharacter {
-    let characterUUID: String
-    let species: String
-    let name: String
-    let image: String
-    let grCharacterStatus: String
-    
-    init(
-        
-        characterUUID: String = UUID().uuidString,
-        species: String = "",
-        name: String = "",
-        image: String = "",
-        grCharacterStatus: String = ""
-    ) {
-        self.characterUUID = characterUUID
-        self.species = species
-        self.name = name
-        self.image = image
-        self.grCharacterStatus = grCharacterStatus
-    }
-}
+//struct GRCharacter {
+//    let characterUUID: String
+//    let species: String
+//    let name: String
+//    let image: String
+//    let grCharacterStatus: String
+//    
+//    init(
+//        
+//        characterUUID: String = UUID().uuidString,
+//        species: String = "",
+//        name: String = "",
+//        image: String = "",
+//        grCharacterStatus: String = ""
+//    ) {
+//        self.characterUUID = characterUUID
+//        self.species = species
+//        self.name = name
+//        self.image = image
+//        self.grCharacterStatus = grCharacterStatus
+//    }
+//}
 
-struct GRPost {
-    let postID: String // Document ID
-    let characterUUID: String
-    var postImage: String
-    var postBody: String
-    var createdAt: Date
-    var updatedAt: Date
-    
-    init(
-        postID: String,
-        characterUUID: String,
-        postImage: String,
-        postBody: String,
-        createdAt: Date,
-        updatedAt: Date
-    ){
-        self.postID = postID
-        self.characterUUID = characterUUID
-        self.postImage = postImage
-        self.postBody = postBody
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-    }
-}
+//struct GRPost {
+//    let postID: String // Document ID
+//    let characterUUID: String
+//    var postImage: String
+//    var postBody: String
+//    var createdAt: Date
+//    var updatedAt: Date
+//    
+//    init(
+//        postID: String,
+//        characterUUID: String,
+//        postImage: String,
+//        postBody: String,
+//        createdAt: Date,
+//        updatedAt: Date
+//    ){
+//        self.postID = postID
+//        self.characterUUID = characterUUID
+//        self.postImage = postImage
+//        self.postBody = postBody
+//        self.createdAt = createdAt
+//        self.updatedAt = updatedAt
+//    }
+//}
 // --- 여기까지 더미 데이터 ---
 
 
@@ -70,19 +70,27 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
     init(characterUUID: String = "") {
-#if DEBUG
-        // Firebase Emulator 설정
-        let settings = Firestore.firestore().settings
-        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-        settings.isPersistenceEnabled = false
-        settings.isSSLEnabled = false
-        db.settings = settings
+//#if DEBUG
+//        // Firebase Emulator 설정
+//        let settings = Firestore.firestore().settings
+//        settings.host = "localhost:8080" // Firestore emulator 기본 포트
+//        settings.isPersistenceEnabled = false
+//        settings.isSSLEnabled = false
+//        db.settings = settings
+//        
+//        // Storage Emulator 설정
+//        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
+//#endif
         
-        // Storage Emulator 설정
-        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-#endif
-        
-        self.character = GRCharacter()
+        // 기본 더미 캐릭터로 초기화
+        self.character = GRCharacter(
+            id: UUID().uuidString,
+            species: .Undefined,
+            name: "기본 캐릭터",
+            imageName: "pawprint.fill",
+            birthDate: Date()
+            
+        )
         
         // 초기화시 UUID가 제공되면 데이터 로드
         if !characterUUID.isEmpty {
@@ -101,12 +109,23 @@ class CharacterDetailViewModel: ObservableObject {
                 return
             }
             
+            // 데이터 파싱 및 GRCharacter 생성
+            let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
+            let name = data["name"] as? String ?? "이름 없음"
+            let imageName = data["imageName"] as? String ?? "pawprint.fill"
+            let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
+            
+            // 상태 정보 파싱 (실제 앱에 맞게 조정 필요)
+            // 만약 status가 별도의 필드로 저장되어 있다면 해당 필드에서 가져와야 함
+            let status = GRCharacterStatus() // 기본 상태로 초기화 (실제 데이터와 연결 필요)
+            
             self.character = GRCharacter(
-                characterUUID: characterUUID,
-                species: data["species"] as? String ?? "",
-                name: data["name"] as? String ?? "",
-                image: data["image"] as? String ?? "",
-                grCharacterStatus: data["GRCharacterStatus"] as? String ?? ""
+                id: characterUUID,
+                species: species,
+                name: name,
+                imageName: imageName,
+                birthDate: birthDate,
+                status: status
             )
         }
     }
@@ -179,6 +198,7 @@ class CharacterDetailViewModel: ObservableObject {
                     let data = document.data()
                     let documentID = document.documentID
                     let postCharacterUUID = data["characterUUID"] as? String ?? ""
+                    let postTitle = data["postTitle"] as? String ?? ""
                     let postImage = data["postImage"] as? String ?? ""
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                     let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
@@ -186,8 +206,9 @@ class CharacterDetailViewModel: ObservableObject {
                     return GRPost(
                         postID: documentID,
                         characterUUID: postCharacterUUID,
-                        postImage: postImage,
+                        postTitle: postTitle,
                         postBody: data["postBody"] as? String ?? "",
+                        postImage: postImage,
                         createdAt: createdAt,
                         updatedAt: updatedAt
                     )

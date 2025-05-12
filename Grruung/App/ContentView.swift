@@ -66,7 +66,7 @@ struct MainTabView: View {
             
             // 캐릭터 도감 탭
             Tab("캐릭터", systemImage: "teddybear.fill", value: 2) {
-                Text("캐릭터 도감")
+                CharDexView()
             }
             
             // 상점 탭

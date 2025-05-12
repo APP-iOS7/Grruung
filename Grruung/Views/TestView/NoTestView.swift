@@ -10,7 +10,7 @@ import SwiftUI
 struct NoTestView: View {
     var body: some View {
         NavigationStack {
-            NavigationLink(destination: CharacterDetailView()) {
+            NavigationLink(destination: CharacterDetailView(characterUUID: "1234")) { // 임시 더미 characterUUID
                 Text("Go to Character Detail")
             }
         }
