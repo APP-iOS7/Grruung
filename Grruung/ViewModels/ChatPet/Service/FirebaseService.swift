@@ -222,4 +222,11 @@ class FirebaseService {
                 completion(messages, nil)
             }
     }
+    
+    // MARK: - 대화 세션 관리
+    func createConversationSession(
+        characterID: String,
+        sessionName: String? = nil,
+        
+    )
 }
