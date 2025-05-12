@@ -23,8 +23,9 @@ struct StoreView: View {
                                 selectedTab = index
                             }}) {
                                 VStack {
-                                    Text(tabs[index]).font(.headline)
-                                        .foregroundColor(selectedTab == index ? .white : .gray)
+                                    Text(tabs[index])
+                                        .font(.headline)
+                                        .foregroundColor(selectedTab == index ? .primary : .secondary)
                                     Capsule()
                                         .fill(selectedTab == index ? Color.white : Color.clear)
                                         .frame(height: 3)
@@ -36,10 +37,18 @@ struct StoreView: View {
                 }
                 Spacer()
                 
-                Image(systemName: tabImages[selectedTab]).resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 100, height: 100)
-                    .foregroundColor(.white)
+                Group {
+                    if selectedTab == 0 {
+                        StoreGridView()
+                            .transition(.opacity)
+                    } else {
+                        Image(systemName: tabImages[selectedTab])
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(.white)
+                    }
+                }
                 
                 Spacer()
                 
@@ -69,5 +78,4 @@ struct StoreView: View {
 }
 #Preview {
     StoreView()
-        .preferredColorScheme(.dark)
 }
