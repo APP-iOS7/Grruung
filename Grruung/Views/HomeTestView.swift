@@ -7,413 +7,490 @@
 
 import SwiftUI
 
-/// 홈 화면 뷰
+// MARK: - 홈 뷰 구현
 struct HomeTestView: View {
-    // MARK: - 0. 프로퍼티
     @StateObject private var viewModel = HomeViewModel()
-    @State private var showChatPet = false
-    @State private var showPetSettings = false
+    @State private var showingChatPet = false
+    @State private var showTestControls = false
     
-    // MARK: - 1. 바디
     var body: some View {
-        ZStack {
-            // 배경
-            Color(UIColor.systemBackground)
-                .ignoresSafeArea()
-            
-            // 메인 콘텐츠
-            VStack(spacing: 0) {
-                // 상단 상태바 및 네비게이션
-                homeHeader
-                
-                // 메인 펫 표시 영역
-                petDisplayArea
-                
-                // 활동 탭 및 버튼 영역
-                activityTabsArea
-                
-                // 하단 메뉴 버튼
-                bottomMenuArea
-            }
-            .padding(.horizontal, 16)
-            
-            // 로딩 인디케이터
-            if viewModel.isLoading {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .background(Color.black.opacity(0.2))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .onAppear {
-            // 테스트 캐릭터 생성 (실제 앱에서는 Firebase에서 로드)
-            viewModel.createTestCharacter()
-        }
-        .alert(item: Binding<AlertItem?>(
-            get: {
-                viewModel.errorMessage.map { message in
-                    AlertItem(message: message)
-                }
-            },
-            set: { _ in
-                viewModel.errorMessage = nil
-            }
-        )) { alert in
-            Alert(
-                title: Text("오류"),
-                message: Text(alert.message),
-                dismissButton: .default(Text("확인"))
-            )
-        }
-        .sheet(isPresented: $showChatPet) {
-            if let character = viewModel.selectedCharacter,
-               let prompt = viewModel.generateChatPetPrompt() {
-                ChatPetView(
-                    character: character,
-                    prompt: prompt
-                )
-            } else {
-                Text("캐릭터 정보를 불러오는 중 오류가 발생했습니다.")
-            }
-        }
-        .sheet(isPresented: $showPetSettings) {
-            petSettingsView
-        }
-    }
-    
-    // MARK: - 2. 홈 헤더 뷰
-    private var homeHeader: some View {
-        VStack(spacing: 8) {
-            
-            // 성장 수치 표시
-            VStack(spacing: 8) {
-                // 운동량
-                HStack {
-                    Text("운동량")
-                        .font(.footnote)
-                        .frame(width: 50, alignment: .leading)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 펫 정보 및 상태 표시
+                    petInfoSection
                     
-                    ProgressBar(value: viewModel.activityPercent, color: .green)
-                }
-                
-                // 체력
-                HStack {
-                    Text("체력")
-                        .font(.footnote)
-                        .frame(width: 50, alignment: .leading)
+                    // 펫 컨트롤 버튼
+                    petControlsSection
                     
-                    ProgressBar(value: viewModel.staminaPercent, color: .blue)
-                }
-                
-                // 포만감
-                HStack {
-                    Text("포만감")
-                        .font(.footnote)
-                        .frame(width: 50, alignment: .leading)
+                    // 테스트 모드 토글 버튼
+                    testModeToggleButton
                     
-                    ProgressBar(value: viewModel.satietyPercent, color: .orange)
-                }
-                
-                // 경험치
-                HStack {
-                    Text("Exp \(Int(viewModel.expPercent * 100))%")
-                        .font(.footnote)
-                        .frame(width: 70, alignment: .leading)
-                    
-                    ProgressBar(value: viewModel.expPercent, color: .purple)
-                }
-            }
-            .padding(.vertical, 8)
-        }
-    }
-    
-    // MARK: - 3. 펫 표시 영역
-    private var petDisplayArea: some View {
-        VStack {
-            ZStack {
-                // 펫 이미지 (또는 빈 공간)
-                if let character = viewModel.selectedCharacter {
-                    Image(character.imageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
-                        .padding(.vertical, 20)
-                        .overlay(
-                            // 펫 상태 메시지
-                            Text(viewModel.getStatusMessage())
-                                .font(.system(size: 14, weight: .medium))
-                                .padding(8)
-                                .background(Color.white.opacity(0.8))
-                                .cornerRadius(8)
-                                .shadow(radius: 2)
-                                .padding(16),
-                            alignment: .top
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 12)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                        .frame(height: 200)
-                        .overlay(
-                            VStack {
-                                Image(systemName: "plus.circle")
-                                    .font(.largeTitle)
-                                
-                                Text("펫 추가하기")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-                            }
-                        )
-                }
-                
-                // 테스트 모드 설정 버튼 (디버그용)
-                if viewModel.testMode {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                showPetSettings = true
-                            }) {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.white)
-                                    .padding(8)
-                                    .background(Color.black.opacity(0.6))
-                                    .clipShape(Circle())
-                            }
-                            .padding(16)
-                        }
+                    // 테스트 컨트롤 (토글시 표시)
+                    if showTestControls {
+                        testControlsSection
                     }
                 }
+                .padding()
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-        }
-    }
-    
-    // MARK: - 4. 활동 탭 영역
-    private var activityTabsArea: some View {
-        VStack(spacing: 16) {
-            // 활동 탭 헤더
-            HStack {
-                Text("활동 탭")
-                    .font(.headline)
-                
-                Spacer()
-            }
-            
-            // 활동 버튼 그리드
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 12) {
-                // 쓰다듬기
-                ActivityButton(title: "쓰다듬기", icon: "hand.tap.fill") {
-                    // 쓰다듬기 액션
-                    viewModel.updateSelectedCharacter(affection: 5)
-                    viewModel.addExperience(1)
-                }
-                
-                // 닦아주기
-                ActivityButton(title: "닦아주기", icon: "shower.fill") {
-                    // 닦아주기 액션
-                    viewModel.updateSelectedCharacter(clean: 10)
-                    viewModel.addExperience(2)
-                }
-                
-                // 훈련시키기
-                ActivityButton(title: "훈련시키기", icon: "figure.walk") {
-                    // 훈련시키기 액션
-                    viewModel.updateSelectedCharacter(stamina: -5, activity: 10)
-                    viewModel.addExperience(3)
-                }
-                
-                // 먹이주기
-                ActivityButton(title: "먹이주기", icon: "fork.knife") {
-                    // 먹이주기 액션
-                    viewModel.updateSelectedCharacter(satiety: 15, stamina: 5)
-                    viewModel.addExperience(1)
-                }
-                
-                // 놀아주기
-                ActivityButton(title: "놀아주기", icon: "gamecontroller.fill") {
-                    // 놀아주기 액션
-                    viewModel.updateSelectedCharacter(stamina: -10, activity: 5, affection: 10)
-                    viewModel.addExperience(2)
-                }
-                
-                // 목욕하기
-                ActivityButton(title: "목욕하기", icon: "drop.fill") {
-                    // 목욕하기 액션
-                    viewModel.updateSelectedCharacter(stamina: -5, clean: 20)
-                    viewModel.addExperience(2)
-                }
-            }
-        }
-        .padding(.vertical, 16)
-    }
-    
-    // MARK: - 5. 하단 메뉴 영역
-    private var bottomMenuArea: some View {
-        HStack(spacing: 20) {
-            // 들려준 이야기
-            BottomMenuItem(icon: "book.fill", title: "들려준 이야기") {
-                // 들려준 이야기 액션
-            }
-            
-            // 인벤토리
-            BottomMenuItem(icon: "bag.fill", title: "인벤토리") {
-                // 인벤토리 액션
-            }
-            
-            // BM 아이템
-            BottomMenuItem(icon: "cart.fill", title: "BM 아이템") {
-                // BM 아이템 액션
-            }
-            
-            // 동산
-            BottomMenuItem(icon: "leaf.fill", title: "동산") {
-                // 동산 액션
-            }
-            
-            // 음성 대화
-            BottomMenuItem(icon: "bubble.left.fill", title: "음성 대화") {
-                // 음성 대화 액션
-                showChatPet = true
-            }
-        }
-        .padding(.vertical, 16)
-    }
-    
-    // MARK: - 6. 펫 설정 뷰 (테스트용)
-    private var petSettingsView: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("테스트 설정")) {
-                    // 펫 종류 선택
-                    Picker("펫 종류", selection: $viewModel.testSpecies) {
-                        ForEach(PetSpecies.allCases, id: \.self) { species in
-                            Text(species.rawValue).tag(species)
-                        }
-                    }
-                    
-                    // 성장 단계 선택
-                    Picker("성장 단계", selection: $viewModel.testPhase) {
-                        ForEach([
-                            CharacterPhase.infant,
-                            CharacterPhase.child,
-                            CharacterPhase.adolescent,
-                            CharacterPhase.adult,
-                            CharacterPhase.elder
-                        ], id: \.self) { phase in
-                            Text(phase.rawValue).tag(phase)
-                        }
-                    }
-                }
-                
-                Section {
-                    Button("테스트 캐릭터 생성") {
-                        viewModel.createTestCharacter()
-                        showPetSettings = false
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .foregroundColor(.blue)
-                }
-            }
-            .navigationTitle("펫 설정")
+            .navigationTitle("홈")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("닫기") {
-                        showPetSettings = false
+                    Button(action: {
+                        showingChatPet = true
+                    }) {
+                        Label("채팅", systemImage: "bubble.left.fill")
                     }
                 }
             }
+            .sheet(isPresented: $showingChatPet) {
+                if let character = viewModel.selectedCharacter,
+                   let prompt = viewModel.generateChatPetPrompt() {
+                    ChatPetView(character: character, prompt: prompt)
+                } else {
+                    Text("캐릭터 정보를 불러올 수 없습니다.")
+                }
+            }
+            .onAppear {
+                viewModel.loadCharacters()
+            }
+            .overlay {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .background(Color.white.opacity(0.7))
+                        .cornerRadius(10)
+                        .padding(30)
+                }
+            }
+            .alert(isPresented: Binding<Bool>(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            )) {
+                Alert(
+                    title: Text("오류"),
+                    message: Text(viewModel.errorMessage ?? "알 수 없는 오류가 발생했습니다."),
+                    dismissButton: .default(Text("확인"))
+                )
+            }
         }
     }
-}
-
-// MARK: - 7. 보조 구조체 (UI 컴포넌트)
-
-/// 프로그레스 바 컴포넌트
-struct ProgressBar: View {
-    let value: CGFloat
-    let color: Color
     
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                // 배경
-                Rectangle()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .opacity(0.2)
-                    .foregroundColor(color)
+    
+    // MARK: - 펫 정보 섹션
+    private var petInfoSection: some View {
+        VStack(spacing: 15) {
+            if let character = viewModel.selectedCharacter {
+                // 펫 이미지
+                Image.testCharacterImage(for: character.species, phase: character.status.phase)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 200)
                 
-                // 진행 바
-                Rectangle()
-                    .frame(width: min(CGFloat(value) * geometry.size.width, geometry.size.width), height: geometry.size.height)
-                    .foregroundColor(color)
-                    .animation(.linear, value: value)
+                // 펫 이름 및 상태
+                Text(character.name)
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Text("Lv.\(character.status.level) - \(character.status.phase.rawValue)")
+                    .font(.subheadline)
+                
+                Text(viewModel.getStatusMessage())
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 5)
+                
+                // 기본 스텟 표시
+                VStack(spacing: 10) {
+                    // 경험치
+                    HStack {
+                        Text("경험치:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: viewModel.expPercent)
+                        Text("\(viewModel.expValue)/\(viewModel.expMaxValue)")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    
+                    // 포만감
+                    HStack {
+                        Text("포만감:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: viewModel.satietyPercent)
+                        Text("\(viewModel.satietyValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    
+                    // 체력
+                    HStack {
+                        Text("체력:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: viewModel.staminaPercent)
+                        Text("\(viewModel.staminaValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    
+                    // 활동량
+                    HStack {
+                        Text("활동량:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: viewModel.activityPercent)
+                        Text("\(viewModel.activityValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // 히든 스텟 표시
+                VStack(spacing: 10) {
+                    Text("히든 스텟")
+                        .font(.headline)
+                        .padding(.top, 5)
+                    
+                    // 건강
+                    HStack {
+                        Text("건강:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: CGFloat(viewModel.healthyValue) / 100)
+                        Text("\(viewModel.healthyValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    
+                    // 청결
+                    HStack {
+                        Text("청결:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: CGFloat(viewModel.cleanValue) / 100)
+                        Text("\(viewModel.cleanValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    
+                    // 애정도
+                    HStack {
+                        Text("애정도:")
+                            .frame(width: 60, alignment: .leading)
+                        ProgressView(value: CGFloat(viewModel.affectionValue) / 100)
+                        Text("\(viewModel.affectionValue)/100")
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                }
+                .padding(.horizontal)
+                
+            } else {
+                Text("펫이 없습니다")
+                    .font(.title)
+                    .foregroundColor(.secondary)
+                    .padding()
+                
+                Button("펫 생성하기") {
+                    showTestControls = true
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .cornerRadius(10)
         }
-        .frame(height: 10)
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
     }
-}
-
-/// 활동 버튼 컴포넌트
-struct ActivityButton: View {
-    let title: String
-    let icon: String
-    let action: () -> Void
     
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(.white)
+
+    // MARK: - 펫 컨트롤 버튼 섹션
+    private var petControlsSection: some View {
+        VStack(spacing: 15) {
+            Text("상호작용")
+                .font(.headline)
+            
+            HStack(spacing: 20) {
+                Button(action: {
+                    viewModel.updateSelectedCharacter(satiety: 10)
+                }) {
+                    VStack {
+                        Image(systemName: "fork.knife")
+                            .font(.title)
+                        Text("먹이주기")
+                            .font(.caption)
+                    }
+                    .frame(width: 70, height: 70)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(10)
+                }
                 
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.white)
+                Button(action: {
+                    viewModel.updateSelectedCharacter(stamina: 10)
+                }) {
+                    VStack {
+                        Image(systemName: "bed.double.fill")
+                            .font(.title)
+                        Text("재우기")
+                            .font(.caption)
+                    }
+                    .frame(width: 70, height: 70)
+                    .background(Color.purple.opacity(0.1))
+                    .cornerRadius(10)
+                }
+
+                Button(action: {
+                    viewModel.updateSelectedCharacter(
+                        activity: 10,
+                        affection: 5,
+                        healthy: 5
+                    )
+                }) {
+                    VStack {
+                        Image(systemName: "figure.walk")
+                            .font(.title)
+                        Text("산책하기")
+                            .font(.caption)
+                    }
+                    .frame(width: 70, height: 70)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(10)
+                }
+                
+                Button(action: {
+                    viewModel.updateSelectedCharacter(
+                        affection: 5, clean: 10
+                    )
+                }) {
+                    VStack {
+                        Image(systemName: "shower.fill")
+                            .font(.title)
+                        Text("씻기기")
+                            .font(.caption)
+                    }
+                    .frame(width: 70, height: 70)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(10)
+                }
             }
+            
+            
+            Button(action: {
+                viewModel.addExperience(10)
+            }) {
+                Label("경험치 주기 (+10)", systemImage: "star.fill")
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(10)
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
+    }
+    
+    // MARK: - 테스트 모드 토글 버튼
+    private var testModeToggleButton: some View {
+        Button(action: {
+            withAnimation {
+                showTestControls.toggle()
+            }
+        }) {
+            HStack {
+                Image(systemName: showTestControls ? "chevron.up" : "chevron.down")
+                Text(showTestControls ? "테스트 컨트롤 닫기" : "테스트 컨트롤 열기")
+            }
+            .padding()
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color.blue)
+            .background(Color.gray.opacity(0.2))
             .cornerRadius(10)
         }
     }
-}
-
-/// 하단 메뉴 아이템 컴포넌트
-struct BottomMenuItem: View {
-    let icon: String
-    let title: String
-    let action: () -> Void
     
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(.blue)
-                
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.primary)
+    // MARK: - 테스트 컨트롤 섹션
+    private var testControlsSection: some View {
+        VStack(spacing: 15) {
+            Text("테스트 캐릭터 설정")
+                .font(.headline)
+                .padding(.top)
+            
+            // 이름 입력
+            TextField("캐릭터 이름", text: $viewModel.testName)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal)
+            
+            // 종류 선택
+            Picker("종류", selection: $viewModel.testSpecies) {
+                ForEach(PetSpecies.allCases, id: \.self) { species in
+                    Text(species.rawValue).tag(species)
+                }
             }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal)
+            
+            // 성장단계 선택
+            Picker("성장단계", selection: $viewModel.testPhase) {
+                ForEach([CharacterPhase.egg, .infant, .child, .adolescent, .adult, .elder], id: \.self) { phase in
+                    Text(phase.rawValue).tag(phase)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal)
+            
+            // 스텟 슬라이더
+            Group {
+                Text("기본 스텟")
+                    .font(.subheadline)
+                    .padding(.top, 5)
+                
+                // 포만감 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("포만감:")
+                        Spacer()
+                        Text("\(viewModel.satietyValue)")
+            
+                    }
+                    
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.satietyValue) },
+                        set: { viewModel.satietyValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+                .padding(.horizontal)
+                
+                // 체력 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("체력:")
+                        Spacer()
+                        Text("\(viewModel.staminaValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.staminaValue) },
+                        set: { viewModel.staminaValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+                .padding(.horizontal)
+                
+                // 활동량 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("활동량:")
+                        Spacer()
+                        Text("\(viewModel.activityValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.activityValue) },
+                        set: { viewModel.activityValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+                .padding(.horizontal)
+            }
+            
+            Group {
+                Text("히든 스텟")
+                    .font(.subheadline)
+                    .padding(.top, 5)
+                
+                // 건강 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("건강:")
+                        Spacer()
+                        Text("\(viewModel.healthyValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.healthyValue) },
+                        set: { viewModel.healthyValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+
+                .padding(.horizontal)
+                
+                // 청결도 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("청결도:")
+                        Spacer()
+                        Text("\(viewModel.cleanValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.cleanValue) },
+                        set: { viewModel.cleanValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+                .padding(.horizontal)
+                
+                // 애정도 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("애정도:")
+                        Spacer()
+                        Text("\(viewModel.affectionValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.affectionValue) },
+                        set: { viewModel.affectionValue = Int($0) }
+                    ), in: 0...100, step: 1)
+                }
+                .padding(.horizontal)
+            }
+
+            
+            Group {
+                Text("경험치")
+                    .font(.subheadline)
+                    .padding(.top, 5)
+                
+                // 현재 경험치 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("현재 경험치:")
+                        Spacer()
+                        Text("\(viewModel.expValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.expValue) },
+                        set: { viewModel.expValue = Int($0) }
+                    ), in: 0...Double(max(100, viewModel.expMaxValue)), step: 1)
+                }
+                .padding(.horizontal)
+                
+                // 다음 레벨 경험치 슬라이더
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("다음 레벨까지:")
+                        Spacer()
+                        Text("\(viewModel.expMaxValue)")
+                    }
+                    Slider(value: Binding<Double>(
+                        get: { Double(viewModel.expMaxValue) },
+                        set: { viewModel.expMaxValue = max(100, Int($0)) }
+                    ), in: 100...500, step: 10)
+                }
+                .padding(.horizontal)
+            }
+            
+            // 버튼 그룹
+            HStack(spacing: 15) {
+                Button("테스트 캐릭터 생성") {
+                    viewModel.createTestCharacter(
+                        name: viewModel.testName.isEmpty ? nil : viewModel.testName,
+                        satiety: viewModel.satietyValue,
+                        stamina: viewModel.staminaValue,
+                        activity: viewModel.activityValue,
+                        affection: viewModel.affectionValue,
+                        healthy: viewModel.healthyValue,
+                        clean: viewModel.cleanValue
+                    )
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Button("Firestore에 저장") {
+                    viewModel.saveTestCharacterToFirestore()
+                }
+                .buttonStyle(.bordered)
+                .disabled(!viewModel.testMode)
+            }
+            .padding()
         }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
     }
 }
 
-/// 알림 아이템 (오류 표시용)
-struct AlertItem: Identifiable {
-    let id = UUID()
-    let message: String
-}
 
 #Preview {
     HomeTestView()
