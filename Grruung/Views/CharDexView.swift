@@ -108,7 +108,20 @@ struct CharDexView: View {
                 
                 HStack {
                     if unlockTicketCount <= 0 {
-                        Spacer()
+                        ZStack {
+                            Image(systemName: "ticket")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(.top, 8)
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(Color.brown.opacity(0.5))
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(.top, 8)
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(.red)
+                        }
                     }
                     ForEach(0..<unlockTicketCount, id: \.self) { _ in
                         Image(systemName: "ticket")
