@@ -28,6 +28,13 @@ struct ShrinkListHeightModifier: ViewModifier {
     }
 }
 
+struct PostIdentifier: Hashable, Identifiable {
+    let characterUUID: String
+    let postID: String
+    var id: String { "\(characterUUID)-\(postID)" }
+    
+}
+
 extension View {
     /// List의 높이를 콘텐츠 크기에 맞추어 동적으로 조절합니다.
     /// List가 다른 ScrollView 내부에 있을 때 이중 스크롤 문제를 방지하는 데 도움이 됩니다.
@@ -75,208 +82,39 @@ struct CharacterDetailView: View {
         self._viewModel = StateObject(wrappedValue: CharacterDetailViewModel(characterUUID: characterUUID))
     }
     
+    @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
+    
     var body: some View {
         ScrollView {
             VStack {
+                
                 // 캐릭터 정보 영역
-                HStack {
-                    if !viewModel.character.imageName.isEmpty {
-                        AsyncImage(url: URL(string: viewModel.character.imageName)) { image in
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 100, height: 100)
-                        } placeholder: {
-                            Image(systemName: "photo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 100, height: 100)
-                        }
-                        .padding()
-                    } else {
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 100, height: 100)
-                            .padding()
-                    }
-                    
-                    VStack(alignment: .leading) {
-                        Text("떨어진 날: \(meetDateDummy)")
-                        Text("사는 곳: \(addressDummy)")
-                        Text("생 후: \(ageDummy)일")
-                    }
-                    .padding(.trailing, 20)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
+                characterInfoSection
                 
                 // 성장 과정 영역
-                VStack {
-                    Text("성장 과정 🐾")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 10)
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(0..<currentStageIndex, id: \.self) { index in
-                                VStack {
-                                    Image(systemName: growthStages[index].image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 50, height: 50)
-                                }
-                                .padding()
-                                if index != currentStageIndex - 1 {
-                                    HStack {
-                                        Text("→")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
+                growthProgressSection
                 
-                HStack {
-                    Button("<") {
-                        searchDate = searchDate.addingTimeInterval(-30 * 24 * 60 * 60)
-                        viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
-                        print("이전 기록 버튼 클릭됨")
-                    }
-                    Text("\(searchDateString(date: searchDate))")
-                        
-                    Button(">") {
-                        searchDate = searchDate.addingTimeInterval(30 * 24 * 60 * 60)
-                        viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
-                        print("다음 기록 버튼 클릭됨")
-                    }
-                }
-                .padding(.bottom, 10)
+                dateNavigationSection
                 
-                // 성장 기록 영역
-                VStack {
-                    Text("성장 기록 📔")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 10)
-                    
-                    HStack {
-                        VStack {
-                            Text("총 활동량")
-                                .frame(alignment: .leading)
-                                .padding(.leading, 40)
-                            
-                            Image(systemName: "pawprint.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
-                                .cornerRadius(10)
-                                .frame(alignment: .leading)
-                                .padding(.leading, 46)
-                        }
-                        
-                        Divider()
-                            .frame(height: 70)
-                            .background(Color.gray)
-                            .padding(.horizontal, 10)
-                        
-                        VStack(alignment: .leading) {
-                            Text("놀이 : 10회")
-                            Text("산책 : 5회")
-                            Text("같이 걷기: 20.5 km")
-                        }
-                        .padding(.trailing, 20)
-                        Spacer()
-                    }
-                    .padding(.bottom, 30)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
+                activitySection
                 
-                // 들려준 이야기 영역 - Firebase 데이터 사용하도록 수정
-                VStack {
-                    Text("들려준 이야기 📖")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 10)
-                    
-                    if viewModel.posts.isEmpty {
-                        Text("이번 달에 기록된 이야기가 없습니다.")
-                            .foregroundColor(.gray)
-                            .padding()
-                    } else {
-                        List {
-                            ForEach(viewModel.posts.indices, id: \.self) { index in
-                                NavigationLink(destination: Text("\(viewModel.posts[index].postBody)")) {
-                                    HStack {
-                                        if !viewModel.posts[index].postImage.isEmpty {
-                                            AsyncImage(url: URL(string: viewModel.posts[index].postImage)) { image in
-                                                image
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 60, height: 60)
-                                                    .padding(10)
-                                            } placeholder: {
-                                                Image(systemName: "photo")
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 60, height: 60)
-                                                    .padding(10)
-                                            }
-                                        } else {
-                                            Image(systemName: "photo")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 60, height: 60)
-                                                .padding(10)
-                                        }
-                                        
-                                        VStack(alignment: .leading) {
-                                            Text(formatDate(viewModel.posts[index].createdAt))
-                                                .font(.headline)
-                                            Text(viewModel.posts[index].postBody)
-                                                .font(.subheadline)
-                                                .lineLimit(2)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                }
-                                .listRowInsets(EdgeInsets())
-                                .padding(.vertical, 4)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        print("삭제 버튼 클릭됨 \(viewModel.posts[index].postBody)")
-                                        viewModel.deletePost(postID: viewModel.posts[index].postID)
-                                    } label: {
-                                        Image(systemName: "trash")
-                                    }
-                                }
-                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                    Button {
-                                        print("수정 버튼 클릭됨 \(viewModel.posts[index].postBody)")
-                                    } label: {
-                                        Image(systemName: "pencil")
-                                    }
-                                    .tint(.blue)
-                                }
-                            }
-                            .listRowBackground(Color.white)
-                        }
-                        .listStyle(PlainListStyle())
-                        .padding(.horizontal)
-                        .shrinkToFitListContent(itemCount: viewModel.posts.count, estimatedRowHeight: estimatedRowHeight)
-                    }
-                }
+                storyListSection
+                
             }
-            .padding(.bottom, 30)
             
             Spacer()
             
         } // end of ScrollView
-        
+        .navigationDestination(item: $selectedPostForEdit) { post in
+            WriteStoryView(
+                currentMode: .edit,
+                characterUUID: post.characterUUID,
+                postID: post.postID
+            )
+        }
         .navigationTitle("\(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)")
         .navigationBarTitleDisplayMode(.inline)
+        
         
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -298,6 +136,217 @@ struct CharacterDetailView: View {
         }
     }
     
+    // MARK: - 캐릭터 정보 영역
+    private var characterInfoSection: some View {
+        HStack {
+            if !viewModel.character.imageName.isEmpty {
+                AsyncImage(url: URL(string: viewModel.character.imageName)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                } placeholder: {
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                }
+                .padding()
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .padding()
+            }
+            
+            VStack(alignment: .leading) {
+                Text("떨어진 날: \(meetDateDummy)")
+                Text("사는 곳: \(addressDummy)")
+                Text("생 후: \(ageDummy)일")
+            }
+            .padding(.trailing, 20)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - 성장 과정 영역
+    private var growthProgressSection: some View {
+        VStack {
+            Text("성장 과정 🐾")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 10)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    ForEach(0..<currentStageIndex, id: \.self) { index in
+                        VStack {
+                            Image(systemName: growthStages[index].image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 50, height: 50)
+                        }
+                        .padding()
+                        if index != currentStageIndex - 1 {
+                            HStack {
+                                Text("→")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - 날짜 탐색 버튼
+    private var dateNavigationSection: some View {
+        HStack {
+            Button("<") {
+                searchDate = searchDate.addingTimeInterval(-30 * 24 * 60 * 60)
+                viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
+                print("이전 기록 버튼 클릭됨")
+            }
+            Text("\(searchDateString(date: searchDate))")
+            
+            Button(">") {
+                searchDate = searchDate.addingTimeInterval(30 * 24 * 60 * 60)
+                viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
+                print("다음 기록 버튼 클릭됨")
+            }
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // MARK: - 활동 기록 영역
+    private var activitySection: some View {
+        VStack {
+            Text("성장 기록 📔")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 10)
+            
+            HStack {
+                VStack {
+                    Text("총 활동량")
+                        .frame(alignment: .leading)
+                        .padding(.leading, 40)
+                    
+                    Image(systemName: "pawprint.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 50, height: 50)
+                        .cornerRadius(10)
+                        .frame(alignment: .leading)
+                        .padding(.leading, 46)
+                }
+                
+                Divider()
+                    .frame(height: 70)
+                    .background(Color.gray)
+                    .padding(.horizontal, 10)
+                
+                VStack(alignment: .leading) {
+                    Text("놀이 : 10회")
+                    Text("산책 : 5회")
+                    Text("같이 걷기: 20.5 km")
+                }
+                .padding(.trailing, 20)
+                Spacer()
+            }
+            .padding(.bottom, 30)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - 들려준 이야기 영역
+    private var storyListSection: some View {
+        VStack {
+            Text("들려준 이야기 📖")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 10)
+            
+            if viewModel.posts.isEmpty {
+                Text("이번 달에 기록된 이야기가 없습니다.")
+                    .foregroundColor(.gray)
+                    .padding()
+            } else {
+                List {
+                    ForEach(viewModel.posts.indices, id: \.self) { index in
+                        NavigationLink(destination: Text("\(viewModel.posts[index].postBody)")) {
+                            HStack {
+                                if !viewModel.posts[index].postImage.isEmpty {
+                                    AsyncImage(url: URL(string: viewModel.posts[index].postImage)) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 60, height: 60)
+                                            .padding(10)
+                                    } placeholder: {
+                                        Image(systemName: "photo")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 60, height: 60)
+                                            .padding(10)
+                                    }
+                                } else {
+                                    Image(systemName: "photo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 60, height: 60)
+                                        .padding(10)
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text(viewModel.posts[index].postBody)
+                                        .font(.headline)
+                                        .lineLimit(1)
+                                    Text(formatDate(viewModel.posts[index].createdAt))
+                                        .font(.subheadline)
+                                    
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .padding(.vertical, 4)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                print("삭제 버튼 클릭됨 \(viewModel.posts[index].postBody)")
+                                viewModel.deletePost(postID: viewModel.posts[index].postID)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                        
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                print("수정 버튼 클릭됨 \(viewModel.posts[index].postBody)")
+                                
+                                selectedPostForEdit = PostIdentifier(
+                                    characterUUID: characterUUID,
+                                    postID: viewModel.posts[index].postID
+                                )
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .tint(.blue)
+                        }
+                    }
+                    .listRowBackground(Color.white)
+                }
+                .listStyle(PlainListStyle())
+                .padding(.horizontal)
+                .shrinkToFitListContent(itemCount: viewModel.posts.count, estimatedRowHeight: estimatedRowHeight)
+                
+            }
+        }
+        .padding(.bottom, 30)
+    }
+    
     func searchDateString(date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy년 MM월"
@@ -310,12 +359,13 @@ struct CharacterDetailView: View {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter.string(from: date)
     }
-}
+    
+} // end of CharacterDetailView
 
 
-
+// MARK: NavigationView 사용 시 수정 뷰로 이동 안되므로 꼭 상위 뷰에서 NavigationStack을 사용해야 함
 #Preview {
-    NavigationView { // 네비게이션 바 테스트를 위해 NavigationView 추가
+    NavigationStack {
         CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
     }
 }
