@@ -49,202 +49,217 @@ struct AnimationTestView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                // 캐릭터 타입 선택
-                Picker("캐릭터 타입", selection: $selectedCharacterType) {
-                    ForEach(characterTypes, id: \.self) { type in
-                        //Text(type.capitalized).tag(type)
-                        Text(type).tag(type)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding()
-                .onChange(of: selectedCharacterType) { _, newValue in
-                    // 캐릭터 변경 시 첫 번째 애니메이션 타입 자동 선택
-                    if let firstType = animationOptions[newValue]?.first {
-                        selectedAnimationType = firstType
-                    }
-                    // 애니메이션 정지 및 초기화
-                    stopAnimation()
-                    loadSelectedAnimation()
-                }
-                
-                // 애니메이션 타입 선택
-                Picker("애니메이션 타입", selection: $selectedAnimationType) {
-                    if let types = animationOptions[selectedCharacterType] {
-                        ForEach(types, id: \.self) { type in
+            ScrollView {
+                VStack {
+                    // 캐릭터 타입 선택
+                    Picker("캐릭터 타입", selection: $selectedCharacterType) {
+                        ForEach(characterTypes, id: \.self) { type in
                             //Text(type.capitalized).tag(type)
                             Text(type).tag(type)
                         }
                     }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .onChange(of: selectedAnimationType) { _, _ in
-                    // 애니메이션 정지 및 초기화
-                    stopAnimation()
-                    loadSelectedAnimation()
-                }
-                
-                // 로딩 및 에러 메시지
-                if animationTestViewModel.isLoading {
-                    ProgressView(value: animationTestViewModel.progress, total: 1.0) {
-                        Text(animationTestViewModel.message)
-                            .font(.caption)
-                    }
+                    .pickerStyle(.segmented)
                     .padding()
-                } else if let errorMessage = animationTestViewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .padding()
-                }
-                
-                // 애니메이션 표시 영역
-                ZStack {
-                    Color(.systemGray6)
-                        .cornerRadius(16)
+                    .onChange(of: selectedCharacterType) { _, newValue in
+                        // 캐릭터 변경 시 첫 번째 애니메이션 타입 자동 선택
+                        if let firstType = animationOptions[newValue]?.first {
+                            selectedAnimationType = firstType
+                        }
+                        // 애니메이션 정지 및 초기화
+                        stopAnimation()
+                        loadSelectedAnimation()
+                    }
                     
-                    if animationFrames.isEmpty {
-                        Text("프레임 없음")
-                            .foregroundColor(.gray)
-                    } else if currentFrameIndex < animationFrames.count {
-                        Image(uiImage: animationFrames[currentFrameIndex])
-                            .resizable()
-                            .scaledToFit()
-                            .padding()
-                    }
-                }
-                .frame(height: 300)
-                .padding()
-                
-                // 프레임 정보와 슬라이더
-                if !animationFrames.isEmpty {
-                    VStack {
-                        Text("프레임: \(currentFrameIndex + 1) / \(animationFrames.count)")
-                            .padding(.bottom, 4)
-                        
-                        Slider(value: Binding(
-                            get: { Double(currentFrameIndex) },
-                            set: { newValue in
-                                currentFrameIndex = Int(newValue)
+                    // 애니메이션 타입 선택
+                    Picker("애니메이션 타입", selection: $selectedAnimationType) {
+                        if let types = animationOptions[selectedCharacterType] {
+                            ForEach(types, id: \.self) { type in
+                                //Text(type.capitalized).tag(type)
+                                Text(type).tag(type)
                             }
-                        ), in: 0...Double(animationFrames.count - 1), step: 1)
-                        .padding(.horizontal)
-                    }
-                    .padding(.bottom)
-                }
-                
-                // 애니메이션 컨트롤
-                VStack {
-                    // 속도 조절 및 모드 선택
-                    HStack {
-                        Text("FPS: \(Int(framesPerSecond))")
-                            .frame(width: 80, alignment: .leading)
-                        
-                        Slider(value: $framesPerSecond, in: 1...60, step: 1)
-                            .onChange(of: framesPerSecond) { _, _ in
-                                if isPlaying {
-                                    // 속도 변경 시 타이머 재시작
-                                    startAnimation()
-                                }
-                            }
-                    }
-                    .padding(.horizontal)
-                    
-                    // 애니메이션 모드 선택
-                    Picker("모드", selection: $animationMode) {
-                        ForEach(AnimationMode.allCases) { mode in
-                            Text(mode.rawValue).tag(mode)
                         }
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
-                    .padding(.bottom, 8)
-                    
-                    // 재생 컨트롤 버튼
-                    HStack(spacing: 30) {
-                        // 이전 프레임
-                        Button(action: previousFrame) {
-                            Image(systemName: "backward.frame")
-                                .font(.title)
-                        }
-                        .disabled(animationFrames.isEmpty || currentFrameIndex <= 0)
-                        
-                        // 재생/일시정지
-                        Button(action: togglePlayback) {
-                            Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 44))
-                        }
-                        .disabled(animationFrames.isEmpty)
-                        
-                        // 다음 프레임
-                        Button(action: nextFrame) {
-                            Image(systemName: "forward.frame")
-                                .font(.title)
-                        }
-                        .disabled(animationFrames.isEmpty || currentFrameIndex >= animationFrames.count - 1)
+                    .onChange(of: selectedAnimationType) { _, _ in
+                        // 애니메이션 정지 및 초기화
+                        stopAnimation()
+                        loadSelectedAnimation()
                     }
-                    .padding(.bottom)
-                }
-                
-                // 캐시 관리 버튼
-                HStack(spacing: 20) {
-                    // 다운로드 버튼
-                    Button(action: downloadSelectedAnimation) {
-                        Label("다운로드", systemImage: "arrow.down.circle")
-                    }
-                    .disabled(animationTestViewModel.isLoading)
                     
-                    // 단일 프레임 테스트 버튼 추가
-                    Button(action: {
-                        animationTestViewModel.downloadSingleFrame(
+                    // 로딩 및 에러 메시지
+                    if animationTestViewModel.isLoading {
+                        ProgressView(value: animationTestViewModel.progress, total: 1.0) {
+                            Text(animationTestViewModel.message)
+                                .font(.caption)
+                        }
+                        .padding()
+                    } else if let errorMessage = animationTestViewModel.errorMessage {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
+                    
+                    // 애니메이션 표시 영역
+                    ZStack {
+                        // 배경 이미지 추가
+                        Image("room1")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 300)
+                            .cornerRadius(16)
+                            .clipped() // 이미지가 영역을 벗어나지 않도록 클리핑
+                            .offset(x: 0, y: -30) // 이미지를 위로 50만큼 이동 (아래쪽 부분 표시)
+                        
+//                        Color(.systemGray6)
+//                            .cornerRadius(16)
+                        
+                        if animationFrames.isEmpty {
+                            Text("프레임 없음")
+                                .foregroundColor(.gray)
+                        } else if currentFrameIndex < animationFrames.count {
+                            Image(uiImage: animationFrames[currentFrameIndex])
+                                .resizable()
+                                .scaledToFit()
+                                .padding()
+                        }
+                    }
+                    .frame(height: 300)
+                    .padding()
+                    
+                    // 프레임 정보와 슬라이더
+                    if !animationFrames.isEmpty {
+                        VStack {
+                            Text("프레임: \(currentFrameIndex + 1) / \(animationFrames.count)")
+                                .padding(.bottom, 4)
+                            
+                            Slider(value: Binding(
+                                get: { Double(currentFrameIndex) },
+                                set: { newValue in
+                                    currentFrameIndex = Int(newValue)
+                                }
+                            ), in: 0...Double(animationFrames.count - 1), step: 1)
+                            .padding(.horizontal)
+                        }
+                        .padding(.bottom)
+                    }
+                    
+                    // 애니메이션 컨트롤
+                    VStack {
+                        // 속도 조절 및 모드 선택
+                        HStack {
+                            Text("FPS: \(Int(framesPerSecond))")
+                                .frame(width: 80, alignment: .leading)
+                            
+                            Slider(value: $framesPerSecond, in: 1...60, step: 1)
+                                .onChange(of: framesPerSecond) { _, _ in
+                                    if isPlaying {
+                                        // 속도 변경 시 타이머 재시작
+                                        startAnimation()
+                                    }
+                                }
+                        }
+                        .padding(.horizontal)
+                        
+                        // 애니메이션 모드 선택
+                        Picker("모드", selection: $animationMode) {
+                            ForEach(AnimationMode.allCases) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                        
+                        // 재생 컨트롤 버튼
+                        HStack(spacing: 30) {
+                            // 이전 프레임
+                            Button(action: previousFrame) {
+                                Image(systemName: "backward.frame")
+                                    .font(.title)
+                            }
+                            .disabled(animationFrames.isEmpty || currentFrameIndex <= 0)
+                            
+                            // 재생/일시정지
+                            Button(action: togglePlayback) {
+                                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                    .font(.system(size: 44))
+                            }
+                            .disabled(animationFrames.isEmpty)
+                            
+                            // 다음 프레임
+                            Button(action: nextFrame) {
+                                Image(systemName: "forward.frame")
+                                    .font(.title)
+                            }
+                            .disabled(animationFrames.isEmpty || currentFrameIndex >= animationFrames.count - 1)
+                        }
+                        .padding(.bottom)
+                    }
+                    
+                    // 캐시 관리 버튼
+                    HStack(spacing: 20) {
+                        // 다운로드 버튼
+                        Button(action: downloadSelectedAnimation) {
+                            Label("다운로드", systemImage: "arrow.down.circle")
+                        }
+                        .disabled(animationTestViewModel.isLoading)
+                        
+                        // 단일 프레임 테스트 버튼 추가
+                        Button(action: {
+                            animationTestViewModel.downloadSingleFrame(
+                                characterType: selectedCharacterType,
+                                animationType: selectedAnimationType
+                            )
+                        }) {
+                            Label("첫 프레임만", systemImage: "1.circle")
+                        }
+                        .disabled(animationTestViewModel.isLoading)
+                        .background(Color.yellow.opacity(0.2))
+                        .cornerRadius(8)
+                        
+                        Button(action: {
+                            animationTestViewModel.checkFileExistence(
+                                characterType: selectedCharacterType,
+                                animationType: selectedAnimationType
+                            )
+                        }) {
+                            Label("파일 확인", systemImage: "magnifyingglass")
+                        }
+                        .disabled(animationTestViewModel.isLoading)
+                        .background(Color.green.opacity(0.2))
+                        .cornerRadius(8)
+                        
+                        // 로드 버튼
+                        Button(action: loadSelectedAnimation) {
+                            Label("로드", systemImage: "arrow.clockwise.circle")
+                        }
+                        .disabled(animationTestViewModel.isLoading)
+                        
+                        // 삭제 버튼
+                        Button(action: clearSelectedAnimation) {
+                            Label("삭제", systemImage: "trash.circle")
+                        }
+                        .disabled(animationTestViewModel.isLoading || animationFrames.isEmpty)
+                    }
+                    .padding()
+                    
+                    // 캐시 정보
+                    if !animationFrames.isEmpty {
+                        let totalSize = animationTestViewModel.getTotalSize(
                             characterType: selectedCharacterType,
                             animationType: selectedAnimationType
                         )
-                    }) {
-                        Label("첫 프레임만", systemImage: "1.circle")
+                        
+                        Text("캐시 크기: \(formatFileSize(totalSize))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
-                    .disabled(animationTestViewModel.isLoading)
-                    .background(Color.yellow.opacity(0.2))
-                    .cornerRadius(8)
                     
-                    Button(action: {
-                        animationTestViewModel.checkFileExistence(
-                            characterType: selectedCharacterType,
-                            animationType: selectedAnimationType
-                        )
-                    }) {
-                        Label("파일 확인", systemImage: "magnifyingglass")
-                    }
-                    .disabled(animationTestViewModel.isLoading)
-                    .background(Color.green.opacity(0.2))
-                    .cornerRadius(8)
-                    
-                    // 로드 버튼
-                    Button(action: loadSelectedAnimation) {
-                        Label("로드", systemImage: "arrow.clockwise.circle")
-                    }
-                    .disabled(animationTestViewModel.isLoading)
-                    
-                    // 삭제 버튼
-                    Button(action: clearSelectedAnimation) {
-                        Label("삭제", systemImage: "trash.circle")
-                    }
-                    .disabled(animationTestViewModel.isLoading || animationFrames.isEmpty)
+                    // 하단 여백 추가 - 탭바와 겹치지 않도록
+                    Spacer(minLength: 20)
                 }
-                .padding()
-                
-                // 캐시 정보
-                if !animationFrames.isEmpty {
-                    let totalSize = animationTestViewModel.getTotalSize(
-                        characterType: selectedCharacterType,
-                        animationType: selectedAnimationType
-                    )
-                    
-                    Text("캐시 크기: \(formatFileSize(totalSize))")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
+                .padding(.bottom, 20)
             }
             .navigationTitle("애니메이션 테스트")
             .toolbar {
@@ -348,7 +363,7 @@ struct AnimationTestView: View {
         isPlaying = true
         
         // 타이머 생성 (FPS에 맞는 간격)
-        let timeInterval = 0.05 / framesPerSecond
+        let timeInterval = 1.0 / framesPerSecond
         animationTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
             // 애니메이션 프레임 업데이트
             updateAnimationFrame()
