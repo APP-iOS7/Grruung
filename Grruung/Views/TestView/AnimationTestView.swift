@@ -12,7 +12,7 @@ struct AnimationTestView: View {
     @StateObject private var animationTestViewModel = AnimationTestViewModel()
     
     // 현재 선택된 설정
-    @State private var selectedCharacterType = "Egg"
+    @State private var selectedCharacterType = "egg"
     @State private var selectedAnimationType = "eggBasic"
     
     // 애니메이션 설정
@@ -29,11 +29,11 @@ struct AnimationTestView: View {
     @State private var animationTimer: Timer?
     
     // 캐릭터 타입 옵션
-    let characterTypes = ["Egg", "quokka", "lion"]
+    let characterTypes = ["egg", "quokka", "lion"]
     
     // 각 캐릭터 타입별 애니메이션 타입 옵션
     let animationOptions: [String: [String]] = [
-        "Egg": ["eggBasic", "eggbreak", "egghatch"],
+        "egg": ["eggBasic", "eggbreak", "egghatch"],
         "quokka": ["normal", "sleep", "play"],
         "lion": ["normal", "angry", "happy"]
     ]
@@ -206,6 +206,18 @@ struct AnimationTestView: View {
                     }
                     .disabled(animationTestViewModel.isLoading)
                     .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(8)
+                    
+                    Button(action: {
+                        animationTestViewModel.checkFileExistence(
+                            characterType: selectedCharacterType,
+                            animationType: selectedAnimationType
+                        )
+                    }) {
+                        Label("파일 확인", systemImage: "magnifyingglass")
+                    }
+                    .disabled(animationTestViewModel.isLoading)
+                    .background(Color.green.opacity(0.2))
                     .cornerRadius(8)
                     
                     // 로드 버튼

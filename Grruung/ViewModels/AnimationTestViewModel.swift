@@ -82,7 +82,7 @@ class AnimationTestViewModel: ObservableObject {
         errorMessage = nil
         
         // 다운로드할 폴더 경로
-        let animationPath = "CharacterImageSet/\(characterType)/\(animationType)"
+        let animationPath = "animations/\(characterType)/\(animationType)"
         print("요청 경로: \(animationPath)")
         let folderRef = storage.child(animationPath)
         print("요청 folderRef 경로: \(folderRef)")
@@ -291,12 +291,17 @@ class AnimationTestViewModel: ObservableObject {
         
         // 단일 프레임 경로 구성 (첫 번째 프레임)
         let frameNumber = 1
-        let filePath = "CharacterImageSet/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
+        let frameNumbers = [1, 2, 3]
+        var downloadedFrames = 0
+        
+        
+        let filePath = "animations/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
         // "CharacterImageSet/\(formattedCharType)/\(formattedAnimType)/\(formattedAnimType)\(frameNumber).png"
         
         print("테스트 파일 경로: \(filePath)")
         
         let fileRef = storage.child(filePath)
+        print("테스트 파일 전체 경로: \(fileRef)")
         
         // 캐릭터 애니메이션 타입 폴더 경로
         let animationDirectory = self.cacheDirectoryURL
@@ -308,7 +313,7 @@ class AnimationTestViewModel: ObservableObject {
                                                 withIntermediateDirectories: true)
         
         // 로컬 저장 경로
-        let localFileName = "\(formattedAnimType)\(frameNumber).png"
+        let localFileName = "\(animationType)\(frameNumber).png"
         let localURL = animationDirectory.appendingPathComponent(localFileName)
         
         // 다운로드 전 상세 정보 출력
@@ -424,6 +429,58 @@ class AnimationTestViewModel: ObservableObject {
         } else {
             let mb = Double(byteCount) / (1024.0 * 1024.0)
             return String(format: "%.1f MB", mb)
+        }
+    }
+    
+    /// 특정 파일이 Firebase Storage에 존재하는지 확인
+    func checkFileExistence(characterType: String, animationType: String, frameNumber: Int = 1) {
+        // 경로 포맷팅
+//        let formattedCharType = characterType.prefix(1).capitalized + characterType.dropFirst()
+        
+//        // 애니메이션 타입 포맷팅
+//        let formattedAnimType: String
+//        switch animationType.lowercased() {
+//        case "eggbasic":
+//            formattedAnimType = "eggBasic"
+//        case "eggbreak":
+//            formattedAnimType = "eggBreak"
+//        default:
+//            formattedAnimType = animationType
+//        }
+        
+        // 파일 경로 구성
+        let filePath = "animations/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
+        print("확인 중인 파일: \(filePath)")
+        
+        let fileRef = storage.child(filePath)
+        
+        // 메타데이터만 가져와서 존재 여부 확인
+        message = "파일 존재 여부 확인 중..."
+        isLoading = true
+        
+        fileRef.getMetadata { metadata, error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error as NSError? {
+                    self.errorMessage = "파일이 존재하지 않음: \(error.localizedDescription)"
+                    
+                    print("===== 파일 존재 안함 =====")
+                    print("경로: \(filePath)")
+                    print("오류 코드: \(error.code)")
+                    print("오류 설명: \(error.localizedDescription)")
+                    print("=========================")
+                } else if let metadata = metadata {
+                    self.message = "파일 존재함! 크기: \(self.formatFileSize(Int(metadata.size)))"
+                    
+                    print("===== 파일 존재함 =====")
+                    print("경로: \(filePath)")
+                    print("크기: \(metadata.size) 바이트")
+                    print("타입: \(metadata.contentType ?? "unknown")")
+                    print("생성: \(metadata.timeCreated ?? Date())")
+                    print("=======================")
+                }
+            }
         }
     }
     
