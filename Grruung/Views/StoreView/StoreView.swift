@@ -39,13 +39,13 @@ struct StoreView: View {
                     .padding(.horizontal)
                 }
 
-                // ScrollViewReader로 섹션 이동
+                // ScrollViewReader로 섹션 이동 제목 누르면 거기로 이동
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 32) {
-                            SectionView(title: "치료", id: "치료", products: treatmentProducts)
-                            SectionView(title: "놀이", id: "놀이", products: playProducts)
-                            SectionView(title: "회복", id: "회복", products: recoveryProducts)
+                            SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
+                            SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
+                            SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
                         }
                         .padding()
                     }
@@ -55,13 +55,9 @@ struct StoreView: View {
                         }
                     }
                 }
-
-                // 구매 버튼
-                
             }
             .navigationTitle("Store")
         }
-
     }
 }
 
@@ -69,6 +65,7 @@ struct SectionView: View {
     let title: String
     let id: String
     let products: [Product]
+    let proxy: ScrollViewProxy
 
     let columns = [
         GridItem(.flexible()),
@@ -78,10 +75,17 @@ struct SectionView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.title2)
-                .bold()
-                .id(id) // <-- scrollTo 타겟
+            Button(action: {
+                withAnimation {
+                    proxy.scrollTo(id, anchor: .top)
+                }
+            }) {
+                Text(title)
+                    .font(.title2)
+                    .bold()
+                    .foregroundColor(.primary)
+            }
+            .id(id) // scroll 대상은 여전히 유지
 
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(products) { product in
@@ -93,13 +97,12 @@ struct SectionView: View {
                             bgColor: product.bgColor
                         )
                     }
-                    .buttonStyle(PlainButtonStyle()) // 탭뷰랑 겹쳐 눌림 방지용
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
     }
 }
-
 
 #Preview {
     StoreView()
