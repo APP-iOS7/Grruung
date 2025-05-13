@@ -38,6 +38,16 @@ struct AnimationTestView: View {
         "lion": ["normal", "angry", "happy"]
     ]
     
+    // 배경 이미지 위치 조절을 위한 상태 변수
+    @State private var backgroundOffsetX: CGFloat = 0
+    @State private var backgroundOffsetY: CGFloat = -20
+    @State private var backgroundScale: CGFloat = 1.0
+    @State private var isEditingBackground: Bool = false
+    
+    // 조절 단위 (버튼 한 번 클릭 시 이동량)
+    private let offsetStep: CGFloat = 5
+    private let scaleStep: CGFloat = 0.05
+    
     // 애니메이션 모드
     enum AnimationMode: String, CaseIterable, Identifiable {
         case loop = "반복"
@@ -102,30 +112,189 @@ struct AnimationTestView: View {
                     
                     // 애니메이션 표시 영역
                     ZStack {
-                        // 배경 이미지 추가
-                        Image("room1")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 300)
-                            .cornerRadius(16)
-                            .clipped() // 이미지가 영역을 벗어나지 않도록 클리핑
-                            .offset(x: 0, y: -30) // 이미지를 위로 50만큼 이동 (아래쪽 부분 표시)
+                        // 배경 이미지
+                        GeometryReader { geometry in
+                            Image("room2")
+                                .resizable()
+                                .scaledToFill()
+                                .scaleEffect(backgroundScale)
+                                .offset(x: backgroundOffsetX, y: backgroundOffsetY)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped() // 이미지가 영역을 벗어나지 않도록 클리핑
+                        }
+                        .cornerRadius(16)
                         
-//                        Color(.systemGray6)
-//                            .cornerRadius(16)
+                        //                        Color(.systemGray6)
+                        //                            .cornerRadius(16)
                         
+                        // 캐릭터 이미지
                         if animationFrames.isEmpty {
                             Text("프레임 없음")
-                                .foregroundColor(.gray)
+                                .foregroundColor(.white)
                         } else if currentFrameIndex < animationFrames.count {
                             Image(uiImage: animationFrames[currentFrameIndex])
                                 .resizable()
                                 .scaledToFit()
                                 .padding()
                         }
+                        
+                        // 이미지 편집 모드일 때 표시되는 조절 버튼들
+                        // 이미지 편집 모드일 때 표시되는 조절 버튼들
+                        if isEditingBackground {
+                            VStack {
+                                Spacer()
+                                
+                                // 배경 조절 컨트롤
+                                HStack {
+                                    VStack {
+                                        // 확대/축소 버튼
+                                        Button(action: {
+                                            backgroundScale += scaleStep
+                                            printCurrentSettings()
+                                        }) {
+                                            Image(systemName: "plus.magnifyingglass")
+                                                .padding(8)
+                                                .background(Color.white.opacity(0.7))
+                                                .clipShape(Circle())
+                                        }
+                                        
+                                        Button(action: {
+                                            backgroundScale = max(0.5, backgroundScale - scaleStep)
+                                            printCurrentSettings()
+                                        }) {
+                                            Image(systemName: "minus.magnifyingglass")
+                                                .padding(8)
+                                                .background(Color.white.opacity(0.7))
+                                                .clipShape(Circle())
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    // 방향 컨트롤
+                                    VStack {
+                                        // 위 버튼
+                                        Button(action: {
+                                            backgroundOffsetY += offsetStep
+                                            printCurrentSettings()
+                                        }) {
+                                            Image(systemName: "arrow.up")
+                                                .padding(8)
+                                                .background(Color.white.opacity(0.7))
+                                                .clipShape(Circle())
+                                        }
+                                        
+                                        HStack {
+                                            // 왼쪽 버튼
+                                            Button(action: {
+                                                backgroundOffsetX += offsetStep
+                                                printCurrentSettings()
+                                            }) {
+                                                Image(systemName: "arrow.left")
+                                                    .padding(8)
+                                                    .background(Color.white.opacity(0.7))
+                                                    .clipShape(Circle())
+                                            }
+                                            
+                                            // 오른쪽 버튼
+                                            Button(action: {
+                                                backgroundOffsetX -= offsetStep
+                                                printCurrentSettings()
+                                            }) {
+                                                Image(systemName: "arrow.right")
+                                                    .padding(8)
+                                                    .background(Color.white.opacity(0.7))
+                                                    .clipShape(Circle())
+                                            }
+                                        }
+                                        
+                                        // 아래 버튼
+                                        Button(action: {
+                                            backgroundOffsetY -= offsetStep
+                                            printCurrentSettings()
+                                        }) {
+                                            Image(systemName: "arrow.down")
+                                                .padding(8)
+                                                .background(Color.white.opacity(0.7))
+                                                .clipShape(Circle())
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    // 초기화 버튼
+                                    Button(action: {
+                                        backgroundOffsetX = 0
+                                        backgroundOffsetY = 0
+                                        backgroundScale = 1.0
+                                        printCurrentSettings()
+                                    }) {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .padding(8)
+                                            .background(Color.white.opacity(0.7))
+                                            .clipShape(Circle())
+                                    }
+                                }
+                                .padding()
+                                .background(Color.black.opacity(0.3))
+                                .cornerRadius(16)
+                                .padding(.horizontal)
+                            }
+                        }
                     }
                     .frame(height: 300)
                     .padding()
+                    
+                    // 배경 편집 모드 토글 버튼
+                    Button(action: {
+                        isEditingBackground.toggle()
+                        if isEditingBackground {
+                            // 편집 모드 시작 시 현재 설정 출력
+                            printCurrentSettings()
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: isEditingBackground ? "photo.fill" : "photo")
+                            Text(isEditingBackground ? "편집 완료" : "배경 위치 조절")
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(isEditingBackground ? Color.green : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                    }
+                    .padding(.bottom)
+                    
+                    // 현재 위치 정보 표시 (이제 항상 보이게 설정)
+                    Group {
+                        Text("X: \(Int(backgroundOffsetX)), Y: \(Int(backgroundOffsetY)), Scale: \(backgroundScale, specifier: "%.2f")")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.secondary)
+                        
+                        // 복사 가능한 코드 형태로 표시
+                        Text(".offset(x: \(Int(backgroundOffsetX)), y: \(Int(backgroundOffsetY)))\n.scaleEffect(\(backgroundScale, specifier: "%.2f"))")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                    }
+                    
+
+                    
+                    // 버튼으로 콘솔 로그를 직접 출력 (선택 사항)
+                    Button(action: {
+                        printCurrentSettings()
+                    }) {
+                        Label("현재 설정 출력", systemImage: "terminal")
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.gray.opacity(0.2))
+                            .cornerRadius(10)
+                    }
+                    .padding(.bottom)
+                    
                     
                     // 프레임 정보와 슬라이더
                     if !animationFrames.isEmpty {
@@ -255,6 +424,8 @@ struct AnimationTestView: View {
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
+                    
+                    
                     
                     // 하단 여백 추가 - 탭바와 겹치지 않도록
                     Spacer(minLength: 20)
@@ -442,6 +613,43 @@ struct AnimationTestView: View {
             let mb = Double(byteCount) / (1024.0 * 1024.0)
             return String(format: "%.1f MB", mb)
         }
+    }
+    
+    // 현재 설정을 콘솔에 출력하는 메소드
+    private func printCurrentSettings() {
+        print("\n===== 배경 이미지 설정 =====")
+        print("캐릭터 타입: \(selectedCharacterType)")
+        print("애니메이션 타입: \(selectedAnimationType)")
+        print("X 오프셋: \(backgroundOffsetX)")
+        print("Y 오프셋: \(backgroundOffsetY)")
+        print("확대/축소: \(backgroundScale)")
+        
+        // SwiftUI 코드로 출력
+        print("\n// SwiftUI에서 사용 가능한 코드")
+        print("Image(\"room1\")")
+        print("    .resizable()")
+        print("    .scaledToFill()")
+        print("    .scaleEffect(\(backgroundScale))")
+        print("    .offset(x: \(backgroundOffsetX), y: \(backgroundOffsetY))")
+        print("    .frame(width: geometry.size.width, height: geometry.size.height)")
+        print("    .clipped()")
+        
+        // 특정 캐릭터 타입에 적용할 수 있는 코드 템플릿
+        print("\n// \(selectedCharacterType)/\(selectedAnimationType)에 적용하기 위한 코드 템플릿")
+        print("if characterType == \"\(selectedCharacterType)\" && animationType == \"\(selectedAnimationType)\" {")
+        print("    return (offsetX: \(backgroundOffsetX), offsetY: \(backgroundOffsetY), scale: \(backgroundScale))")
+        print("}")
+        
+        // 커스텀 뷰를 위한 파라미터
+        print("\n// CroppedBackgroundView에 적용할 파라미터")
+        print("CroppedBackgroundView(")
+        print("    imageName: \"room1\",")
+        print("    offsetX: \(backgroundOffsetX),")
+        print("    offsetY: \(backgroundOffsetY),")
+        print("    scale: \(backgroundScale)")
+        print(")")
+        
+        print("===========================\n")
     }
 }
 
