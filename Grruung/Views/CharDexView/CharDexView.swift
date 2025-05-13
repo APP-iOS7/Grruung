@@ -229,82 +229,105 @@ struct CharDexView: View {
     
     // 캐릭터 슬롯
     private func characterSlot(_ character: GRCharacter) -> some View {
-        VStack(alignment: .center) {
-            ZStack {
-                Image(systemName: character.imageName)
-                    .resizable()
-                    .frame(width: 100, height: 100, alignment: .center)
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(.black)
-                if character.status.address == "space" {
-                    Image(systemName: "xmark")
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let xOffset = sin(yPosition / 50) * 5 // 좌우로 움직임
+
+            VStack(alignment: .center) {
+                ZStack {
+                    Image(systemName: character.imageName)
                         .resizable()
+                        .frame(width: 100, height: 100)
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 15, height: 15)
-                        .offset(x: 60, y: -40)
-                        .foregroundStyle(.red)
-                } else {
-                    Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 20, height: 20)
-                        .offset(x: 60, y: -40)
-                        .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                        .foregroundStyle(.black)
+
+                    if character.status.address == "space" {
+                        Image(systemName: "xmark")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 15, height: 15)
+                            .offset(x: 60, y: -40)
+                            .foregroundStyle(.red)
+                    } else {
+                        Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 20, height: 20)
+                            .offset(x: 60, y: -40)
+                            .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                    }
                 }
+
+                Text(character.name)
+                    .foregroundStyle(.black)
+                    .bold()
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+
+                Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
+                    .foregroundStyle(.gray)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity)
             }
-            Text(character.name)
-                .foregroundStyle(.black)
-                .bold()
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-            
-            Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
-                .foregroundStyle(.gray)
-                .font(.caption)
-                .frame(maxWidth: .infinity)
+            .frame(height: 180)
+            .frame(maxWidth: .infinity)
+            .background(Color.brown.opacity(0.5))
+            .cornerRadius(20)
+            .foregroundColor(.gray)
+            .padding(.bottom, 16)
+            .offset(x: xOffset)
         }
         .frame(height: 180)
-        .frame(maxWidth: .infinity)
-        .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
-        .foregroundColor(.gray)
-        .padding(.bottom, 16)
     }
     
     // 잠겨있는 슬롯
     private func lockSlot(at index: Int) -> some View {
-        Button {
-            selectedLockedIndex = index
-            showingUnlockAlert = true
-        } label: {
-            VStack {
-                Image(systemName: "lock.fill")
-                    .scaledToFit()
-                    .font(.system(size: 60))
-                    .foregroundStyle(.black)
-                    .frame(height: 180)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.black.opacity(0.5))
-                    .cornerRadius(20)
-                    .foregroundColor(.gray)
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let xOffset = sin(yPosition / 50) * 5
+
+            Button {
+                selectedLockedIndex = index
+                showingUnlockAlert = true
+            } label: {
+                VStack {
+                    Image(systemName: "lock.fill")
+                        .scaledToFit()
+                        .font(.system(size: 60))
+                        .foregroundStyle(.black)
+                        .frame(height: 180)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(20)
+                        .foregroundColor(.gray)
+                }
+                .padding(.bottom, 16)
+                .offset(x: xOffset)
             }
-            .padding(.bottom, 16)
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(height: 180)
     }
     
     // 추가할 수 있는 슬롯(남은 슬롯 표시)
     private var addSlot: some View {
-        VStack {
-            Image(systemName: "plus")
-                .scaledToFit()
-                .font(.system(size: 60))
-                .frame(height: 180)
-                .frame(maxWidth: .infinity)
-                .background(Color.brown.opacity(0.5))
-                .cornerRadius(20)
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let xOffset = sin(yPosition / 50) * 5
+
+            VStack {
+                Image(systemName: "plus")
+                    .scaledToFit()
+                    .font(.system(size: 60))
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.brown.opacity(0.5))
+                    .cornerRadius(20)
+            }
+            .padding(.bottom, 16)
+            .offset(x: xOffset)
         }
-        .padding(.bottom, 16)
+        .frame(height: 180)
     }
 }
 
