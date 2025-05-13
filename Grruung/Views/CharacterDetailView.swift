@@ -49,9 +49,7 @@ extension View {
 
 struct CharacterDetailView: View {
     // 더미 데이터: 모델 구현 후 삭제 예정
-    let meetDateDummy: String = "2025년 02월 14일"
     let addressDummy: String = "〇〇의 아이폰"
-    let ageDummy: Int = 45
     
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
@@ -66,14 +64,16 @@ struct CharacterDetailView: View {
     // 현재 성장 단계 (인덱스 기준)
     let currentStageIndex: Int = 5
     
-    // 각 List 행의 예상 높이를 계산합니다.
-    let estimatedRowHeight: CGFloat = 88.0
+
     
     @StateObject private var viewModel: CharacterDetailViewModel
     @Environment(\.dismiss) var dismiss
     
     @State private var searchDate: Date = Date()
     var characterUUID: String
+    
+    // 각 List 행의 예상 높이를 계산합니다.
+    let estimatedRowHeight: CGFloat = 88.0
     
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
@@ -94,10 +94,13 @@ struct CharacterDetailView: View {
                 // 성장 과정 영역
                 growthProgressSection
                 
+                // 날짜 탐색 버튼
                 dateNavigationSection
                 
+                // 활동 기록 영역
                 activitySection
                 
+                // 들려준 이야기 영역
                 storyListSection
                 
             }
@@ -149,25 +152,22 @@ struct CharacterDetailView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 100, height: 100)
+                        .padding()
                 } placeholder: {
                     Image(systemName: "photo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 100, height: 100)
+                        .padding()
                 }
                 .padding()
-            } else {
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
-                    .padding()
             }
             
             VStack(alignment: .leading) {
-                Text("떨어진 날: \(meetDateDummy)")
+                Text("떨어진 날: \(formatDate(viewModel.character.createdAt))")
+                
                 Text("사는 곳: \(addressDummy)")
-                Text("생 후: \(ageDummy)일")
+                Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -999)일")
             }
             .padding(.trailing, 20)
         }
@@ -304,7 +304,7 @@ struct CharacterDetailView: View {
                                 }
                                 
                                 VStack(alignment: .leading) {
-                                    Text(viewModel.posts[index].postBody)
+                                    Text(viewModel.posts[index].postTitle)
                                         .font(.headline)
                                         .lineLimit(1)
                                     Text(formatDate(viewModel.posts[index].createdAt))

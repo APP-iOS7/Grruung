@@ -18,26 +18,15 @@ class CharacterDetailViewModel: ObservableObject {
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
-    init(characterUUID: String = "") {
-#if DEBUG
-        // Firebase Emulator 설정
-        let settings = Firestore.firestore().settings
-        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-        settings.isPersistenceEnabled = false
-        settings.isSSLEnabled = false
-        db.settings = settings
-        
-        // Storage Emulator 설정
-        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-#endif
-        
+    init(characterUUID: String = "") {  
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
             species: .Undefined,
             name: "기본 캐릭터",
             imageName: "pawprint.fill",
-            birthDate: Date()
+            birthDate: Date(),
+            createdAt: Date()
             
         )
         
@@ -63,7 +52,8 @@ class CharacterDetailViewModel: ObservableObject {
             let name = data["name"] as? String ?? "이름 없음"
             let imageName = data["imageName"] as? String ?? "pawprint.fill"
             let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
-            
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            print("캐릭터 생성 된 날짜 : \(createdAt)")
             // 상태 정보 파싱 (실제 앱에 맞게 조정 필요)
             // 만약 status가 별도의 필드로 저장되어 있다면 해당 필드에서 가져와야 함
             let status = GRCharacterStatus() // 기본 상태로 초기화 (실제 데이터와 연결 필요)
@@ -74,6 +64,7 @@ class CharacterDetailViewModel: ObservableObject {
                 name: name,
                 imageName: imageName,
                 birthDate: birthDate,
+                createdAt: createdAt,
                 status: status
             )
         }
@@ -168,3 +159,11 @@ class CharacterDetailViewModel: ObservableObject {
     }
     
 } // end of class
+
+// MARK: NavigationView 사용 시 수정 뷰로 이동 안되므로 꼭 상위 뷰에서 NavigationStack을 사용해야 함
+import SwiftUI
+#Preview {
+    NavigationStack {
+        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+    }
+}

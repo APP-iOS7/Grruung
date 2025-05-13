@@ -18,21 +18,6 @@ class WriteStoryViewModel: ObservableObject {
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
-    init() {
-        
-#if DEBUG
-        // Firebase Emulator 설정
-        let settings = Firestore.firestore().settings
-        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-        settings.isPersistenceEnabled = false
-        settings.isSSLEnabled = false
-        db.settings = settings
-        
-        // Storage Emulator 설정
-        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-#endif
-    }
-    
     private func uploadImageToStorage(imageData: Data) async throws -> String {
         let imageName = UUID().uuidString + ".jpg"
         let imageRef = storage.reference().child("post_images/\(imageName)") // "post_images" 폴더에 저장
