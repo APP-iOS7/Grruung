@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AlertView: View {
+    let product: Product
     @Binding var isPresented: Bool // 팝업 제어용
     
     var body: some View {
@@ -27,7 +28,7 @@ struct AlertView: View {
                     )
                 
                 // 제목
-                Text("[10 주얼]")
+                Text("가격: \(product.price)")
                     .font(.headline)
                     .foregroundColor(.black)
                 

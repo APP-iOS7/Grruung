@@ -46,11 +46,19 @@ struct ProductDetailView: View {
         }
         .navigationTitle("상세보기")
         if showAlert {
-            AlertView(isPresented: $showAlert)
+            AlertView(product: product, isPresented: $showAlert)
                 .transition(.opacity)
                 .zIndex(1)
         }
     }
+}
+
+#Preview {
+    if let product = treatmentProducts.first {
+            ProductDetailView(product: product)
+        } else {
+            Text("샘플 데이터 없음")
+        }
 }
 
 
