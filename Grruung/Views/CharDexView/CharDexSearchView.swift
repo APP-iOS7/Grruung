@@ -133,26 +133,45 @@ struct CharDexSearchView: View {
     }
     
     private func characterSlot(_ character: GRCharacter) -> some View {
-        VStack {
-            Image(systemName: character.imageName)
-                .resizable()
-                .frame(width: 100, height: 100)
-                .aspectRatio(contentMode: .fit)
-                .foregroundStyle(.black)
+        VStack(alignment: .center) {
+            ZStack {
+                Image(systemName: character.imageName)
+                    .resizable()
+                    .frame(width: 100, height: 100, alignment: .center)
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(.black)
+                if character.status.address == "space" {
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 15, height: 15)
+                        .offset(x: 60, y: -40)
+                        .foregroundStyle(.red)
+                } else {
+                    Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20, height: 20)
+                        .offset(x: 60, y: -40)
+                        .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                }
+            }
             Text(character.name)
-                .bold()
                 .foregroundStyle(.black)
+                .bold()
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
+            
             Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
-                .font(.caption)
                 .foregroundStyle(.gray)
+                .font(.caption)
                 .frame(maxWidth: .infinity)
         }
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
         .cornerRadius(20)
+        .foregroundColor(.gray)
         .padding(.bottom, 16)
     }
 }
