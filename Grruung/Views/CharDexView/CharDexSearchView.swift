@@ -12,8 +12,9 @@ struct CharDexSearchView: View {
     @State private var unlockCount: Int = 5
     @State private var sortType: SortType = .original
     @State private var showingErrorAlert = false
+    // 검색 내용
     @State private var searchText = ""
-    
+    // 검색되는 캐릭터들
     let searchCharacters: [GRCharacter]
     
     enum SortType {
@@ -37,6 +38,7 @@ struct CharDexSearchView: View {
             return sorted
         } else {
             return sorted.filter {
+                // 대소문자 구분 없이, 사용자의 언어 설정(로케일)을 고려해서 필터링
                 $0.name.localizedCaseInsensitiveContains(searchText)
             }
         }
