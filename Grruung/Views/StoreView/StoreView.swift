@@ -42,7 +42,7 @@ struct StoreView: View {
                 // ScrollViewReader로 섹션 이동 제목 누르면 거기로 이동
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 32) {
+                        VStack(alignment: .leading, spacing: 45) {
                             SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                             SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
@@ -74,7 +74,7 @@ struct SectionView: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Button(action: {
                 withAnimation {
                     proxy.scrollTo(id, anchor: .top)
@@ -86,8 +86,9 @@ struct SectionView: View {
                     .foregroundColor(.primary)
             }
             .id(id) // scroll 대상은 여전히 유지
+            .padding(.horizontal)
 
-            LazyVGrid(columns: columns, spacing: 16) {
+            LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
                     NavigationLink(destination: ProductDetailView(product: product)) {
                         ProductItemView(
