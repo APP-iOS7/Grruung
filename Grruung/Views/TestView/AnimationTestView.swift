@@ -348,7 +348,7 @@ struct AnimationTestView: View {
         isPlaying = true
         
         // 타이머 생성 (FPS에 맞는 간격)
-        let timeInterval = 1.0 / framesPerSecond
+        let timeInterval = 0.05 / framesPerSecond
         animationTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
             // 애니메이션 프레임 업데이트
             updateAnimationFrame()
