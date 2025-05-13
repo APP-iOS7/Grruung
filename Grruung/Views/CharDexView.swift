@@ -30,13 +30,13 @@ struct CharDexView: View {
     // 알 수 없는 에러 alert
     @State private var showingErrorAlert = false
     
-    let columns = [
+    private let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
     
     // 임시 데이터(테스트 용)
-    @State var garaCharacters: [GRCharacter] = [
+    @State private var garaCharacters: [GRCharacter] = [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
@@ -49,7 +49,7 @@ struct CharDexView: View {
                     birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
     ]
     
-    enum SortType {
+    private enum SortType {
         case original
         case createdAscending
         case createdDescending
@@ -57,7 +57,7 @@ struct CharDexView: View {
     }
     
     // 현재 캐릭터 슬롯 정렬 프로퍼티
-    var sortedCharacterSlots: [GRCharacter] {
+    private var sortedCharacterSlots: [GRCharacter] {
         switch sortType {
         case .original:
             return garaCharacters

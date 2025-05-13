@@ -50,18 +50,32 @@ struct CharDexSearchView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                TextField("캐릭터 이름을 입력하세요", text: $searchText)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .frame(height: 32)
+                    .cornerRadius(8)
+                    .padding(.horizontal, 16)
+                    .overlay(
+                        HStack {
+                            Spacer()
+                            if !searchText.isEmpty {
+                                Button(action: {
+                                    searchText = ""
+                                }, label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                })
+                                .padding(.trailing, 20)
+                            }
+                        }
+                    )
+                
                 HStack {
                     if filteredCharacters.count == 0 {
                         Text("해당 이름을 가진 캐릭터는 존재하지 않습니다.")
-                    } else {
-                        if !searchText.isEmpty {
-                            Text("해당 이름을 가진 캐릭터가 총")
-                            Text("\(filteredCharacters.count)")
-                                .foregroundStyle(.yellow)
-                            Text("개 존재합니다.")
-                        }
+                            .padding(.top, 16)
                     }
-                    
                 }
                 .frame(maxWidth: .infinity)
                 .font(.title3)
@@ -76,7 +90,6 @@ struct CharDexSearchView: View {
                 .padding()
             }
             .navigationTitle("캐릭터 검색")
-            .searchable(text: $searchText, prompt: "캐릭터 이름으로 검색해주세요.")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
