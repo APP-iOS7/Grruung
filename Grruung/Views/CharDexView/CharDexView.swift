@@ -231,7 +231,7 @@ struct CharDexView: View {
     private func characterSlot(_ character: GRCharacter) -> some View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
-            let xOffset = sin(yPosition / 50) * 5 // 좌우로 움직임
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
 
             VStack(alignment: .center) {
                 ZStack {
@@ -275,7 +275,7 @@ struct CharDexView: View {
             .cornerRadius(20)
             .foregroundColor(.gray)
             .padding(.bottom, 16)
-            .offset(x: xOffset)
+            .offset(y: yOffset)
         }
         .frame(height: 180)
     }
@@ -284,7 +284,7 @@ struct CharDexView: View {
     private func lockSlot(at index: Int) -> some View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
-            let xOffset = sin(yPosition / 50) * 5
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
 
             Button {
                 selectedLockedIndex = index
@@ -302,7 +302,7 @@ struct CharDexView: View {
                         .foregroundColor(.gray)
                 }
                 .padding(.bottom, 16)
-                .offset(x: xOffset)
+                .offset(y: yOffset)
             }
             .buttonStyle(.plain)
         }
@@ -313,7 +313,7 @@ struct CharDexView: View {
     private var addSlot: some View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
-            let xOffset = sin(yPosition / 50) * 5
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
 
             VStack {
                 Image(systemName: "plus")
@@ -325,7 +325,7 @@ struct CharDexView: View {
                     .cornerRadius(20)
             }
             .padding(.bottom, 16)
-            .offset(x: xOffset)
+            .offset(y: yOffset)
         }
         .frame(height: 180)
     }
