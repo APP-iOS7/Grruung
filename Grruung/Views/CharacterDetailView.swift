@@ -167,7 +167,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("종: \(viewModel.character.species.rawValue)")
                     .font(.subheadline)
-                Text("사는 곳: \(viewModel.user.userName)의 아이폰")
+                Text("사는 곳: \(viewModel.user.userName)의 \(UIDevice.modelName())")
                     .font(.subheadline)
                 Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
                     .font(.subheadline)

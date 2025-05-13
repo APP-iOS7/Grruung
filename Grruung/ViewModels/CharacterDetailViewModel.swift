@@ -80,7 +80,7 @@ class CharacterDetailViewModel: ObservableObject {
     func loadUser(characterUUID: String) {
         db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
             guard let self = self else { return }
-            guard let documents = snapshot?.documents else {
+            guard let documents = snapshot?.documents, !documents.isEmpty else {
                 print("No documents found")
                 return
             }
