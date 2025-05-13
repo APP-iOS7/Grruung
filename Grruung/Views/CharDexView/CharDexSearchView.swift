@@ -84,7 +84,7 @@ struct CharDexSearchView: View {
                 
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(Array(filteredCharacters.enumerated()), id: \.element.id) { index, character in
-                        NavigationLink(destination: DetailView(character: character)) {
+                        NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
                             characterSlot(character)
                         }
                     }

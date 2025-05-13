@@ -47,7 +47,7 @@ struct CharDexView: View {
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
                     birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, status: GRCharacterStatus(address: "space")),
-    ]
+    ].filter { !($0.status.address == "space") }
     
     private enum SortType {
         case original
@@ -143,7 +143,7 @@ struct CharDexView: View {
                         } else if character.imageName == "plus" {
                             addSlot
                         } else {
-                            NavigationLink(destination: DetailView(character: character)) {
+                            NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
                                 characterSlot(character)
                             }
                         }
@@ -242,6 +242,8 @@ struct CharDexView: View {
                         .foregroundStyle(.black)
 
                     if character.status.address == "space" {
+                        // xmark가 도감에서 보이면 안됨!!
+                        // 우주로 돌려보냄(삭제)
                         Image(systemName: "xmark")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -328,34 +330,6 @@ struct CharDexView: View {
             .offset(y: yOffset)
         }
         .frame(height: 180)
-    }
-}
-
-// 임시 디테일 뷰
-struct DetailView: View {
-    var character: GRCharacter
-    
-    var body: some View {
-        VStack {
-            Image(systemName: character.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 200)
-                .frame(maxWidth: .infinity)
-                .padding()
-            
-            Text(character.name)
-                .font(.largeTitle)
-                .bold()
-            
-            Text(character.species.rawValue)
-                .font(.title)
-                .foregroundStyle(.gray)
-            
-            Spacer()
-        }
-        .navigationTitle(character.name)
-        .padding()
     }
 }
 
