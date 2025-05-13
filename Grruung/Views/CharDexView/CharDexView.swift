@@ -38,15 +38,15 @@ struct CharDexView: View {
     // 임시 데이터(테스트 용)
     @State private var garaCharacters: [GRCharacter] = [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, status: GRCharacterStatus(address: "userHome")),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!,status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!, status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, status: GRCharacterStatus(address: "space")),
     ]
     
     private enum SortType {
@@ -230,12 +230,28 @@ struct CharDexView: View {
     // 캐릭터 슬롯
     private func characterSlot(_ character: GRCharacter) -> some View {
         VStack(alignment: .center) {
-            Image(systemName: character.imageName)
-                .resizable()
-                .frame(width: 100, height: 100, alignment: .center)
-                .aspectRatio(contentMode: .fit)
-                .foregroundStyle(.black)
-            
+            ZStack {
+                Image(systemName: character.imageName)
+                    .resizable()
+                    .frame(width: 100, height: 100, alignment: .center)
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(.black)
+                if character.status.address == "space" {
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 15, height: 15)
+                        .offset(x: 60, y: -40)
+                        .foregroundStyle(.red)
+                } else {
+                    Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20, height: 20)
+                        .offset(x: 60, y: -40)
+                        .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                }
+            }
             Text(character.name)
                 .foregroundStyle(.black)
                 .bold()
