@@ -48,9 +48,6 @@ extension View {
 }
 
 struct CharacterDetailView: View {
-    // 더미 데이터: 모델 구현 후 삭제 예정
-    let addressDummy: String = "〇〇의 아이폰"
-    
     // 성장 단계 더미 데이터
     let growthStages: [(stage: String, image: String)] = [
         ("애기", "lizard.fill"),
@@ -165,9 +162,15 @@ struct CharacterDetailView: View {
             
             VStack(alignment: .leading) {
                 Text("떨어진 날: \(formatDate(viewModel.character.createdAt))")
-                
-                Text("사는 곳: \(addressDummy)")
-                Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -999)일")
+                    .font(.subheadline)
+                Text("태어난 날: \(formatDate(viewModel.character.birthDate))")
+                    .font(.subheadline)
+                Text("종: \(viewModel.character.species.rawValue)")
+                    .font(.subheadline)
+                Text("사는 곳: \(viewModel.user.userName)의 아이폰")
+                    .font(.subheadline)
+                Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
+                    .font(.subheadline)
             }
             .padding(.trailing, 20)
         }

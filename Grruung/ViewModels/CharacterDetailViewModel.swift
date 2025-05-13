@@ -13,12 +13,13 @@ import FirebaseStorage
 class CharacterDetailViewModel: ObservableObject {
     
     @Published var character: GRCharacter
+    @Published var user: GRUser
     @Published var posts: [GRPost] = []
     
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
-    init(characterUUID: String = "") {  
+    init(characterUUID: String = "") {
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
@@ -30,19 +31,24 @@ class CharacterDetailViewModel: ObservableObject {
             
         )
         
+        self.user = GRUser(
+            id: UUID().uuidString,
+            userEmail: "",
+            userName: "",
+            chosenCharacterUUID: ""
+        )
+        
         // 초기화시 UUID가 제공되면 데이터 로드
         if !characterUUID.isEmpty {
             self.loadCharacter(characterUUID: characterUUID)
             self.loadPost(characterUUID: characterUUID, searchDate: Date())
+            self.loadUser(characterUUID: characterUUID)
         }
     }
     
     func loadCharacter(characterUUID: String) {
-        
         db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
             guard let self = self else { return }
-            
-            
             guard let data = snapshot?.data() else {
                 return
             }
@@ -53,34 +59,60 @@ class CharacterDetailViewModel: ObservableObject {
             let imageName = data["imageName"] as? String ?? "pawprint.fill"
             let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-            print("캐릭터 생성 된 날짜 : \(createdAt)")
-            // 상태 정보 파싱 (실제 앱에 맞게 조정 필요)
-            // 만약 status가 별도의 필드로 저장되어 있다면 해당 필드에서 가져와야 함
-            let status = GRCharacterStatus() // 기본 상태로 초기화 (실제 데이터와 연결 필요)
             
-            self.character = GRCharacter(
-                id: characterUUID,
-                species: species,
-                name: name,
-                imageName: imageName,
-                birthDate: birthDate,
-                createdAt: createdAt,
-                status: status
-            )
+            
+            let status = GRCharacterStatus() // 기본 상태로 초기화
+            
+            DispatchQueue.main.async {
+                self.character = GRCharacter(
+                    id: characterUUID,
+                    species: species,
+                    name: name,
+                    imageName: imageName,
+                    birthDate: birthDate,
+                    createdAt: createdAt,
+                    status: status
+                )
+            }
+        }
+    }
+    
+    func loadUser(characterUUID: String) {
+        db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
+            guard let documents = snapshot?.documents else {
+                print("No documents found")
+                return
+            }
+            
+            let document = documents[0]
+            let data = document.data()
+            let userID = document.documentID
+            let userEmail = data["userEmail"] as? String ?? ""
+            let userName = data["userName"] as? String ?? ""
+            let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
+            
+            // 메인 스레드에서 user 속성 업데이트
+            DispatchQueue.main.async {
+                self.user = GRUser(
+                    id : userID,
+                    userEmail: userEmail,
+                    userName: userName,
+                    chosenCharacterUUID: chosenCharacterUUID
+                )
+            }
+            print("User Email: \(userEmail), User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
         }
     }
     
     func loadPost(characterUUID: String, searchDate: Date) {
         print("loadPost called with characterUUID: \(characterUUID) and searchDate: \(searchDate)")
         
-        
         let calendar = Calendar.current
         let month = calendar.component(.month, from: searchDate)
         let year = calendar.component(.year, from: searchDate)
         
         fetchPostsFromFirebase(characterUUID: characterUUID,year: year, month: month)
-        
-        
     }
     
     func deletePost(postID: String) {
@@ -159,11 +191,3 @@ class CharacterDetailViewModel: ObservableObject {
     }
     
 } // end of class
-
-// MARK: NavigationView 사용 시 수정 뷰로 이동 안되므로 꼭 상위 뷰에서 NavigationStack을 사용해야 함
-import SwiftUI
-#Preview {
-    NavigationStack {
-        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-    }
-}
