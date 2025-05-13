@@ -82,11 +82,13 @@ class AnimationTestViewModel: ObservableObject {
         errorMessage = nil
         
         // 다운로드할 폴더 경로
-        let animationPath = "animations/\(characterType)/\(animationType)"
+        let animationPath = "CharacterImageSet/\(characterType)/\(animationType)"
+        print("요청 경로: \(animationPath)")
         let folderRef = storage.child(animationPath)
+        print("요청 folderRef 경로: \(folderRef)")
         
         // 폴더 내 모든 파일 목록 가져오기
-        folderRef.listAll { [weak self] result, error in
+        folderRef.listAll { [weak self] (result, error) in
             guard let self = self else { return }
             
             if let error = error {
@@ -163,10 +165,12 @@ class AnimationTestViewModel: ObservableObject {
                     DispatchQueue.main.async {
                         self.progress = progress
                         self.message = "다운로드 중... (\(downloadedFiles)/\(totalFiles))"
+                        print("다운로드 중... (\(downloadedFiles)/\(totalFiles))")
                         
                         // 모든 파일 처리 완료
                         if downloadedFiles == totalFiles {
                             self.message = "다운로드 완료! \(totalFiles)개 프레임"
+                            print("다운로드 완료! \(totalFiles)개 프레임")
                             self.isLoading = false
                         }
                     }
@@ -235,6 +239,13 @@ class AnimationTestViewModel: ObservableObject {
                 // 오류 처리
                 downloadTask.observe(.failure) { snapshot in
                     print("다운로드 실패: \(item.name), 오류: \(snapshot.error?.localizedDescription ?? "알 수 없음")")
+//                    if let error = snapshot.error as NSError? {
+//                        print("다운로드 실패: \(item.name), 오류 코드: \(error.code), 설명: \(error.localizedDescription), 도메인: \(error.domain)")
+//                        // 추가 오류 정보가 있으면 출력
+//                        if let userInfo = error.userInfo as? [String: Any], !userInfo.isEmpty {
+//                            print("추가 정보: \(userInfo)")
+//                        }
+//                    }
                     
                     // 오류가 있어도 진행 카운터 업데이트
                     downloadedFiles += 1
@@ -248,6 +259,171 @@ class AnimationTestViewModel: ObservableObject {
                     }
                 }
             }
+        }
+    }
+    
+    /// 테스트용으로 첫 번째 프레임만 다운로드
+    func downloadSingleFrame(characterType: String, animationType: String) {
+        guard let modelContext = modelContext else {
+            errorMessage = "데이터 컨텍스트 초기화 실패"
+            return
+        }
+        
+        isLoading = true
+        progress = 0
+        message = "테스트 다운로드 준비 중..."
+        errorMessage = nil
+        
+        // 경로 포맷팅
+        let formattedCharType = characterType.prefix(1).capitalized + characterType.dropFirst() // egg -> Egg
+        
+        // 애니메이션 타입 포맷팅 (eggbasic -> eggBasic)
+        let formattedAnimType: String
+        switch animationType.lowercased() {
+        case "eggbasic":
+            formattedAnimType = "eggBasic"
+        case "eggbreak":
+            formattedAnimType = "eggBreak"
+        // 다른 애니메이션 타입들도 필요에 따라 추가
+        default:
+            formattedAnimType = animationType
+        }
+        
+        // 단일 프레임 경로 구성 (첫 번째 프레임)
+        let frameNumber = 1
+        let filePath = "CharacterImageSet/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
+        // "CharacterImageSet/\(formattedCharType)/\(formattedAnimType)/\(formattedAnimType)\(frameNumber).png"
+        
+        print("테스트 파일 경로: \(filePath)")
+        
+        let fileRef = storage.child(filePath)
+        
+        // 캐릭터 애니메이션 타입 폴더 경로
+        let animationDirectory = self.cacheDirectoryURL
+            .appendingPathComponent(characterType, isDirectory: true)
+            .appendingPathComponent(animationType, isDirectory: true)
+        
+        // 폴더 생성
+        try? FileManager.default.createDirectory(at: animationDirectory,
+                                                withIntermediateDirectories: true)
+        
+        // 로컬 저장 경로
+        let localFileName = "\(formattedAnimType)\(frameNumber).png"
+        let localURL = animationDirectory.appendingPathComponent(localFileName)
+        
+        // 다운로드 전 상세 정보 출력
+        print("===== 다운로드 시작 정보 =====")
+        print("다운로드 경로: \(filePath)")
+        print("저장 경로: \(localURL.path)")
+        print("=============================")
+        
+        // Firebase에서 파일 다운로드
+        let downloadTask = fileRef.write(toFile: localURL)
+        
+        // 진행률 업데이트
+        downloadTask.observe(.progress) { snapshot in
+            let fileProgress = (snapshot.progress?.fractionCompleted ?? 0)
+            
+            DispatchQueue.main.async {
+                self.progress = fileProgress
+                self.message = "테스트 다운로드 중... \(Int(fileProgress * 100))%"
+            }
+        }
+        
+        // 완료 처리
+        downloadTask.observe(.success) { snapshot in
+            do {
+                // 파일 크기 확인
+                let fileAttributes = try FileManager.default.attributesOfItem(atPath: localURL.path)
+                let fileSize = fileAttributes[.size] as? Int ?? 0
+                
+                // 메타데이터 저장
+                self.saveMetadata(
+                    characterType: characterType,
+                    animationType: animationType,
+                    frameIndex: frameNumber,
+                    filePath: localURL.path,
+                    fileSize: fileSize
+                )
+                
+                // 이미지 확인
+                if let image = UIImage(contentsOfFile: localURL.path) {
+                    // 메모리 캐시에 추가
+                    let cacheKey = self.getCacheKey(
+                        characterType: characterType,
+                        animationType: animationType,
+                        frameIndex: frameNumber
+                    )
+                    self.imageCache.setObject(image, forKey: cacheKey as NSString)
+                    
+                    DispatchQueue.main.async {
+                        self.message = "테스트 다운로드 성공! 크기: \(self.formatFileSize(fileSize))"
+                        self.isLoading = false
+                    }
+                    
+                    // 성공 로그
+                    print("===== 다운로드 성공 =====")
+                    print("파일 경로: \(localURL.path)")
+                    print("파일 크기: \(fileSize) 바이트")
+                    print("이미지 크기: \(image.size.width)x\(image.size.height)")
+                    print("=========================")
+                } else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = "이미지 로드 실패: 파일은 다운로드되었으나 이미지로 변환할 수 없습니다."
+                        self.isLoading = false
+                    }
+                    
+                    print("===== 이미지 로드 실패 =====")
+                    print("파일은 다운로드되었으나 이미지로 변환할 수 없습니다.")
+                    print("===============================")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.errorMessage = "파일 처리 실패: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+                
+                print("===== 파일 처리 실패 =====")
+                print("오류: \(error.localizedDescription)")
+                print("===========================")
+            }
+        }
+        
+        // 오류 처리
+        downloadTask.observe(.failure) { snapshot in
+            DispatchQueue.main.async {
+                self.errorMessage = "다운로드 실패: \(snapshot.error?.localizedDescription ?? "알 수 없는 오류")"
+                self.isLoading = false
+            }
+            
+            print("===== 다운로드 실패 =====")
+            print("파일 경로: \(filePath)")
+            
+            if let error = snapshot.error as NSError? {
+                print("오류 코드: \(error.code)")
+                print("오류 설명: \(error.localizedDescription)")
+                print("오류 도메인: \(error.domain)")
+                
+//                if let userInfo = error.userInfo, !userInfo.isEmpty {
+//                    print("상세 정보:")
+//                    for (key, value) in userInfo {
+//                        print("  \(key): \(value)")
+//                    }
+//                }
+            }
+            print("=========================")
+        }
+    }
+    // 파일 크기 포맷팅
+    private func formatFileSize(_ byteCount: Int) -> String {
+        if byteCount < 1024 {
+            return "\(byteCount) 바이트"
+        } else if byteCount < 1024 * 1024 {
+            let kb = Double(byteCount) / 1024.0
+            return String(format: "%.1f KB", kb)
+        } else {
+            let mb = Double(byteCount) / (1024.0 * 1024.0)
+            return String(format: "%.1f MB", mb)
         }
     }
     

@@ -12,8 +12,8 @@ struct AnimationTestView: View {
     @StateObject private var animationTestViewModel = AnimationTestViewModel()
     
     // 현재 선택된 설정
-    @State private var selectedCharacterType = "egg"
-    @State private var selectedAnimationType = "eggbasic"
+    @State private var selectedCharacterType = "Egg"
+    @State private var selectedAnimationType = "eggBasic"
     
     // 애니메이션 설정
     @State private var currentFrameIndex = 0
@@ -29,11 +29,11 @@ struct AnimationTestView: View {
     @State private var animationTimer: Timer?
     
     // 캐릭터 타입 옵션
-    let characterTypes = ["egg", "quokka", "lion"]
+    let characterTypes = ["Egg", "quokka", "lion"]
     
     // 각 캐릭터 타입별 애니메이션 타입 옵션
     let animationOptions: [String: [String]] = [
-        "egg": ["eggbasic", "eggbreak", "egghatch"],
+        "Egg": ["eggBasic", "eggbreak", "egghatch"],
         "quokka": ["normal", "sleep", "play"],
         "lion": ["normal", "angry", "happy"]
     ]
@@ -53,7 +53,8 @@ struct AnimationTestView: View {
                 // 캐릭터 타입 선택
                 Picker("캐릭터 타입", selection: $selectedCharacterType) {
                     ForEach(characterTypes, id: \.self) { type in
-                        Text(type.capitalized).tag(type)
+                        //Text(type.capitalized).tag(type)
+                        Text(type).tag(type)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -72,7 +73,8 @@ struct AnimationTestView: View {
                 Picker("애니메이션 타입", selection: $selectedAnimationType) {
                     if let types = animationOptions[selectedCharacterType] {
                         ForEach(types, id: \.self) { type in
-                            Text(type.capitalized).tag(type)
+                            //Text(type.capitalized).tag(type)
+                            Text(type).tag(type)
                         }
                     }
                 }
@@ -192,6 +194,19 @@ struct AnimationTestView: View {
                         Label("다운로드", systemImage: "arrow.down.circle")
                     }
                     .disabled(animationTestViewModel.isLoading)
+                    
+                    // 단일 프레임 테스트 버튼 추가
+                    Button(action: {
+                        animationTestViewModel.downloadSingleFrame(
+                            characterType: selectedCharacterType,
+                            animationType: selectedAnimationType
+                        )
+                    }) {
+                        Label("첫 프레임만", systemImage: "1.circle")
+                    }
+                    .disabled(animationTestViewModel.isLoading)
+                    .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(8)
                     
                     // 로드 버튼
                     Button(action: loadSelectedAnimation) {
