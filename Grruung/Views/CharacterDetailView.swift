@@ -48,7 +48,7 @@ extension View {
 }
 
 struct CharacterDetailView: View {
-    // 성장 단계 더미 데이터
+    //  --------------------- 더미 데이터 ---------------------
     let growthStages: [(stage: String, image: String)] = [
         ("애기", "lizard.fill"),
         ("유아기", "hare.fill"),
@@ -61,8 +61,8 @@ struct CharacterDetailView: View {
     // 현재 성장 단계 (인덱스 기준)
     let currentStageIndex: Int = 5
     
+    // --------------------- 더미 데이터 끝 ---------------------
 
-    
     @StateObject private var viewModel: CharacterDetailViewModel
     @Environment(\.dismiss) var dismiss
     

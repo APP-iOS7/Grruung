@@ -337,7 +337,7 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "eW0tG0WuoZ1mr7Ft4Mec")
+        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "vlW4ySOc0E7frCnpNniZ")
     }
 }
 

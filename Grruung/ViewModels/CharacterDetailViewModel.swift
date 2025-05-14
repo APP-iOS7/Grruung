@@ -16,6 +16,12 @@ class CharacterDetailViewModel: ObservableObject {
     @Published var user: GRUser
     @Published var posts: [GRPost] = []
     
+    // 로딩 상태 추적을 위한 플래그
+    private var isLoadingCharacter = false
+    private var isLoadingUser = false
+    private var isLoadingPosts = false
+    
+    
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
@@ -47,6 +53,10 @@ class CharacterDetailViewModel: ObservableObject {
     }
     
     func loadCharacter(characterUUID: String) {
+        
+        guard !isLoadingCharacter else { return }
+        self.isLoadingCharacter = true
+        
         db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
             guard let self = self else { return }
             guard let data = snapshot?.data() else {
@@ -74,12 +84,26 @@ class CharacterDetailViewModel: ObservableObject {
                     status: status
                 )
             }
+            // 로딩 완료 후 플래그 해제
+            self.isLoadingCharacter = false
         }
     }
     
     func loadUser(characterUUID: String) {
+        
+        guard !isLoadingUser else { return }
+        isLoadingUser = true
+        
+        print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
         db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
             guard let self = self else { return }
+            
+            
+            if let error = error {
+                print("사용자 정보 가져오기 오류 : \(error)")
+                return
+            }
+            
             guard let documents = snapshot?.documents, !documents.isEmpty else {
                 print("No documents found")
                 return
@@ -92,6 +116,8 @@ class CharacterDetailViewModel: ObservableObject {
             let userName = data["userName"] as? String ?? ""
             let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
             
+            print("사용자 찾음 - User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
+            
             // 메인 스레드에서 user 속성 업데이트
             DispatchQueue.main.async {
                 self.user = GRUser(
@@ -101,11 +127,18 @@ class CharacterDetailViewModel: ObservableObject {
                     chosenCharacterUUID: chosenCharacterUUID
                 )
             }
-            print("User Email: \(userEmail), User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
+            
+            // 로딩 완료 후 플래그 해제
+            self.isLoadingUser = false
+            
         }
     }
     
     func loadPost(characterUUID: String, searchDate: Date) {
+        
+        // 로딩 상태 확인
+        guard !isLoadingPosts else { return }
+        isLoadingPosts = true
         print("loadPost called with characterUUID: \(characterUUID) and searchDate: \(searchDate)")
         
         let calendar = Calendar.current
@@ -187,6 +220,9 @@ class CharacterDetailViewModel: ObservableObject {
                 }
                 
                 print("Updated self.posts with \(self.posts.count) posts.")
+                
+                // 로딩 완료 후 플래그 해제
+                self.isLoadingPosts = false
             }
     }
     
