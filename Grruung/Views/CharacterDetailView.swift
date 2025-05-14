@@ -33,10 +33,18 @@ struct CharacterDetailView: View {
     @State private var isShowingNameChangeAlert = false // 이름 변경 시 사용하는 플래그
     @State private var newName: String = "" // 이름 변경 시 사용할 새로운 이름
     
+    // 캐릭터 이동 버튼 클릭 시 사용
+    @State private var goToHome = false // 홈으로 보내기 버튼 클릭 시 사용
+    @State private var goToParadise = false // 동산으로 보내기 버튼 클릭 시 사용
+    @State private var goToSpace = false // 우주로 보내기 버튼 클릭 시 사용
+    
     
 
     private let estimatedRowHeight: CGFloat = 88.0 // 각 List 행의 예상 높이를 계산합니다. (리스트 크기 조정 시 필요)
     private let deviceModel: String = UIDevice.modelName() // 현재 기기 모델을 가져옵니다.
+    
+    // 성장 단계
+    var phase: CharacterPhase = .egg
     
     // 외부에서 전달받은 characterUUID
     var characterUUID: String
@@ -142,7 +150,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
                     .font(.subheadline)
-                Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
+                Text("생 후: + \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
                     .font(.subheadline)
             }
             .padding(.trailing, 20)
@@ -227,9 +235,8 @@ struct CharacterDetailView: View {
                     .padding(.horizontal, 10)
                 
                 VStack(alignment: .leading) {
-                    Text("놀이 : 10회")
-                    Text("산책 : 5회")
-                    Text("같이 걷기: 20.5 km")
+                    Text("활동량 : \(viewModel.characterStatus.activity)")
+                 
                 }
                 .padding(.trailing, 20)
                 Spacer()

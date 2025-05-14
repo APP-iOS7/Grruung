@@ -13,11 +13,14 @@ import FirebaseStorage
 class CharacterDetailViewModel: ObservableObject {
     
     @Published var character: GRCharacter
+    @Published var characterStatus: GRCharacterStatus = GRCharacterStatus()
     @Published var user: GRUser
     @Published var posts: [GRPost] = []
     
     // 로딩 상태 추적을 위한 플래그
     private var isLoadingCharacter = false
+    // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
+    //    private var isLoadingCharacterStatus = false
     private var isLoadingUser = false
     private var isLoadingPosts = false
     
@@ -34,7 +37,6 @@ class CharacterDetailViewModel: ObservableObject {
             imageName: "pawprint.fill",
             birthDate: Date(),
             createdAt: Date()
-            
         )
         
         self.user = GRUser(
@@ -47,6 +49,8 @@ class CharacterDetailViewModel: ObservableObject {
         // 초기화시 UUID가 제공되면 데이터 로드
         if !characterUUID.isEmpty {
             self.loadCharacter(characterUUID: characterUUID)
+            // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
+            //            self.loadCharacterStatus(characterUUID: characterUUID)
             self.loadPost(characterUUID: characterUUID, searchDate: Date())
             self.loadUser(characterUUID: characterUUID)
         }
@@ -70,6 +74,11 @@ class CharacterDetailViewModel: ObservableObject {
             let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             
+            // 데이터 파싱 및 GRCharacterStatus 생성
+            let level = data["level"] as? Int ?? 1
+            let exp = data["exp"] as? Int ?? 0
+            let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
+            let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
             
             let status = GRCharacterStatus() // 기본 상태로 초기화
             
@@ -83,11 +92,51 @@ class CharacterDetailViewModel: ObservableObject {
                     createdAt: createdAt,
                     status: status
                 )
+                
+                self.characterStatus = GRCharacterStatus(
+                    level: level,
+                    exp: exp,
+                    expToNextLevel: expToNextLevel,
+                    phase: phase
+                )
             }
             // 로딩 완료 후 플래그 해제
             self.isLoadingCharacter = false
         }
     }
+    
+    
+    // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
+    //    func loadCharacterStatus(characterUUID: String) {
+    //
+    //        guard !isLoadingCharacterStatus else { return }
+    //        self.isLoadingCharacterStatus = true
+    //
+    //        db.collection("GRCharacter").document(characterUUID).getDocument { [weak self] snapshot, error in
+    //            guard let self = self else { return }
+    //            guard let data = snapshot?.data() else {
+    //                return
+    //            }
+    //
+    //            // 데이터 파싱 및 GRCharacterStatus 생성
+    //            let level = data["level"] as? Int ?? 1
+    //            let exp = data["exp"] as? Int ?? 0
+    //            let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
+    //            let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
+    //
+    //            DispatchQueue.main.async {
+    //                self.characterStatus = GRCharacterStatus(
+    //                    level: level,
+    //                    exp: exp,
+    //                    expToNextLevel: expToNextLevel,
+    //                    phase: phase
+    //                )
+    //            }
+    //            // 로딩 완료 후 플래그 해제
+    //            self.isLoadingCharacterStatus = false
+    //        }
+    //    }
+    
     
     func loadUser(characterUUID: String) {
         
