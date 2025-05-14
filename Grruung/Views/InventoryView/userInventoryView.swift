@@ -106,6 +106,35 @@ struct userInventoryView: View {
         }
     }
     
+    fileprivate func itemCellView(_ item: GRUserInventory) -> HStack<TupleView<(some View, VStack<TupleView<(HStack<TupleView<(Text, Spacer, Text)>>, some View, Text)>>)>> {
+        return HStack {
+            Image(systemName: item.userItemImage)
+                .resizable()
+                .frame(width: 60, height: 60)
+                .aspectRatio(contentMode: .fit)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(lineWidth: 1)
+                        .background(Color.gray.opacity(0.3))
+                }
+                .padding(.trailing, 8)
+            
+            VStack(alignment: .leading) {
+                HStack {
+                    Text(item.userItemName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Spacer()
+                    Text(item.userItemType.rawValue)
+                        .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
+                }
+                Text(item.userItemDescription)
+                    .lineLimit(1)
+                Text("보유: \(item.userIteamQuantity)")
+            }
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -129,31 +158,9 @@ struct userInventoryView: View {
                 } else {
                     LazyVGrid(columns: columns) {
                         ForEach(sortedItems, id: \.userItemNumber) { item in
-                            HStack {
-                                Image(systemName: item.userItemImage)
-                                    .resizable()
-                                    .frame(width: 60, height: 60)
-                                    .aspectRatio(contentMode: .fit)
-                                    .overlay {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(lineWidth: 1)
-                                            .background(Color.gray.opacity(0.3))
-                                    }
-                                    .padding(.trailing, 8)
-                                
-                                VStack(alignment: .leading) {
-                                    HStack {
-                                        Text(item.userItemName)
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                        Spacer()
-                                        Text(item.userItemType.rawValue)
-                                            .foregroundStyle(item.userItemType.rawValue == "소모품" ? .red : .gray)
-                                    }
-                                    Text(item.userItemDescription)
-                                        .lineLimit(1)
-                                    Text("보유: \(item.userIteamQuantity)")
-                                }
+                            NavigationLink(destination: userInventoryDetailView(item: item)) {
+                                itemCellView(item)
+                                    .foregroundStyle(.black)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
