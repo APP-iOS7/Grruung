@@ -226,4 +226,17 @@ class CharacterDetailViewModel: ObservableObject {
             }
     }
     
+    func updateCharacterName(characterUUID: String, newName: String) {
+        db.collection("GRCharacter").document(characterUUID).updateData([
+            "name": newName
+        ]) { error in
+            if let error = error {
+                print("Error updating character name: \(error)")
+            } else {
+                print("Character name updated successfully")
+                self.character.name = newName // 로컬 캐릭터 이름 업데이트
+            }
+        }
+    }
+    
 } // end of class

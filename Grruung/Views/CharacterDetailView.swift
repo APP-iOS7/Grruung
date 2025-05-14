@@ -25,13 +25,21 @@ struct CharacterDetailView: View {
     // --------------------- 더미 데이터 끝 ---------------------
     
     @StateObject private var viewModel: CharacterDetailViewModel
+    
     @Environment(\.dismiss) var dismiss
     
     @State private var searchDate: Date = Date()
-    var characterUUID: String
+    @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
+    @State private var isShowingNameChangeAlert = false // 이름 변경 시 사용하는 플래그
+    @State private var newName: String = "" // 이름 변경 시 사용할 새로운 이름
     
-    // 각 List 행의 예상 높이를 계산합니다.
-    let estimatedRowHeight: CGFloat = 88.0
+    
+
+    private let estimatedRowHeight: CGFloat = 88.0 // 각 List 행의 예상 높이를 계산합니다. (리스트 크기 조정 시 필요)
+    private let deviceModel: String = UIDevice.modelName() // 현재 기기 모델을 가져옵니다.
+    
+    // 외부에서 전달받은 characterUUID
+    var characterUUID: String
     
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
@@ -39,32 +47,21 @@ struct CharacterDetailView: View {
         self._viewModel = StateObject(wrappedValue: CharacterDetailViewModel(characterUUID: characterUUID))
     }
     
-    @State private var selectedPostForEdit: PostIdentifier? // (characterUUID, postID)
-    
-    
     var body: some View {
         ScrollView {
             VStack {
-                
                 // 캐릭터 정보 영역
                 characterInfoSection
-                
                 // 성장 과정 영역
                 growthProgressSection
-                
                 // 날짜 탐색 버튼
                 dateNavigationSection
-                
                 // 활동 기록 영역
                 activitySection
-                
                 // 들려준 이야기 영역
                 storyListSection
-                
             }
-            
             Spacer()
-            
         } // end of ScrollView
         .onAppear {
             print("CharacterDetailView appeared. Refreshing data for character: \(characterUUID) and date: \(searchDateString(date: searchDate))")
@@ -79,13 +76,12 @@ struct CharacterDetailView: View {
         }
         .navigationTitle("\(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)")
         .navigationBarTitleDisplayMode(.inline)
-        
-        
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button(action: {
-                        print("이름 바꿔주기 버튼 클릭 됨")
+                        newName = viewModel.character.name
+                        isShowingNameChangeAlert = true
                     }) {
                         Text("이름 바꿔주기")
                     }
@@ -98,6 +94,22 @@ struct CharacterDetailView: View {
                     Image(systemName: "ellipsis.circle")
                 }
             }
+        }
+        .alert("이름 바꾸기", isPresented: $isShowingNameChangeAlert) {
+            TextField("새로운 이름", text: $newName)
+                .autocorrectionDisabled()
+            
+            Button("취소", role: .cancel) {
+                newName = ""
+            }
+            
+            Button("변경") {
+                if !newName.isEmpty {
+                    viewModel.updateCharacterName(characterUUID: characterUUID, newName: newName)
+                }
+            }
+        } message: {
+            Text("\(viewModel.character.name)의 새로운 이름을 입력해주세요.")
         }
     }
     
@@ -128,7 +140,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("종: \(viewModel.character.species.rawValue)")
                     .font(.subheadline)
-                Text("사는 곳: \(viewModel.user.userName)의 \(UIDevice.modelName())")
+                Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
                     .font(.subheadline)
                 Text("생 후: \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
                     .font(.subheadline)
@@ -178,7 +190,6 @@ struct CharacterDetailView: View {
                 print("이전 기록 버튼 클릭됨")
             }
             Text("\(searchDateString(date: searchDate))")
-            
             Button(">") {
                 searchDate = searchDate.addingTimeInterval(30 * 24 * 60 * 60)
                 viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
@@ -266,7 +277,6 @@ struct CharacterDetailView: View {
                                         .frame(width: 60, height: 60)
                                         .padding(10)
                                 }
-                                
                                 VStack(alignment: .leading) {
                                     Text(viewModel.posts[index].postTitle)
                                         .font(.headline)
@@ -275,7 +285,6 @@ struct CharacterDetailView: View {
                                         .font(.subheadline)
                                 }
                             }
-                            
                             Spacer()
                         }
                         .listRowInsets(EdgeInsets())
@@ -307,8 +316,10 @@ struct CharacterDetailView: View {
                 }
                 .listStyle(PlainListStyle())
                 .padding(.horizontal)
-                .shrinkToFitListContent(itemCount: viewModel.posts.count, estimatedRowHeight: estimatedRowHeight)
-                
+                .shrinkToFitListContent(
+                    itemCount: viewModel.posts.count,
+                    estimatedRowHeight: estimatedRowHeight
+                )
             }
         }
         .padding(.bottom, 30)
