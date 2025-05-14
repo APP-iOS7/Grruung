@@ -55,16 +55,21 @@ struct userInventoryDetailView: View {
         
         if let remainItemCount {
             VStack {
-                TextField("입력하세요", text: $typeItemCount)
-                    .keyboardType(.numberPad)
-                    .onSubmit {
-                        if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
-                            useItemCount = Double(typeItemCount) ?? useItemCount
-                        } else {
-                            showingItemCountAlert = true
-                            typeItemCount = ""
+                HStack {
+                    Text("수량: ")
+                    TextField("입력", text: $typeItemCount)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 50)
+                        .onSubmit {
+                            if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+                                useItemCount = Double(typeItemCount) ?? useItemCount
+                            } else {
+                                showingItemCountAlert = true
+                                typeItemCount = ""
+                            }
                         }
-                    }
+                }
 
                 HStack {
                     Button(action: {
