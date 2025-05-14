@@ -565,16 +565,3 @@ class VoiceChatViewModel: ObservableObject {
     }
 }
 
-//
-//  VoiceChatViewModel.swift
-//  Grruung
-//
-//  Created by KimJunsoo on 5/12/25.
-//
-
-class VoiceChatViewModel: ObservableObject {
-
-    init() {
-
-    }
-}
