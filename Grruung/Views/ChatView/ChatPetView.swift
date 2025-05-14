@@ -68,7 +68,7 @@ struct ChatPetView: View {
                 )
             }
             .sheet(isPresented: $showVoiceChatLive) {
-                VoiceChatLiveView(
+                VoiceChatView(
                     character: character,
                     prompt: prompt
                 )
@@ -230,8 +230,3 @@ struct MessageBubble: View {
     }
 }
 
-/// 알림 아이템 (오류 표시용)
-struct AlertItem: Identifiable {
-    let id = UUID()
-    let message: String
-}
