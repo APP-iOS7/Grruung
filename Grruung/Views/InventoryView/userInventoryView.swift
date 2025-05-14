@@ -9,56 +9,56 @@ import SwiftUI
 
 struct userInventoryView: View {
     @State private var garaItems: [GRUserInventory] = [
-//        GRUserInventory(
-//            userItemNumber: 1,
-//            userItemName: "비타민 젤리",
-//            userItemType: .consumable,
-//            userItemImage: "pill",
-//            userIteamQuantity: Int.random(in: 1...10),
-//            userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
-//            userItemCategory: .drug,
-//            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//        ),
-//        GRUserInventory(
-//            userItemNumber: 2,
-//            userItemName: "딸랑이 인형",
-//            userItemType: .permanent,
-//            userItemImage: "soccerball",
-//            userIteamQuantity: Int.random(in: 1...10),
-//            userItemDescription: "지루할 틈이 없어요! 딸랑딸랑 장난감.",
-//            userItemCategory: .toy,
-//            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//        ),
-//        GRUserInventory(
-//            userItemNumber: 3,
-//            userItemName: "감기약",
-//            userItemType: .consumable,
-//            userItemImage: "pill",
-//            userIteamQuantity: Int.random(in: 1...10),
-//            userItemDescription: "달달한 감기약이에요.",
-//            userItemCategory: .drug,
-//            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//        ),
-//        GRUserInventory(
-//            userItemNumber: 4,
-//            userItemName: "알록달록 공",
-//            userItemType: .permanent,
-//            userItemImage: "soccerball",
-//            userIteamQuantity: Int.random(in: 1...10),
-//            userItemDescription: "놀기 좋아하는 펫의 최고의 선택.",
-//            userItemCategory: .toy,
-//            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//        ),
-//        GRUserInventory(
-//            userItemNumber: 5,
-//            userItemName: "에너지 드링크",
-//            userItemType: .consumable,
-//            userItemImage: "pill",
-//            userIteamQuantity: Int.random(in: 1...10),
-//            userItemDescription: "타우린이 많이 들어있어요.",
-//            userItemCategory: .drug,
-//            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//        )
+        GRUserInventory(
+            userItemNumber: 1,
+            userItemName: "비타민 젤리",
+            userItemType: .consumable,
+            userItemImage: "pill",
+            userIteamQuantity: Int.random(in: 1...10),
+            userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
+            userItemCategory: .drug,
+            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+        ),
+        GRUserInventory(
+            userItemNumber: 2,
+            userItemName: "딸랑이 인형",
+            userItemType: .permanent,
+            userItemImage: "soccerball",
+            userIteamQuantity: Int.random(in: 1...10),
+            userItemDescription: "지루할 틈이 없어요! 딸랑딸랑 장난감.",
+            userItemCategory: .toy,
+            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+        ),
+        GRUserInventory(
+            userItemNumber: 3,
+            userItemName: "감기약",
+            userItemType: .consumable,
+            userItemImage: "pill",
+            userIteamQuantity: Int.random(in: 1...10),
+            userItemDescription: "달달한 감기약이에요.",
+            userItemCategory: .drug,
+            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+        ),
+        GRUserInventory(
+            userItemNumber: 4,
+            userItemName: "알록달록 공",
+            userItemType: .permanent,
+            userItemImage: "soccerball",
+            userIteamQuantity: Int.random(in: 1...10),
+            userItemDescription: "놀기 좋아하는 펫의 최고의 선택.",
+            userItemCategory: .toy,
+            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+        ),
+        GRUserInventory(
+            userItemNumber: 5,
+            userItemName: "에너지 드링크",
+            userItemType: .consumable,
+            userItemImage: "pill",
+            userIteamQuantity: Int.random(in: 1...10),
+            userItemDescription: "타우린이 많이 들어있어요.",
+            userItemCategory: .drug,
+            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+        )
     ]
     
     private let inventoryEmptyText: [String] = [
