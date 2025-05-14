@@ -80,50 +80,96 @@ struct userInventoryView: View {
         GridItem(.flexible())
     ]
     
+    @State private var sortItemCategory: SortItemCategory = .all
+    @State private var sortItemType: SortItemType = .all
+    
+    enum SortItemCategory: String, CaseIterable {
+        case all = "전체"
+        case drug = "약품"
+        case toy = "장난감"
+    }
+    
+    enum SortItemType: String {
+        case all = "전체"
+        case consumable = "소모품"
+        case permanent = "영구"
+    }
+    
+    var sortedItems: [GRUserInventory] {
+        switch sortItemCategory {
+        case .all:
+            return garaItems
+        case .drug:
+            return garaItems.filter { $0.userItemCategory == .drug }
+        case .toy:
+            return garaItems.filter { $0.userItemCategory == .toy }
+        }
+    }
+    
     var body: some View {
-            if garaItems.isEmpty {
-                Text(inventoryEmptyText.randomElement() ?? "텅...")
-                    .lineLimit(1)
-                    .font(.title2)
-                    .foregroundStyle(.gray)
-                    .padding()
-            } else {
-                ScrollView {
-                LazyVGrid(columns: columns) {
-                    ForEach(garaItems, id: \.userItemNumber) { item in
-                        HStack {
-                            Image(systemName: item.userItemImage)
-                                .resizable()
-                                .frame(width: 60, height: 60)
-                                .aspectRatio(contentMode: .fit)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(lineWidth: 1)
-                                        .background(Color.gray.opacity(0.3))
+        NavigationStack {
+            ScrollView {
+                Picker("Choose a category", selection: $sortItemCategory) {
+                    ForEach(SortItemCategory.allCases, id: \.self) { category in
+                        Text(category.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .background(.yellow)
+                .cornerRadius(15)
+                .padding()
+                
+                if garaItems.isEmpty {
+                    Text(inventoryEmptyText.randomElement() ?? "텅...")
+                        .lineLimit(1)
+                        .font(.title2)
+                        .foregroundStyle(.gray)
+                        .padding()
+                } else {
+                    LazyVGrid(columns: columns) {
+                        ForEach(sortedItems, id: \.userItemNumber) { item in
+                            HStack {
+                                Image(systemName: item.userItemImage)
+                                    .resizable()
+                                    .frame(width: 60, height: 60)
+                                    .aspectRatio(contentMode: .fit)
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(lineWidth: 1)
+                                            .background(Color.gray.opacity(0.3))
+                                    }
+                                    .padding(.trailing, 8)
+                                
+                                VStack(alignment: .leading) {
+                                    HStack {
+                                        Text(item.userItemName)
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                        Spacer()
+                                        Text(item.userItemType.rawValue)
+                                            .foregroundStyle(item.userItemType.rawValue == "소모품" ? .red : .gray)
+                                    }
+                                    Text(item.userItemDescription)
+                                        .lineLimit(1)
+                                    Text("보유: \(item.userIteamQuantity)")
                                 }
-                                .padding(.trailing, 8)
-                            
-                            VStack(alignment: .leading) {
-                                Text(item.userItemName)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text(item.userItemDescription)
-                                    .lineLimit(1)
-                                Text("보유: \(item.userIteamQuantity)")
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(lineWidth: 2)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 32)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(lineWidth: 2)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
                 }
             }
+            .navigationTitle("가방")
         }
+        
     }
 }
 
