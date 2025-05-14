@@ -7,45 +7,6 @@
 
 import SwiftUI
 
-// List의 높이를 콘텐츠에 맞게 조절하는 ViewModifier
-struct ShrinkListHeightModifier: ViewModifier {
-    let itemCount: Int
-    let estimatedRowHeight: CGFloat
-    
-    private var totalHeight: CGFloat {
-        if itemCount == 0 {
-            return 0 // 아이템이 없으면 높이는 0
-        }
-        // 전체 높이 = 아이템 개수 * 각 행의 예상 높이
-        // PlainListStyle의 경우, 구분선은 매우 얇거나 행 높이 내에 포함될 수 있습니다.
-        // 정확한 계산을 위해서는 (itemCount - 1) * separatorHeight를 더할 수 있지만,
-        // 보통은 itemCount * estimatedRowHeight로 충분합니다.
-        return CGFloat(itemCount) * estimatedRowHeight
-    }
-    
-    func body(content: Content) -> some View {
-        content.frame(height: totalHeight)
-    }
-}
-
-struct PostIdentifier: Hashable, Identifiable {
-    let characterUUID: String
-    let postID: String
-    var id: String { "\(characterUUID)-\(postID)" }
-    
-}
-
-extension View {
-    /// List의 높이를 콘텐츠 크기에 맞추어 동적으로 조절합니다.
-    /// List가 다른 ScrollView 내부에 있을 때 이중 스크롤 문제를 방지하는 데 도움이 됩니다.
-    ///
-    /// - Parameters:
-    ///   - itemCount: 리스트에 표시될 아이템의 총 개수입니다.
-    ///   - estimatedRowHeight: 각 행의 예상 높이입니다. 행 내부의 패딩을 포함해야 합니다.
-    func shrinkToFitListContent(itemCount: Int, estimatedRowHeight: CGFloat) -> some View {
-        self.modifier(ShrinkListHeightModifier(itemCount: itemCount, estimatedRowHeight: estimatedRowHeight))
-    }
-}
 
 struct CharacterDetailView: View {
     //  --------------------- 더미 데이터 ---------------------
@@ -62,7 +23,7 @@ struct CharacterDetailView: View {
     let currentStageIndex: Int = 5
     
     // --------------------- 더미 데이터 끝 ---------------------
-
+    
     @StateObject private var viewModel: CharacterDetailViewModel
     @Environment(\.dismiss) var dismiss
     
@@ -368,6 +329,46 @@ struct CharacterDetailView: View {
     
 } // end of CharacterDetailView
 
+// 포스트 식별자 구조체
+struct PostIdentifier: Hashable, Identifiable {
+    let characterUUID: String
+    let postID: String
+    var id: String { "\(characterUUID)-\(postID)" }
+    
+}
+
+// 리스트 의 높이를 콘텐츠 크기에 맞추어 조절하는 View Extension
+extension View {
+    /// List의 높이를 콘텐츠 크기에 맞추어 동적으로 조절합니다.
+    /// List가 다른 ScrollView 내부에 있을 때 이중 스크롤 문제를 방지하는 데 도움이 됩니다.
+    /// - Parameters:
+    ///   - itemCount: 리스트에 표시될 아이템의 총 개수입니다.
+    ///   - estimatedRowHeight: 각 행의 예상 높이입니다. 행 내부의 패딩을 포함해야 합니다.
+    func shrinkToFitListContent(itemCount: Int, estimatedRowHeight: CGFloat) -> some View {
+        self.modifier(ShrinkListHeightModifier(itemCount: itemCount, estimatedRowHeight: estimatedRowHeight))
+    }
+}
+
+// List의 높이를 콘텐츠에 맞게 조절하는 ViewModifier
+struct ShrinkListHeightModifier: ViewModifier {
+    let itemCount: Int
+    let estimatedRowHeight: CGFloat
+    
+    private var totalHeight: CGFloat {
+        if itemCount == 0 {
+            return 0 // 아이템이 없으면 높이는 0
+        }
+        // 전체 높이 = 아이템 개수 * 각 행의 예상 높이
+        // PlainListStyle의 경우, 구분선은 매우 얇거나 행 높이 내에 포함될 수 있습니다.
+        // 정확한 계산을 위해서는 (itemCount - 1) * separatorHeight를 더할 수 있지만,
+        // 보통은 itemCount * estimatedRowHeight로 충분합니다.
+        return CGFloat(itemCount) * estimatedRowHeight
+    }
+    
+    func body(content: Content) -> some View {
+        content.frame(height: totalHeight)
+    }
+}
 
 // MARK: NavigationView 사용 시 수정 뷰로 이동 안되므로 꼭 상위 뷰에서 NavigationStack을 사용해야 함
 #Preview {
