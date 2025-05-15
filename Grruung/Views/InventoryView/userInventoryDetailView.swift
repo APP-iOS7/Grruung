@@ -90,6 +90,13 @@ struct userInventoryDetailView: View {
                 
                 HStack {
                     Button(action: {
+                        useItemCount = 0
+                        typeItemCount = "0"
+                    }, label: {
+                        Text("최소")
+                            .foregroundStyle(.black)
+                    })
+                    Button(action: {
                         if useItemCount > 0 {
                             useItemCount -= 1
                             typeItemCount = Int(useItemCount).description
@@ -118,6 +125,13 @@ struct userInventoryDetailView: View {
                             .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
                     })
                     .disabled(useItemCount >= remainItemCount)
+                    Button(action: {
+                        useItemCount = remainItemCount
+                        typeItemCount = Int(remainItemCount).description
+                    }, label: {
+                        Text("최대")
+                            .foregroundStyle(.black)
+                    })
                 }
                 .padding(.horizontal, 16)
                 
