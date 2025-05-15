@@ -38,13 +38,12 @@ struct CharacterDetailView: View {
     @State private var goToParadise = false // 동산으로 보내기 버튼 클릭 시 사용
     @State private var goToSpace = false // 우주로 보내기 버튼 클릭 시 사용
     
-    
-
     private let estimatedRowHeight: CGFloat = 88.0 // 각 List 행의 예상 높이를 계산합니다. (리스트 크기 조정 시 필요)
     private let deviceModel: String = UIDevice.modelName() // 현재 기기 모델을 가져옵니다.
     
     // 성장 단계
     var phase: CharacterPhase = .egg
+    var characterAddress: Address = .userHome
     
     // 외부에서 전달받은 characterUUID
     var characterUUID: String
@@ -93,10 +92,12 @@ struct CharacterDetailView: View {
                     }) {
                         Text("이름 바꿔주기")
                     }
-                    Button(action: {
-                        print("동산으로 보내기 버튼 클릭 됨")
-                    }) {
-                        Text("동산으로 보내기")
+                    
+                    // 위치 이동 버튼들을 동적으로 생성
+                    ForEach(getAddressMenuItems(), id: \.id) { item in
+                        Button(action: item.action) {
+                            Text(item.title)
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -236,7 +237,7 @@ struct CharacterDetailView: View {
                 
                 VStack(alignment: .leading) {
                     Text("활동량 : \(viewModel.characterStatus.activity)")
-                 
+                    
                 }
                 .padding(.trailing, 20)
                 Spacer()
@@ -345,6 +346,47 @@ struct CharacterDetailView: View {
         return formatter.string(from: date)
     }
     
+    func getAvailableDestinations(from currentLocation: Address) -> [Address] {
+        switch currentLocation {
+        case .userHome:
+            return [.paradise, .space]
+        case .paradise:
+            return [.userHome, .space]
+        case .space:
+            return [.userHome, .paradise]
+        }
+    }
+    
+    func getAddressMenuItems() -> [MenuItem] {
+        guard let currentAddress = Address(rawValue: viewModel.characterStatus.address) else{
+            return []
+        }
+        
+        let destinations = getAvailableDestinations(from: currentAddress)
+        
+        return destinations.map { destination in
+            let name = getAddressDisplayName(destination)
+            return MenuItem(
+                title: "\(name)(으)로 보내기",
+                action: {
+                    print("이동 버튼 클릭됨: \(name)")
+                    viewModel.updateAddress(characterUUID: characterUUID, newAddress: destination)
+                }
+            )
+        }
+    }
+    
+    func getAddressDisplayName(_ address: Address) -> String {
+        switch address {
+        case .userHome:
+            return "메인"
+        case .paradise:
+            return "동산"
+        case .space:
+            return "우주"
+        }
+    }
+    
 } // end of CharacterDetailView
 
 // 포스트 식별자 구조체
@@ -353,6 +395,12 @@ struct PostIdentifier: Hashable, Identifiable {
     let postID: String
     var id: String { "\(characterUUID)-\(postID)" }
     
+}
+
+struct MenuItem: Identifiable {
+    let id = UUID()
+    let title: String
+    let action: () -> Void
 }
 
 // 리스트 의 높이를 콘텐츠 크기에 맞추어 조절하는 View Extension

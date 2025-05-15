@@ -79,6 +79,7 @@ class CharacterDetailViewModel: ObservableObject {
             let exp = data["exp"] as? Int ?? 0
             let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
             let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
+            let address = data["address"] as? String ?? "동산"
             
             let status = GRCharacterStatus() // 기본 상태로 초기화
             
@@ -97,7 +98,8 @@ class CharacterDetailViewModel: ObservableObject {
                     level: level,
                     exp: exp,
                     expToNextLevel: expToNextLevel,
-                    phase: phase
+                    phase: phase,
+                    address: address
                 )
             }
             // 로딩 완료 후 플래그 해제
@@ -137,6 +139,19 @@ class CharacterDetailViewModel: ObservableObject {
     //        }
     //    }
     
+    func updateAddress(characterUUID: String, newAddress: Address) {
+        
+        db.collection("GRCharacter").document(characterUUID).updateData([
+            "address": newAddress.rawValue
+        ]) { error in
+            if let error = error {
+                print("Error updating address: \(error)")
+            } else {
+                print("Address updated successfully")
+                self.characterStatus.address = newAddress.rawValue // 로컬 캐릭터 주소 업데이트
+            }
+        }
+    }
     
     func loadUser(characterUUID: String) {
         
