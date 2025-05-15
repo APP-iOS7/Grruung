@@ -18,6 +18,8 @@ struct userInventoryDetailView: View {
     
     @State private var showingItemCountAlert: Bool = false
     
+    @State private var showingUseAlert: Bool = false
+    
     @FocusState private var isFocused: Bool
     
     var body: some View {
@@ -53,6 +55,13 @@ struct userInventoryDetailView: View {
         }
         .alert("올바른 수를 입력해주세요", isPresented: $showingItemCountAlert) {
             Button("확인", role: .cancel) {}
+        }
+        .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
+            Button("취소", role: .cancel) {}
+            Button("확인", role: .destructive) {
+                // TODO: 사용 수량 만큼 파이어베이스에 저장하기
+                
+            }
         }
         
         if let remainItemCount {
@@ -150,7 +159,7 @@ struct userInventoryDetailView: View {
         Text("\(item.userItemName) 를 먹으면 몸에 좋아집니다")
         
         Button(action: {
-            
+            showingUseAlert = true
         }, label: {
             Text("사용")
                 .foregroundColor(.black)
