@@ -170,7 +170,7 @@ struct userInventoryView: View {
                                 .stroke(lineWidth: 2)
                         }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 32)
+                        .padding(.bottom, 16)
                     }
                 }
             }

@@ -18,6 +18,8 @@ struct userInventoryDetailView: View {
     
     @State private var showingItemCountAlert: Bool = false
     
+    @FocusState private var isFocused: Bool
+    
     var body: some View {
         HStack {
             Image(systemName: item.userItemImage)
@@ -66,23 +68,40 @@ struct userInventoryDetailView: View {
                                 useItemCount = Double(typeItemCount) ?? useItemCount
                             } else {
                                 showingItemCountAlert = true
-                                typeItemCount = ""
+                                typeItemCount = Int(useItemCount).description
+                            }
+                        }
+                        .focused($isFocused)
+                        .toolbar {
+                            ToolbarItemGroup(placement: .keyboard) {
+                                Spacer()
+                                Button("확인") {
+                                    isFocused = false
+                                    if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+                                        useItemCount = Double(typeItemCount) ?? useItemCount
+                                    } else {
+                                        showingItemCountAlert = true
+                                        typeItemCount = Int(useItemCount).description
+                                    }
+                                }
                             }
                         }
                 }
-
+                
                 HStack {
                     Button(action: {
                         if useItemCount > 0 {
                             useItemCount -= 1
+                            typeItemCount = Int(useItemCount).description
                         }
                         
                     }, label: {
                         Image(systemName: "minus.circle.fill")
                             .resizable()
                             .frame(width: 25, height: 25)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(useItemCount <= 0 ? .gray : .black)
                     })
+                    .disabled(useItemCount <= 0)
                     
                     Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
                         .tint(.green)
@@ -90,13 +109,15 @@ struct userInventoryDetailView: View {
                     Button(action: {
                         if useItemCount < remainItemCount {
                             useItemCount += 1
+                            typeItemCount = Int(useItemCount).description
                         }
                     }, label: {
                         Image(systemName: "plus.circle.fill")
                             .resizable()
                             .frame(width: 25, height: 25)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
                     })
+                    .disabled(useItemCount >= remainItemCount)
                 }
                 .padding(.horizontal, 16)
                 
@@ -109,7 +130,7 @@ struct userInventoryDetailView: View {
             )
             .padding(.horizontal)
         }
-            
+        
         
         // 아이템 효과 설명
         Text("\(item.userItemName) 를 먹으면 몸에 좋아집니다")
