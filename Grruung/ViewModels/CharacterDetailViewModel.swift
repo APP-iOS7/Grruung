@@ -18,6 +18,7 @@ class CharacterDetailViewModel: ObservableObject {
     @Published var posts: [GRPost] = []
     
     // 로딩 상태 추적을 위한 플래그
+    @Published var isLoading  = false
     private var isLoadingCharacter = false
     // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
     //    private var isLoadingCharacterStatus = false
@@ -57,9 +58,9 @@ class CharacterDetailViewModel: ObservableObject {
     }
     
     func loadCharacter(characterUUID: String) {
-        
         guard !isLoadingCharacter else { return }
         self.isLoadingCharacter = true
+        self.isLoading = true
         
         db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
             guard let self = self else { return }
@@ -104,59 +105,58 @@ class CharacterDetailViewModel: ObservableObject {
             }
             // 로딩 완료 후 플래그 해제
             self.isLoadingCharacter = false
+            self.checkLoadingComplete()
         }
     }
     
-    
-    // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
-    //    func loadCharacterStatus(characterUUID: String) {
-    //
-    //        guard !isLoadingCharacterStatus else { return }
-    //        self.isLoadingCharacterStatus = true
-    //
-    //        db.collection("GRCharacter").document(characterUUID).getDocument { [weak self] snapshot, error in
-    //            guard let self = self else { return }
-    //            guard let data = snapshot?.data() else {
-    //                return
-    //            }
-    //
-    //            // 데이터 파싱 및 GRCharacterStatus 생성
-    //            let level = data["level"] as? Int ?? 1
-    //            let exp = data["exp"] as? Int ?? 0
-    //            let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
-    //            let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
-    //
-    //            DispatchQueue.main.async {
-    //                self.characterStatus = GRCharacterStatus(
-    //                    level: level,
-    //                    exp: exp,
-    //                    expToNextLevel: expToNextLevel,
-    //                    phase: phase
-    //                )
-    //            }
-    //            // 로딩 완료 후 플래그 해제
-    //            self.isLoadingCharacterStatus = false
-    //        }
-    //    }
+    func updateCharacterName(characterUUID: String, newName: String) {
+        // 로딩 상태 확인
+        guard !isLoadingCharacter else { return }
+        isLoadingCharacter = true
+        self.isLoading = true
+        
+        db.collection("GRCharacter").document(characterUUID).updateData([
+            "name": newName
+        ]) { error in
+            if let error = error {
+                print("Error updating character name: \(error)")
+                self.isLoadingCharacter = false
+                self.checkLoadingComplete()
+            } else {
+                print("Character name updated successfully")
+                self.character.name = newName // 로컬 캐릭터 이름 업데이트
+            }
+            // 로딩 완료 후 플래그 해제
+            self.isLoadingCharacter = false
+            self.checkLoadingComplete()
+        }
+    }
     
     func updateAddress(characterUUID: String, newAddress: Address) {
-        
+        // 로딩 상태 확인
+        guard !isLoadingCharacter else { return }
+        isLoadingCharacter = true
+        isLoading = true
         db.collection("GRCharacter").document(characterUUID).updateData([
             "address": newAddress.rawValue
         ]) { error in
             if let error = error {
                 print("Error updating address: \(error)")
+                self.isLoadingCharacter = false
+                self.checkLoadingComplete()
             } else {
                 print("Address updated successfully")
                 self.characterStatus.address = newAddress.rawValue // 로컬 캐릭터 주소 업데이트
             }
+            self.isLoadingCharacter = false
+            self.checkLoadingComplete()
         }
     }
     
     func loadUser(characterUUID: String) {
-        
         guard !isLoadingUser else { return }
         isLoadingUser = true
+        self.isLoading = true
         
         print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
         db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
@@ -165,11 +165,15 @@ class CharacterDetailViewModel: ObservableObject {
             
             if let error = error {
                 print("사용자 정보 가져오기 오류 : \(error)")
+                self.isLoadingUser = false
+                self.checkLoadingComplete()
                 return
             }
             
             guard let documents = snapshot?.documents, !documents.isEmpty else {
                 print("No documents found")
+                self.isLoadingUser = false
+                self.checkLoadingComplete()
                 return
             }
             
@@ -194,17 +198,12 @@ class CharacterDetailViewModel: ObservableObject {
             
             // 로딩 완료 후 플래그 해제
             self.isLoadingUser = false
-            
+            self.checkLoadingComplete()
         }
     }
     
     func loadPost(characterUUID: String, searchDate: Date) {
-        
-        // 로딩 상태 확인
-        guard !isLoadingPosts else { return }
-        isLoadingPosts = true
         print("loadPost called with characterUUID: \(characterUUID) and searchDate: \(searchDate)")
-        
         let calendar = Calendar.current
         let month = calendar.component(.month, from: searchDate)
         let year = calendar.component(.year, from: searchDate)
@@ -213,20 +212,32 @@ class CharacterDetailViewModel: ObservableObject {
     }
     
     func deletePost(postID: String) {
+        // 로딩 상태 확인
+        guard !isLoadingPosts else { return }
+        isLoadingPosts = true
+        self.isLoading = true
         db.collection("GRPost").document(postID).delete { error in
             if let error = error {
                 print("Error deleting post: \(error)")
+                self.isLoadingPosts = false
+                self.checkLoadingComplete()
             } else {
                 print("Post deleted successfully")
                 DispatchQueue.main.async {
                     self.posts.removeAll { $0.postID == postID }
                 }
             }
+            // 로딩 완료 후 플래그 해제
+            self.isLoadingPosts = false
+            self.checkLoadingComplete()
         }
     }
     
-    
     func fetchPostsFromFirebase(characterUUID: String,year: Int, month: Int) {
+        // 로딩 상태 확인
+        guard !isLoadingPosts else { return }
+        isLoadingPosts = true
+        self.isLoading = true
         var dateComponents = DateComponents()
         dateComponents.year = year
         dateComponents.month = month
@@ -253,12 +264,16 @@ class CharacterDetailViewModel: ObservableObject {
                 
                 if let error = error {
                     print("Error fetching posts: \(error)")
+                    self.isLoadingPosts = false
+                    self.checkLoadingComplete()
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
                     print("No documents found")
                     self.posts = []
+                    self.isLoadingPosts = false
+                    self.checkLoadingComplete()
                     return
                 }
                 print("Fetched \(documents.count) posts.")
@@ -287,20 +302,48 @@ class CharacterDetailViewModel: ObservableObject {
                 
                 // 로딩 완료 후 플래그 해제
                 self.isLoadingPosts = false
+                self.checkLoadingComplete()
             }
     }
     
-    func updateCharacterName(characterUUID: String, newName: String) {
-        db.collection("GRCharacter").document(characterUUID).updateData([
-            "name": newName
-        ]) { error in
-            if let error = error {
-                print("Error updating character name: \(error)")
-            } else {
-                print("Character name updated successfully")
-                self.character.name = newName // 로컬 캐릭터 이름 업데이트
-            }
+    // 내부 로딩 완료 확인 메서드 추가
+    private func checkLoadingComplete() {
+        DispatchQueue.main.async {
+            self.isLoading = self.isLoadingCharacter || self.isLoadingUser || self.isLoadingPosts
         }
     }
+    
+    // 혹시 다른 컬렉션에서 캐릭터 상태를 가져와야 할 때를 대비하여 주석 처리
+    //    func loadCharacterStatus(characterUUID: String) {
+    //
+    //        guard !isLoadingCharacterStatus else { return }
+    //        self.isLoadingCharacterStatus = true
+    //        self.isLoading = true
+    //
+    //        db.collection("GRCharacter").document(characterUUID).getDocument { [weak self] snapshot, error in
+    //            guard let self = self else { return }
+    //            guard let data = snapshot?.data() else {
+    //                return
+    //            }
+    //
+    //            // 데이터 파싱 및 GRCharacterStatus 생성
+    //            let level = data["level"] as? Int ?? 1
+    //            let exp = data["exp"] as? Int ?? 0
+    //            let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
+    //            let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
+    //
+    //            DispatchQueue.main.async {
+    //                self.characterStatus = GRCharacterStatus(
+    //                    level: level,
+    //                    exp: exp,
+    //                    expToNextLevel: expToNextLevel,
+    //                    phase: phase
+    //                )
+    //            }
+    //            // 로딩 완료 후 플래그 해제
+    //            self.isLoadingCharacterStatus = false
+    //            self.checkLoadingComplete()
+    //        }
+    //    }
     
 } // end of class
