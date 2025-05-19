@@ -278,12 +278,6 @@ struct CharacterDetailView: View {
                                             .frame(width: 60, height: 60)
                                             .padding(10)
                                     }
-                                } else {
-                                    Image(systemName: "photo")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 60, height: 60)
-                                        .padding(10)
                                 }
                                 VStack(alignment: .leading) {
                                     Text(viewModel.posts[index].postTitle)

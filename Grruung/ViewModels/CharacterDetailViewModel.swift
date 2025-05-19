@@ -35,7 +35,7 @@ class CharacterDetailViewModel: ObservableObject {
             id: UUID().uuidString,
             species: .Undefined,
             name: "기본 캐릭터",
-            imageName: "pawprint.fill",
+            imageName: "",
             birthDate: Date(),
             createdAt: Date()
         )
@@ -71,7 +71,8 @@ class CharacterDetailViewModel: ObservableObject {
             // 데이터 파싱 및 GRCharacter 생성
             let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
             let name = data["name"] as? String ?? "이름 없음"
-            let imageName = data["imageName"] as? String ?? "pawprint.fill"
+            let imageName = data["imageName"] as? String ?? ""
+            print("imageName: \(imageName)")
             let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             
