@@ -15,18 +15,19 @@ struct userInventoryDetailView: View {
     @State private var useItemCount: Double = 0
     // 사용할 아이템 갯수를 입력받을 변수
     @State private var typeItemCount: String = ""
-    
+    // 수량 입력 시 범위 밖의 수를 입력했을 때 alert 변수
     @State private var showingItemCountAlert: Bool = false
-    
+    // 사용하기 버튼 클릭 시 alert 변수
     @State private var showingUseAlert: Bool = false
-    
+    // 버리기 버튼 클릭시 alert 변수
     @State private var showingDeleteAlert: Bool = false
-    
+    // 버리기 재확인 alert 변수
     @State private var showingReDeleteAlert: Bool = false
     
     @FocusState private var isFocused: Bool
     
     var body: some View {
+        // MARK: 아이템 설명 UI
         HStack {
             Image(systemName: item.userItemImage)
                 .resizable()
@@ -54,9 +55,12 @@ struct userInventoryDetailView: View {
             }
         }
         .padding(16)
+        // MARK: onAppear
         .onAppear {
+            // 아이템 수량 가져옴
             remainItemCount = Double(item.userIteamQuantity)
         }
+        // MARK: 각종 alert들
         .alert("올바른 수를 입력해주세요", isPresented: $showingItemCountAlert) {
             Button("확인", role: .cancel) {}
         }
@@ -80,8 +84,8 @@ struct userInventoryDetailView: View {
             }
         }
         
-        
         if let remainItemCount {
+            // MARK: 아이템 수량 관련 UI
             VStack {
                 HStack {
                     Text("수량: ")
@@ -172,9 +176,10 @@ struct userInventoryDetailView: View {
         }
         
         
-        // 아이템 효과 설명
+        // MARK: 아이템 효과 설명 UI
         Text("\(item.userItemName) 를 먹으면 몸에 좋아집니다")
         
+        // MARK: 아이템 버튼 UI
         HStack {
             Button(action: {
                 showingDeleteAlert = true
