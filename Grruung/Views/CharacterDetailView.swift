@@ -18,9 +18,7 @@ struct CharacterDetailView: View {
         ("성년기", "dog.fill"),
         ("노년기", "bird.fill")
     ]
-    
-    // 현재 성장 단계 (인덱스 기준)
-    let currentStageIndex: Int = 5
+
     
     // --------------------- 더미 데이터 끝 ---------------------
     
@@ -47,6 +45,24 @@ struct CharacterDetailView: View {
     
     // 외부에서 전달받은 characterUUID
     var characterUUID: String
+    
+    // 현재 성장 단계 인덱스
+    private var currentStageIndex: Int {
+        switch viewModel.characterStatus.phase {
+        case .egg:
+            return 0
+        case .infant:
+            return 1
+        case .child:
+            return 2
+        case .adolescent:
+            return 3
+        case .adult:
+            return 4
+        case .elder:
+            return 5
+        }
+    }
     
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
@@ -169,7 +185,7 @@ struct CharacterDetailView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
-                    ForEach(0..<currentStageIndex, id: \.self) { index in
+                    ForEach(0...currentStageIndex, id: \.self) { index in
                         VStack {
                             Image(systemName: growthStages[index].image)
                                 .resizable()
@@ -177,7 +193,7 @@ struct CharacterDetailView: View {
                                 .frame(width: 50, height: 50)
                         }
                         .padding()
-                        if index != currentStageIndex - 1 {
+                        if index != currentStageIndex  {
                             HStack {
                                 Text("→")
                             }
