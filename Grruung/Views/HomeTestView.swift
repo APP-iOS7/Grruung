@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - 홈 뷰 구현
 struct HomeTestView: View {
-    @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var viewModel = HomeTestViewModel()
     @State private var showingChatPet = false
     @State private var showTestControls = false
     

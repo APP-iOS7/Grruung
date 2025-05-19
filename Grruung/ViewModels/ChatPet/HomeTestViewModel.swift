@@ -9,7 +9,7 @@ import Foundation
 import Combine
 
 /// 홈 화면을 위한 ViewModel
-class HomeViewModel: ObservableObject {
+class HomeTestViewModel: ObservableObject {
     // MARK: - 0. 바인딩 프로퍼티
     @Published var characters: [GRCharacter] = []
     @Published var selectedCharacter: GRCharacter?
