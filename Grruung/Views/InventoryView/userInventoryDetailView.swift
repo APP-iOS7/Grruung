@@ -17,14 +17,20 @@ struct userInventoryDetailView: View {
     @State private var typeItemCount: String = ""
     // 수량 입력 시 범위 밖의 수를 입력했을 때 alert 변수
     @State private var showingItemCountAlert: Bool = false
+    
     // 사용하기 버튼 클릭 시 alert 변수
     @State private var showingUseAlert: Bool = false
     // 버리기 버튼 클릭시 alert 변수
     @State private var showingDeleteAlert: Bool = false
     // 버리기 재확인 alert 변수
     @State private var showingReDeleteAlert: Bool = false
+    // 영구 아이템 버리기 클릭 시 alert 변수
+    @State private var showingNoDeleteAlert: Bool = false
     
+    // 키보드 내리기 변수
     @FocusState private var isFocused: Bool
+    
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         // MARK: 아이템 설명 UI
@@ -51,14 +57,14 @@ struct userInventoryDetailView: View {
                 }
                 Text(item.userItemDescription)
                     .lineLimit(1)
-                Text("보유: \(item.userIteamQuantity)")
+                Text("보유: \(item.userItemQuantity)")
             }
         }
         .padding(16)
         // MARK: onAppear
         .onAppear {
             // 아이템 수량 가져옴
-            remainItemCount = Double(item.userIteamQuantity)
+            remainItemCount = Double(item.userItemQuantity)
         }
         // MARK: 각종 alert들
         .alert("올바른 수를 입력해주세요", isPresented: $showingItemCountAlert) {
@@ -74,14 +80,30 @@ struct userInventoryDetailView: View {
         .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
-                showingReDeleteAlert = true
+                if item.userItemType == .permanent {
+                    showingNoDeleteAlert = true
+                } else {
+                    showingReDeleteAlert = true
+                }
             }
         }
         .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
                 // TODO: 갯수 동기화하기
+                item.userItemQuantity -= Int(useItemCount)
+                remainItemCount = Double(item.userItemQuantity)
+                useItemCount = 0
+                typeItemCount = Int(useItemCount).description
+                // 이전 뷰로 돌아가기
+                if item.userItemQuantity <= 0 {
+                    dismiss()
+                }
+                
             }
+        }
+        .alert("영구 아이템은 버릴 수 없습니다.", isPresented: $showingNoDeleteAlert) {
+            Button("확인", role: .cancel) {}
         }
         
         if let remainItemCount {
@@ -140,8 +162,9 @@ struct userInventoryDetailView: View {
                     })
                     .disabled(useItemCount <= 0)
                     
-                    Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
-                        .tint(.green)
+                    if remainItemCount > 0 {
+                        Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
+                    }
                     
                     Button(action: {
                         if useItemCount < remainItemCount {
@@ -188,7 +211,7 @@ struct userInventoryDetailView: View {
                     .foregroundColor(.black)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(item.userItemType == .permanent ? Color.gray : Color.red)
+                    .background(.red)
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.black, lineWidth: 1)
@@ -196,7 +219,6 @@ struct userInventoryDetailView: View {
                     .cornerRadius(10)
                     .padding(16)
             })
-            .disabled(item.userItemType == .permanent)
             
             Button(action: {
                 showingUseAlert = true

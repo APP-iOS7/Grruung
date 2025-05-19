@@ -130,7 +130,7 @@ struct userInventoryView: View {
                 }
                 Text(item.userItemDescription)
                     .lineLimit(1)
-                Text("보유: \(item.userIteamQuantity)")
+                Text("보유: \(item.userItemQuantity)")
             }
         }
     }

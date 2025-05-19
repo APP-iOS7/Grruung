@@ -14,7 +14,7 @@ struct GRUserInventory {
     var userItemName: String
     var userItemType: ItemType
     var userItemImage: String
-    var userIteamQuantity: Int
+    var userItemQuantity: Int
     var userItemDescription: String
     var userItemCategory: ItemCategory
     var purchasedAt: Date
@@ -24,7 +24,7 @@ struct GRUserInventory {
         self.userItemName = userItemName
         self.userItemType = userItemType
         self.userItemImage = userItemImage
-        self.userIteamQuantity = userIteamQuantity
+        self.userItemQuantity = userIteamQuantity
         self.userItemDescription = userItemDescription
         self.userItemCategory = userItemCategory
         self.purchasedAt = purchasedAt
