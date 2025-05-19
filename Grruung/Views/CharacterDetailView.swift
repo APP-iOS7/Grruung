@@ -18,8 +18,6 @@ struct CharacterDetailView: View {
         ("성년기", "dog.fill"),
         ("노년기", "bird.fill")
     ]
-
-    
     // --------------------- 더미 데이터 끝 ---------------------
     
     @StateObject private var viewModel: CharacterDetailViewModel
@@ -39,9 +37,12 @@ struct CharacterDetailView: View {
     private let estimatedRowHeight: CGFloat = 88.0 // 각 List 행의 예상 높이를 계산합니다. (리스트 크기 조정 시 필요)
     private let deviceModel: String = UIDevice.modelName() // 현재 기기 모델을 가져옵니다.
     
-    // 성장 단계
-    var phase: CharacterPhase = .egg
-    var characterAddress: Address = .userHome
+    private var characterAddress: Address {
+        if let address = Address(rawValue: viewModel.characterStatus.address) {
+            return address
+        }
+        return .userHome // 기본값
+    }
     
     // 외부에서 전달받은 characterUUID
     var characterUUID: String
@@ -165,8 +166,13 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("종: \(viewModel.character.species.rawValue)")
                     .font(.subheadline)
-                Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
-                    .font(.subheadline)
+                if viewModel.characterStatus.address == Address.userHome.rawValue {
+                    Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
+                        .font(.subheadline)
+                } else {
+                    Text("사는 곳: \(getAddressDisplayName(characterAddress))")
+                        .font(.subheadline)
+                }
                 Text("생 후: + \(Calendar.current.dateComponents([.day], from: viewModel.character.birthDate, to: Date()).day ?? -404)일")
                     .font(.subheadline)
             }
