@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct userInventoryView: View {
+    @EnvironmentObject var authService: AuthService
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    private let garaUserId = "12345"
     @State private var garaItems: [GRUserInventory] = [
         GRUserInventory(
             userItemNumber: 1,
@@ -138,6 +141,12 @@ struct userInventoryView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                Button(action: {
+                    userInventoryViewModel.saveInventory(userId: garaUserId, inventory: garaItems[4])
+                }, label:{
+                    Text("파베 테스트!!")
+                })
+                
                 Picker("Choose a category", selection: $sortItemCategory) {
                     ForEach(SortItemCategory.allCases, id: \.self) { category in
                         Text(category.rawValue)
@@ -182,4 +191,5 @@ struct userInventoryView: View {
 
 #Preview {
     userInventoryView()
+        .environmentObject(AuthService())
 }
