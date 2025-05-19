@@ -11,14 +11,14 @@ struct VoiceChatView: View {
     // MARK: - 프로퍼티
     @Environment(\.presentationMode) var presentationMode
     @StateObject private var viewModel: VoiceChatViewModel
-    @State private var showSettingsPopup = false
     
     // 캐릭터 정보
-    private let character: GRCharacter
-    private let prompt: String
+    let character: GRCharacter
+    let prompt: String
     
     // 애니메이션 관련
     @State private var animationScale: CGFloat = 1.0
+    @State private var showSettings = false
     
     // MARK: - 초기화
     init(character: GRCharacter, prompt: String) {
@@ -34,41 +34,12 @@ struct VoiceChatView: View {
             Color(UIColor.systemBackground)
                 .ignoresSafeArea()
             
-            VStack {
-                // 상단 네비게이션 영역
-                HStack {
-                    // 뒤로 가기 버튼
-                    Button(action: {
-                        endSession()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    // 제목
-                    Text("음성 대화")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    // 설정 버튼
-                    Button(action: {
-                        showSettingsPopup = true
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.title2)
-                            .foregroundColor(.primary)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
+            VStack(spacing: 0) {
+                // 커스텀 네비게이션 바
+                customNavigationBar
+                    .padding(.top, 10)
                 
-                Spacer()
-                
-                // 펫 이미지 및 대화 영역
+                // 펫 영역
                 VStack(spacing: 10) {
                     // 펫 이미지
                     characterImage
