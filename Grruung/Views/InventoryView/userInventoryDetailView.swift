@@ -20,6 +20,10 @@ struct userInventoryDetailView: View {
     
     @State private var showingUseAlert: Bool = false
     
+    @State private var showingDeleteAlert: Bool = false
+    
+    @State private var showingReDeleteAlert: Bool = false
+    
     @FocusState private var isFocused: Bool
     
     var body: some View {
@@ -63,6 +67,19 @@ struct userInventoryDetailView: View {
                 
             }
         }
+        .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
+            Button("취소", role: .cancel) {}
+            Button("확인", role: .destructive) {
+                showingReDeleteAlert = true
+            }
+        }
+        .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
+            Button("취소", role: .cancel) {}
+            Button("확인", role: .destructive) {
+                // TODO: 갯수 동기화하기
+            }
+        }
+        
         
         if let remainItemCount {
             VStack {
@@ -158,22 +175,41 @@ struct userInventoryDetailView: View {
         // 아이템 효과 설명
         Text("\(item.userItemName) 를 먹으면 몸에 좋아집니다")
         
-        Button(action: {
-            showingUseAlert = true
-        }, label: {
-            Text("사용")
-                .foregroundColor(.black)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(useItemCount <= 0 ? Color.gray : Color.green)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .cornerRadius(10)
-                .padding(16)
-        })
-        .disabled(useItemCount <= 0)
+        HStack {
+            Button(action: {
+                showingDeleteAlert = true
+            }, label: {
+                Text("버리기")
+                    .foregroundColor(.black)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(item.userItemType == .permanent ? Color.gray : Color.red)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+                    .cornerRadius(10)
+                    .padding(16)
+            })
+            .disabled(item.userItemType == .permanent)
+            
+            Button(action: {
+                showingUseAlert = true
+            }, label: {
+                Text("사용하기")
+                    .foregroundColor(.black)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(useItemCount <= 0 ? Color.gray : Color.green)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+                    .cornerRadius(10)
+                    .padding(16)
+            })
+            .disabled(useItemCount <= 0)
+        }
     }
 }
 
