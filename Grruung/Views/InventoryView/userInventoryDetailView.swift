@@ -15,9 +15,15 @@ struct userInventoryDetailView: View {
     @State private var useItemCount: Double = 0
     // 사용할 아이템 갯수를 입력받을 변수
     @State private var typeItemCount: String = ""
+    
+    private let garaUserId = "12345"
+    
+    @EnvironmentObject var authService: AuthService
+    
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    
     // 수량 입력 시 범위 밖의 수를 입력했을 때 alert 변수
     @State private var showingItemCountAlert: Bool = false
-    
     // 사용하기 버튼 클릭 시 alert 변수
     @State private var showingUseAlert: Bool = false
     // 버리기 버튼 클릭시 alert 변수
@@ -74,6 +80,7 @@ struct userInventoryDetailView: View {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
                 // TODO: 사용 수량 만큼 파이어베이스에 저장하기
+                // 캐릭터에게 아이템 성능 부여
                 
             }
         }
@@ -90,16 +97,19 @@ struct userInventoryDetailView: View {
         .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
-                // TODO: 갯수 동기화하기
-                item.userItemQuantity -= Int(useItemCount)
-                remainItemCount = Double(item.userItemQuantity)
-                useItemCount = 0
-                typeItemCount = Int(useItemCount).description
-                // 이전 뷰로 돌아가기
-                if item.userItemQuantity <= 0 {
-                    dismiss()
+                if useItemCount > 0 {
+                    item.userItemQuantity -= Int(useItemCount)
+                    if item.userItemQuantity <= 0 {
+                        userInventoryViewModel.deleteItem(userId: garaUserId, item: item)
+                        // 이전 뷰로 돌아가기
+                        dismiss()
+                    } else {
+                        remainItemCount = Double(item.userItemQuantity)
+                        useItemCount = 0
+                        typeItemCount = Int(useItemCount).description
+                        userInventoryViewModel.updateItemQuantity(userId: garaUserId, item: item, newQuantity: item.userItemQuantity)
+                    }
                 }
-                
             }
         }
         .alert("영구 아이템은 버릴 수 없습니다.", isPresented: $showingNoDeleteAlert) {
@@ -251,4 +261,5 @@ struct userInventoryDetailView: View {
         userItemCategory: .drug,
         purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
     ))
+    .environmentObject(AuthService())
 }

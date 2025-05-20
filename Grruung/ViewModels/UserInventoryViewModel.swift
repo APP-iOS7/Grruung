@@ -36,7 +36,7 @@ class UserInventoryViewModel: ObservableObject {
         }
     }
     
-    // MARK: - 불러오기
+    // MARK: - 아이템들 불러오기
     func fetchInventories(userId: String, completion: @escaping ([GRUserInventory]) -> Void) {
         db.collection(collectionName)
             .document(userId)
@@ -86,5 +86,36 @@ class UserInventoryViewModel: ObservableObject {
                 completion(self.inventories!)
             }
     }
-    // MARK: - 삭제
+    
+    // MARK: - 아이템 수량 업데이트
+    func updateItemQuantity(userId: String, item: GRUserInventory, newQuantity: Int) {
+        let itemRef = db.collection(collectionName)
+            .document(userId)
+            .collection("items")
+            .document(item.userItemName)
+
+        itemRef.updateData(["userItemQuantity": newQuantity]) { error in
+            if let error = error {
+                print("❌ 수량 업데이트 실패: \(error.localizedDescription)")
+            } else {
+                print("✅ 수량 업데이트 성공")
+            }
+        }
+    }
+    
+    // MARK: - 아이템 삭제
+    func deleteItem(userId: String, item: GRUserInventory) {
+        let itemRef = db.collection(collectionName)
+            .document(userId)
+            .collection("items")
+            .document(item.userItemName)
+
+        itemRef.delete { error in
+            if let error = error {
+                print("❌ 아이템 삭제 실패: \(error.localizedDescription)")
+            } else {
+                print("🗑️ 아이템 삭제 성공")
+            }
+        }
+    }
 }
