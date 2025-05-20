@@ -12,11 +12,15 @@ struct HomeTestView: View {
     @StateObject private var viewModel = HomeTestViewModel()
     @State private var showingChatPet = false
     @State private var showTestControls = false
+    @State private var showCharacterPicker = false
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    // 캐릭터 선택 버튼
+                    characterSelectionButton
+                    
                     // 펫 정보 및 상태 표시
                     petInfoSection
                     
@@ -41,6 +45,7 @@ struct HomeTestView: View {
                     }) {
                         Label("채팅", systemImage: "bubble.left.fill")
                     }
+                    .disabled(viewModel.selectedCharacter == nil)
                 }
             }
             .sheet(isPresented: $showingChatPet) {
@@ -50,6 +55,9 @@ struct HomeTestView: View {
                 } else {
                     Text("캐릭터 정보를 불러올 수 없습니다.")
                 }
+            }
+            .sheet(isPresented: $showCharacterPicker) {
+                characterPickerView
             }
             .onAppear {
                 viewModel.loadCharacters()
@@ -72,6 +80,111 @@ struct HomeTestView: View {
                     message: Text(viewModel.errorMessage ?? "알 수 없는 오류가 발생했습니다."),
                     dismissButton: .default(Text("확인"))
                 )
+            }
+        }
+    }
+    
+    // MARK: - 캐릭터 선택 버튼
+    private var characterSelectionButton: some View {
+        Button(action: {
+            showCharacterPicker = true
+        }) {
+            HStack {
+                if let character = viewModel.selectedCharacter {
+                    // 선택된 캐릭터가 있는 경우
+                    VStack(alignment: .leading) {
+                        Text("현재 선택된 캐릭터: \(character.name)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    // 선택된 캐릭터가 없는 경우
+                    Text("캐릭터 선택하기")
+                        .font(.headline)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.blue)
+            }
+            .padding()
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(10)
+        }
+    }
+    
+    // MARK: - 캐릭터 선택 피커 뷰
+    private var characterPickerView: some View {
+        NavigationView {
+            List {
+                if viewModel.characters.isEmpty {
+                    Text("저장된 캐릭터가 없습니다.")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                } else {
+                    ForEach(viewModel.characters) { character in
+                        Button(action: {
+                            viewModel.selectedCharacter = character
+                            showCharacterPicker = false
+                        }) {
+                            HStack {
+                                // 캐릭터 이미지
+                                Image.testCharacterImage(for: character.species, phase: character.status.phase)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 40, height: 40)
+                                    .cornerRadius(6)
+                                
+                                // 캐릭터 정보
+                                VStack(alignment: .leading) {
+                                    Text(character.name)
+                                        .font(.headline)
+                                    
+                                    Text("Lv.\(character.status.level) \(character.species.rawValue) - \(character.status.phase.rawValue)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                // 현재 선택된 캐릭터 표시
+                                if viewModel.selectedCharacter?.id == character.id {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
+                // 새 캐릭터 생성 버튼
+                Button(action: {
+                    showCharacterPicker = false
+                    showTestControls = true
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
+                        Text("새 캐릭터 생성하기")
+                            .fontWeight(.medium)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            .listStyle(InsetGroupedListStyle())
+            .navigationTitle("캐릭터 선택")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("닫기") {
+                        showCharacterPicker = false
+                    }
+                }
+            }
+            .refreshable {
+                viewModel.loadCharacters()
             }
         }
     }
@@ -192,7 +305,7 @@ struct HomeTestView: View {
         .cornerRadius(10)
     }
     
-
+    
     // MARK: - 펫 컨트롤 버튼 섹션
     private var petControlsSection: some View {
         VStack(spacing: 15) {
@@ -227,7 +340,7 @@ struct HomeTestView: View {
                     .background(Color.purple.opacity(0.1))
                     .cornerRadius(10)
                 }
-
+                
                 Button(action: {
                     viewModel.updateSelectedCharacter(
                         activity: 10,
@@ -339,7 +452,7 @@ struct HomeTestView: View {
                         Text("포만감:")
                         Spacer()
                         Text("\(viewModel.satietyValue)")
-            
+                        
                     }
                     
                     Slider(value: Binding<Double>(
@@ -395,7 +508,7 @@ struct HomeTestView: View {
                         set: { viewModel.healthyValue = Int($0) }
                     ), in: 0...100, step: 1)
                 }
-
+                
                 .padding(.horizontal)
                 
                 // 청결도 슬라이더
@@ -426,7 +539,7 @@ struct HomeTestView: View {
                 }
                 .padding(.horizontal)
             }
-
+            
             
             Group {
                 Text("경험치")
