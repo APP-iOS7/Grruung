@@ -11,58 +11,7 @@ struct userInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     private let garaUserId = "12345"
-    @State private var garaItems: [GRUserInventory] = [
-        GRUserInventory(
-            userItemNumber: 1,
-            userItemName: "비타민 젤리",
-            userItemType: .consumable,
-            userItemImage: "pill",
-            userIteamQuantity: Int.random(in: 1...10),
-            userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
-            userItemCategory: .drug,
-            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-        ),
-        GRUserInventory(
-            userItemNumber: 2,
-            userItemName: "딸랑이 인형",
-            userItemType: .permanent,
-            userItemImage: "soccerball",
-            userIteamQuantity: Int.random(in: 1...10),
-            userItemDescription: "지루할 틈이 없어요! 딸랑딸랑 장난감.",
-            userItemCategory: .toy,
-            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-        ),
-        GRUserInventory(
-            userItemNumber: 3,
-            userItemName: "감기약",
-            userItemType: .consumable,
-            userItemImage: "pill",
-            userIteamQuantity: Int.random(in: 1...10),
-            userItemDescription: "달달한 감기약이에요.",
-            userItemCategory: .drug,
-            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-        ),
-        GRUserInventory(
-            userItemNumber: 4,
-            userItemName: "알록달록 공",
-            userItemType: .permanent,
-            userItemImage: "soccerball",
-            userIteamQuantity: Int.random(in: 1...10),
-            userItemDescription: "놀기 좋아하는 펫의 최고의 선택.",
-            userItemCategory: .toy,
-            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-        ),
-        GRUserInventory(
-            userItemNumber: 5,
-            userItemName: "에너지 드링크",
-            userItemType: .consumable,
-            userItemImage: "pill",
-            userIteamQuantity: Int.random(in: 1...10),
-            userItemDescription: "타우린이 많이 들어있어요.",
-            userItemCategory: .drug,
-            purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-        )
-    ]
+    @State private var items: [GRUserInventory] = []
     
     private let inventoryEmptyText: [String] = [
         "텅...",
@@ -101,11 +50,11 @@ struct userInventoryView: View {
     var sortedItems: [GRUserInventory] {
         switch sortItemCategory {
         case .all:
-            return garaItems
+            return items
         case .drug:
-            return garaItems.filter { $0.userItemCategory == .drug }
+            return items.filter { $0.userItemCategory == .drug }
         case .toy:
-            return garaItems.filter { $0.userItemCategory == .toy }
+            return items.filter { $0.userItemCategory == .toy }
         }
     }
     
@@ -141,12 +90,6 @@ struct userInventoryView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                Button(action: {
-                    userInventoryViewModel.saveInventory(userId: garaUserId, inventory: garaItems[4])
-                }, label:{
-                    Text("파베 테스트!!")
-                })
-                
                 Picker("Choose a category", selection: $sortItemCategory) {
                     ForEach(SortItemCategory.allCases, id: \.self) { category in
                         Text(category.rawValue)
@@ -157,35 +100,42 @@ struct userInventoryView: View {
                 .background(.yellow)
                 .cornerRadius(15)
                 .padding()
-                
-                if garaItems.isEmpty {
-                    Text(inventoryEmptyText.randomElement() ?? "텅...")
-                        .lineLimit(1)
-                        .font(.title2)
-                        .foregroundStyle(.gray)
-                        .padding()
-                } else {
-                    LazyVGrid(columns: columns) {
-                        ForEach(sortedItems, id: \.userItemNumber) { item in
-                            NavigationLink(destination: userInventoryDetailView(item: item)) {
-                                itemCellView(item)
-                                    .foregroundStyle(.black)
+                if let inventories = userInventoryViewModel.inventories {
+                    if inventories.isEmpty {
+                        Text(inventoryEmptyText.randomElement() ?? "텅...")
+                            .lineLimit(1)
+                            .font(.title2)
+                            .foregroundStyle(.gray)
+                            .padding()
+                    } else {
+                        LazyVGrid(columns: columns) {
+                            ForEach(sortedItems, id: \.userItemNumber) { item in
+                                NavigationLink(destination: userInventoryDetailView(item: item)) {
+                                    itemCellView(item)
+                                        .foregroundStyle(.black)
+                                }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(lineWidth: 2)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(lineWidth: 2)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
                     }
+                } else {
+                    ProgressView("불러오는 중...")
+                }
+            }
+            .onAppear {
+                userInventoryViewModel.fetchInventories(userId: garaUserId) { allItems in
+                    items = allItems
                 }
             }
             .navigationTitle("가방")
         }
-        
     }
 }
 
