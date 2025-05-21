@@ -8,8 +8,8 @@
 import Foundation
 import Combine
 
-/// 홈 화면을 위한 ViewModel
-class HomeViewModel: ObservableObject {
+// 홈 화면을 위한 ViewModel
+class HomeTestViewModel: ObservableObject {
     // MARK: - 0. 바인딩 프로퍼티
     @Published var characters: [GRCharacter] = []
     @Published var selectedCharacter: GRCharacter?
@@ -45,13 +45,18 @@ class HomeViewModel: ObservableObject {
     
     // 서비스
     private let firebaseService = FirebaseService.shared
+    private let userDefaults = UserDefaults.standard
     
     // 구독 취소용 객체
     private var cancellables = Set<AnyCancellable>()
     
+    // 선택된 캐릭터 ID 유저 디폴트 키
+    private let selectedCharacterKey = "SelectedCharacterID"
+    
     // MARK: - 1. 이닛
     init() {
         setupBindings()
+        loadSelectedCharacterID()
     }
     
     // MARK: - 2. 바인딩 설정
@@ -62,13 +67,14 @@ class HomeViewModel: ObservableObject {
             .sink { [weak self] character in
                 guard let self = self else { return }
                 self.updateStatusValues(character.status)
+                self.saveSelectedCharacterID(character.id)
             }
             .store(in: &cancellables)
     }
     
     // MARK: - 3. 데이터 로드 메서드
     
-    /// 사용자의 모든 캐릭터 목록을 로드합니다.
+    // 사용자의 모든 캐릭터 목록을 로드합니다.
     func loadCharacters() {
         isLoading = true
         errorMessage = nil
@@ -76,25 +82,34 @@ class HomeViewModel: ObservableObject {
         firebaseService.fetchUserCharacters { [weak self] characters, error in
             guard let self = self else { return }
             
-            self.isLoading = false
-            
-            if let error = error {
-                self.errorMessage = error.localizedDescription
-                return
-            }
-            
-            if let characters = characters {
-                self.characters = characters
+            DispatchQueue.main.async {
+                self.isLoading = false
                 
-                // 선택된 캐릭터가 없으면 첫 번째 캐릭터 선택
-                if self.selectedCharacter == nil && !characters.isEmpty {
-                    self.selectedCharacter = characters[0]
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    return
+                }
+                
+                if let characters = characters {
+                    self.characters = characters
+                    
+                    // 저장된 선택 캐릭터 ID가 있으면 해당 캐릭터 선택
+                    if let savedID = self.getSavedCharacterID(),
+                       let savedCharacter = characters.first(where: { $0.id == savedID }) {
+                        self.selectedCharacter = savedCharacter
+                    }
+                       
+                    
+                    // 선택된 캐릭터가 없으면 첫 번째 캐릭터 선택
+                    if self.selectedCharacter == nil && !characters.isEmpty {
+                        self.selectedCharacter = characters[0]
+                    }
                 }
             }
         }
     }
     
-    /// 테스트용 캐릭터를 생성하고 선택합니다.
+    // 테스트용 캐릭터를 생성하고 선택합니다.
     func createTestCharacter(
         name: String? = nil,
         satiety: Int = 70,
@@ -138,7 +153,7 @@ class HomeViewModel: ObservableObject {
         testMode = true
     }
     
-    /// 테스트용 캐릭터를 Firestore에 저장합니다.
+    // 테스트용 캐릭터를 Firestore에 저장합니다.
     func saveTestCharacterToFirestore() {
         guard let character = selectedCharacter, testMode else {
             errorMessage = "저장할 테스트 캐릭터가 없습니다."
@@ -165,7 +180,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    /// 캐릭터 성장 단계에 맞는 레벨을 반환합니다.
+    // 캐릭터 성장 단계에 맞는 레벨을 반환합니다.
     private func levelForPhase(_ phase: CharacterPhase) -> Int {
         switch phase {
         case .egg:
@@ -185,7 +200,7 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 4. 상태 업데이트 메서드
     
-    /// 캐릭터 상태를 업데이트합니다.
+    // 캐릭터 상태를 업데이트합니다.
     func updateSelectedCharacter(
         satiety: Int? = nil,
         stamina: Int? = nil,
@@ -215,7 +230,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    /// 선택된 캐릭터를 Firestore에 저장합니다.
+    // 선택된 캐릭터를 Firestore에 저장합니다.
     func saveSelectedCharacter() {
         guard let character = selectedCharacter else { return }
         
@@ -233,7 +248,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    /// 캐릭터에게 경험치를 추가합니다.
+    // 캐릭터에게 경험치를 추가합니다.
     func addExperience(_ amount: Int) {
         guard var character = selectedCharacter else { return }
         
@@ -251,7 +266,7 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 5. 상태 표시 메서드
     
-    /// 캐릭터 상태에 따라 상태 퍼센트와 실제 값을 업데이트합니다.
+    // 캐릭터 상태에 따라 상태 퍼센트와 실제 값을 업데이트합니다.
     private func updateStatusValues(_ status: GRCharacterStatus) {
         // 기본 스텟 값 업데이트
         satietyValue = status.satiety
@@ -280,7 +295,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    /// 선택된 캐릭터의 상태 메시지를 반환합니다.
+    // 선택된 캐릭터의 상태 메시지를 반환합니다.
     func getStatusMessage() -> String {
         guard let character = selectedCharacter else {
             return "캐릭터를 선택해주세요."
@@ -291,7 +306,7 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 6. 채팅 관련 메서드
     
-    /// 채팅 화면으로 이동하기 위한 챗펫 프롬프트를 생성합니다.
+    // 채팅 화면으로 이동하기 위한 챗펫 프롬프트를 생성합니다.
     func generateChatPetPrompt() -> String? {
         guard let character = selectedCharacter else { return nil }
         
@@ -302,5 +317,26 @@ class HomeViewModel: ObservableObject {
         )
         
         return petPrompt.generatePrompt(status: character.status)
+    }
+    
+    // MARK: - 캐릭터 선택 상태 저장/로드
+    
+    // 선택한 캐릭터 ID를 UserDefaults에 저장합니다.
+    private func saveSelectedCharacterID(_ characterID: String) {
+        userDefaults.set(characterID, forKey: selectedCharacterKey)
+    }
+    
+    //
+    private func getSavedCharacterID() -> String? {
+        return userDefaults.string(forKey: selectedCharacterKey)
+    }
+    
+    //
+    private func loadSelectedCharacterID() {
+        if let savedID = getSavedCharacterID(),
+           !savedID.isEmpty {
+            // 캐릭터 목록을 로드한 후 ID에 맞는 캐릭터를 찾아 선택 (loadCharacters에서 처리)
+            print("저장된 캐릭터 ID: \(savedID)")
+        }
     }
 }
