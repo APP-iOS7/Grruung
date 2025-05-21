@@ -42,5 +42,6 @@ struct GrruungApp: App {
             ContentView()
                 .environmentObject(authService)
         }
+        .modelContainer(for: [GRAnimationMetadata.self])
     }
 }

@@ -343,10 +343,11 @@ struct VoiceChatView: View {
         name: "냥냥이",
         imageName: "cat.fill",
         birthDate: Date(),
+        createdAt: Date(),
         status: GRCharacterStatus(phase: .child)
     )
     
     let testPrompt = "당신은 '냥냥이'라는 이름의 소아기 고양이사자 다마고치입니다."
     
-    return VoiceChatView(character: testCharacter, prompt: testPrompt)
+    VoiceChatView(character: testCharacter, prompt: testPrompt)
 }

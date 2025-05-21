@@ -142,6 +142,7 @@ class HomeTestViewModel: ObservableObject {
             name: characterName,
             imageName: "\(testSpecies.rawValue)_\(testPhase.rawValue)",
             birthDate: Date(),
+            createdAt: Date(),
             status: status
             
         )

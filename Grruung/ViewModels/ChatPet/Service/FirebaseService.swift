@@ -72,6 +72,8 @@ class FirebaseService {
                     let address = statusData["address"] as? String ?? "usersHome"
                     let birthDateTimestamp = statusData["birthDate"] as? Timestamp
                     let birthDate = birthDateTimestamp?.dateValue() ?? Date()
+                    let createdAtTimestamp = statusData["createdAt"] as? Timestamp
+                    let createdAt = createdAtTimestamp?.dateValue() ?? Date()
                     let appearance = statusData["appearance"] as? [String: String] ?? [:]
                     
                     let status = GRCharacterStatus(
@@ -96,6 +98,7 @@ class FirebaseService {
                         name: name,
                         imageName: imageName,
                         birthDate: birthDate,
+                        createdAt: createdAt,
                         status: status
                     )
                     
