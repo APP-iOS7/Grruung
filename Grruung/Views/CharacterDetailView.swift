@@ -33,6 +33,7 @@ struct CharacterDetailView: View {
     @State private var goToHome = false // 홈으로 보내기 버튼 클릭 시 사용
     @State private var goToParadise = false // 동산으로 보내기 버튼 클릭 시 사용
     @State private var goToSpace = false // 우주로 보내기 버튼 클릭 시 사용
+    @State private var isShowingSpaceConfirmation = false
     
     private let estimatedRowHeight: CGFloat = 88.0 // 각 List 행의 예상 높이를 계산합니다. (리스트 크기 조정 시 필요)
     private let deviceModel: String = UIDevice.modelName() // 현재 기기 모델을 가져옵니다.
@@ -112,8 +113,14 @@ struct CharacterDetailView: View {
                     
                     // 위치 이동 버튼들을 동적으로 생성
                     ForEach(getAddressMenuItems(), id: \.id) { item in
-                        Button(action: item.action) {
-                            Text(item.title)
+                        if item.title == "우주로 보내기" {
+                            Button(role: .destructive, action: item.action) {
+                                Text(item.title)
+                            }
+                        } else {
+                            Button(action: item.action) {
+                                Text(item.title)
+                            }
                         }
                     }
                 } label: {
@@ -136,6 +143,18 @@ struct CharacterDetailView: View {
             }
         } message: {
             Text("\(viewModel.character.name)의 새로운 이름을 입력해주세요.")
+        }
+        .alert("캐릭터를 우주로 보내시겠습니까?", isPresented: $isShowingSpaceConfirmation) {
+            Button("취소", role: .cancel) { }
+            
+            Button("보내기", role: .destructive) {
+                // 캐릭터 상태를 '접근 불가'로 변경
+                viewModel.updateAddress(characterUUID: characterUUID, newAddress: .space)
+                // 목록 화면으로 돌아가기
+                dismiss()
+            }
+        } message: {
+            Text("캐릭터를 우주로 보내면 더 이상 접근할 수 없습니다.")
         }
     }
     
@@ -374,20 +393,32 @@ struct CharacterDetailView: View {
     }
     
     func getAddressMenuItems() -> [MenuItem] {
-        guard let currentAddress = Address(rawValue: viewModel.characterStatus.address) else{
+        guard let currentAddress = Address(rawValue: viewModel.characterStatus.address) else {
             return []
         }
         
         let destinations = getAvailableDestinations(from: currentAddress)
         
         return destinations.map { destination in
-            let name = getAddressDisplayName(destination)
+            let titleText: String
+            switch destination {
+            case .userHome:
+                titleText = "기기로 불러오기"
+            case .paradise:
+                titleText = "동산으로 보내기"
+            case .space:
+                titleText =  "우주로 보내기"
+            }
+            
             return MenuItem(
-                title: "\(name)(으)로 보내기",
+                title: titleText,
                 action: {
-                    print("이동 버튼 클릭됨: \(name)")
-                    viewModel.updateAddress(characterUUID: characterUUID, newAddress: destination)
-                }
+                    if destination == .space {
+                        isShowingSpaceConfirmation = true
+                    } else {
+                        viewModel.updateAddress(characterUUID: characterUUID, newAddress: destination)
+                    }
+                },
             )
         }
     }
