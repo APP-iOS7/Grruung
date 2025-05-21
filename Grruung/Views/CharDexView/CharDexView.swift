@@ -25,10 +25,12 @@ struct CharDexView: View {
     @State private var showingNotEnoughAlert = false
     // 잠금 해제 티켓의 수가 부족한 경우 alert 변수
     @State private var showingNotEnoughTicketAlert = false
-    
+    // 초기 슬롯 해제 alert
     @State private var firstAlert = true
+    // 알 수 없는 에러 alert
+    @State private var showingErrorAlert = false
     
-    let columns = [
+    private let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
@@ -36,18 +38,18 @@ struct CharDexView: View {
     // 임시 데이터(테스트 용)
     @State private var garaCharacters: [GRCharacter] = [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome")),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(),status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "paradise")),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
-    ]
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "space")),
+    ].filter { !($0.status.address == "space") }
     
-    enum SortType {
+    private enum SortType {
         case original
         case createdAscending
         case createdDescending
@@ -55,7 +57,7 @@ struct CharDexView: View {
     }
     
     // 현재 캐릭터 슬롯 정렬 프로퍼티
-    var sortedCharacterSlots: [GRCharacter] {
+    private var sortedCharacterSlots: [GRCharacter] {
         switch sortType {
         case .original:
             return garaCharacters
@@ -76,7 +78,7 @@ struct CharDexView: View {
         
         // "plus" 슬롯 추가
         let plusCharacters = (0..<addableCount).map { _ in
-            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "plus", birthDate: Date())
+            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "plus", birthDate: Date(), createdAt: Date())
         }
         
         // 현재까지 채워진 슬롯 수 = 캐릭터 + plus
@@ -85,7 +87,7 @@ struct CharDexView: View {
         // 나머지 잠금 슬롯 수
         let lockedCount = max(0, maxDexCount - filledCount)
         let lockedCharacters = (0..<lockedCount).map { _ in
-            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "lock.fill", birthDate: Date())
+            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "lock.fill", birthDate: Date(), createdAt: Date())
         }
         
         return hasCharacters + plusCharacters + lockedCharacters
@@ -109,7 +111,20 @@ struct CharDexView: View {
                 
                 HStack {
                     if unlockTicketCount <= 0 {
-                        Spacer()
+                        ZStack {
+                            Image(systemName: "ticket")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(.top, 8)
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(Color.brown.opacity(0.5))
+                            Image(systemName: "xmark")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(.top, 8)
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(.red)
+                        }
                     }
                     ForEach(0..<unlockTicketCount, id: \.self) { _ in
                         Image(systemName: "ticket")
@@ -128,7 +143,7 @@ struct CharDexView: View {
                         } else if character.imageName == "plus" {
                             addSlot
                         } else {
-                            NavigationLink(destination: DetailView(character: character)) {
+                            NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
                                 characterSlot(character)
                             }
                         }
@@ -138,6 +153,11 @@ struct CharDexView: View {
             }
             .navigationTitle("캐릭터 동산")
             .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: CharDexSearchView(searchCharacters: garaCharacters)) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button {
@@ -165,7 +185,7 @@ struct CharDexView: View {
                         }
                         
                     } label: {
-                        Label("정렬", systemImage: "arrow.up.arrow.down")
+                        Label("정렬", systemImage: "line.3.horizontal")
                     }
                 }
             }
@@ -191,9 +211,17 @@ struct CharDexView: View {
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
             }
+            .alert("에러 발생", isPresented: $showingErrorAlert) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("알 수 없는 에러가 발생하였습니다!")
+            }
             .onAppear {
                 if unlockCount == garaCharacters.count && firstAlert {
                     showingNotEnoughAlert = true
+                }
+                if garaCharacters.count > unlockCount {
+                    showingErrorAlert = true
                 }
             }
         }
@@ -201,94 +229,107 @@ struct CharDexView: View {
     
     // 캐릭터 슬롯
     private func characterSlot(_ character: GRCharacter) -> some View {
-        VStack(alignment: .center) {
-            Image(systemName: character.imageName)
-                .resizable()
-                .frame(width: 100, height: 100, alignment: .center)
-                .aspectRatio(contentMode: .fit)
-                .foregroundStyle(.black)
-            
-            Text(character.name)
-                .foregroundStyle(.black)
-                .bold()
-                .lineLimit(1)
-                .frame(maxWidth: .infinity)
-            
-            Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
-                .foregroundStyle(.gray)
-                .font(.caption)
-                .frame(maxWidth: .infinity)
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
+
+            VStack(alignment: .center) {
+                ZStack {
+                    Image(systemName: character.imageName)
+                        .resizable()
+                        .frame(width: 100, height: 100)
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundStyle(.black)
+
+                    if character.status.address == "space" {
+                        // xmark가 도감에서 보이면 안됨!!
+                        // 우주로 돌려보냄(삭제)
+                        Image(systemName: "xmark")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 15, height: 15)
+                            .offset(x: 60, y: -40)
+                            .foregroundStyle(.red)
+                    } else {
+                        Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 20, height: 20)
+                            .offset(x: 60, y: -40)
+                            .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                    }
+                }
+
+                Text(character.name)
+                    .foregroundStyle(.black)
+                    .bold()
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+
+                Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
+                    .foregroundStyle(.gray)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(height: 180)
+            .frame(maxWidth: .infinity)
+            .background(Color.brown.opacity(0.5))
+            .cornerRadius(20)
+            .foregroundColor(.gray)
+            .padding(.bottom, 16)
+            .offset(y: yOffset)
         }
         .frame(height: 180)
-        .frame(maxWidth: .infinity)
-        .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
-        .foregroundColor(.gray)
-        .padding(.bottom, 16)
     }
     
     // 잠겨있는 슬롯
     private func lockSlot(at index: Int) -> some View {
-        Button {
-            selectedLockedIndex = index
-            showingUnlockAlert = true
-        } label: {
-            VStack {
-                Image(systemName: "lock.fill")
-                    .scaledToFit()
-                    .font(.system(size: 60))
-                    .foregroundStyle(.black)
-                    .frame(height: 180)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.black.opacity(0.5))
-                    .cornerRadius(20)
-                    .foregroundColor(.gray)
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
+
+            Button {
+                selectedLockedIndex = index
+                showingUnlockAlert = true
+            } label: {
+                VStack {
+                    Image(systemName: "lock.fill")
+                        .scaledToFit()
+                        .font(.system(size: 60))
+                        .foregroundStyle(.black)
+                        .frame(height: 180)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(20)
+                        .foregroundColor(.gray)
+                }
+                .padding(.bottom, 16)
+                .offset(y: yOffset)
             }
-            .padding(.bottom, 16)
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .frame(height: 180)
     }
     
     // 추가할 수 있는 슬롯(남은 슬롯 표시)
     private var addSlot: some View {
-        VStack {
-            Image(systemName: "plus")
-                .scaledToFit()
-                .font(.system(size: 60))
-                .frame(height: 180)
-                .frame(maxWidth: .infinity)
-                .background(Color.brown.opacity(0.5))
-                .cornerRadius(20)
-        }
-        .padding(.bottom, 16)
-    }
-}
+        GeometryReader { geo in
+            let yPosition = geo.frame(in: .global).minY
+            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
 
-// 임시 디테일 뷰
-struct DetailView: View {
-    var character: GRCharacter
-    
-    var body: some View {
-        VStack {
-            Image(systemName: character.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 200)
-                .frame(maxWidth: .infinity)
-                .padding()
-            
-            Text(character.name)
-                .font(.largeTitle)
-                .bold()
-
-            Text(character.species.rawValue)
-                .font(.title)
-                .foregroundStyle(.gray)
-            
-            Spacer()
+            VStack {
+                Image(systemName: "plus")
+                    .scaledToFit()
+                    .font(.system(size: 60))
+                    .frame(height: 180)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.brown.opacity(0.5))
+                    .cornerRadius(20)
+            }
+            .padding(.bottom, 16)
+            .offset(y: yOffset)
         }
-        .navigationTitle(character.name)
-        .padding()
+        .frame(height: 180)
     }
 }
 

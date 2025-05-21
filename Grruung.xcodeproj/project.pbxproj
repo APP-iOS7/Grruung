@@ -20,9 +20,22 @@
 		8A02B20E2DC1FEEE0064A296 /* Grruung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Grruung.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8AB24D722DDD8FF100BD9D17 /* Exceptions for "Grruung" folder in "Grruung" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8A02B20D2DC1FEEE0064A296 /* Grruung */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8A02B2102DC1FEEE0064A296 /* Grruung */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8AB24D722DDD8FF100BD9D17 /* Exceptions for "Grruung" folder in "Grruung" target */,
+			);
 			path = Grruung;
 			sourceTree = "<group>";
 		};

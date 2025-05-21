@@ -13,10 +13,10 @@ struct SettingView: View {
     var body: some View {
         NavigationStack {
             List {
-//                NavigationLink(destination: TestAIView()) {
-//                    Text("고지용 테스트 뷰")
-//                        .foregroundStyle(.blue)
-//                }
+                NavigationLink(destination: AnimationTestView()) {
+                    Text("고지용 테스트 뷰")
+                        .foregroundStyle(.blue)
+                }
 //                NavigationLink(destination: KimTestView()) {
 //                    Text("김준수 테스트 뷰")
 //                        .foregroundStyle(.blue)
@@ -25,10 +25,10 @@ struct SettingView: View {
                     Text("노성경 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
-                NavigationLink(destination: ParkTestView()) {
-                    Text("박민우 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
+//                NavigationLink(destination: ParkTestView()) {
+//                    Text("박민우 테스트 뷰")
+//                        .foregroundStyle(.blue)
+//                }
 //                NavigationLink(destination: SimTestView()) {
 //                    Text("심연아 테스트 뷰")
 //                        .foregroundStyle(.blue)
