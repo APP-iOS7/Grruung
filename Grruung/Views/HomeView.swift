@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct HomeView: View {
+    // ADD: HomeViewModel 추가
+    @StateObject private var viewModel = HomeViewModel()
+    
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
     @State private var progressValue: CGFloat = 0.65 // 진행률을 동적으로 관리
