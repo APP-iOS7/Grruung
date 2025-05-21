@@ -8,29 +8,11 @@
 import SwiftUI
 
 struct HomeView: View {
-    // ADD: HomeViewModel 추가
-    @StateObject private var viewModel = HomeViewModel()
     
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
-    @State private var progressValue: CGFloat = 0.65 // 진행률을 동적으로 관리
-    @State private var showStoreView: Bool = false
-    
-    let buttons = ["backpack.fill", "cart.fill", "mountain.2.fill"]
-    let icons = ["book.fill", "microphone.fill", "lock.fill"]
-    
-    // 캐릭터 상태 정보를 구조체로 관리
-    let stats: [(icon: String, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, 0.7),
-        ("heart.fill", Color.red, 0.9),
-        ("bolt.fill", Color.yellow, 0.8)]
-    
-    // 하단 아이템 정보
-    let lockedItems: [(isLocked: Bool, icon: String?, name: String)] = [
-        (true, nil, "잠금1"),
-        (true, nil, "잠금2"),
-        (true, nil, "잠금3"),
-        (true, nil, "잠금4")]
+    // ADD: HomeViewModel 추가
+    @StateObject private var viewModel = HomeViewModel()
     
     // MARK: - Body
     var body: some View {
