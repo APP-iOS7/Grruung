@@ -33,6 +33,7 @@ struct ChatPetView: View {
                     chatMessagesArea
                     
                     messageInputArea
+//                        .ignoresSafeArea(.keyboard, edges: .bottom)
                 }
                 
                 if viewModel.isLoading {
@@ -50,6 +51,18 @@ struct ChatPetView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
+                
+                // 키보드 툴바
+                /*
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(action: {
+                        isInputFocused = false
+                    }) {
+                        Image(systemName: "keyboard.chevron.compact.down")
+                            .foregroundColor(.primary)
+                    }
+                }*/
             }
             .alert(item: Binding<AlertItem?>(
                 get: {
@@ -72,6 +85,12 @@ struct ChatPetView: View {
                     character: character,
                     prompt: prompt
                 )
+            }
+            .onTapGesture {
+                // 배경 탭 시 키보드 숨기기
+                if isInputFocused {
+                    isInputFocused = false
+                }
             }
         }
     }
@@ -112,6 +131,12 @@ struct ChatPetView: View {
                         .background(Color(UIColor.systemGray6))
                         .cornerRadius(20)
                         .focused($isInputFocused)
+                        // 엔터키로 메시지 보내기
+                        /*.onSubmit {
+                            if !viewModel.inputText.isEmpty {
+                                viewModel.sendMessage()
+                            }
+                        }*/
                 } else {
                     Text("음성 변환 중...")
                         .foregroundStyle(.secondary)
@@ -123,7 +148,7 @@ struct ChatPetView: View {
                 
                 // 음성 대화 모드
                 Button(action: {
-                        showVoiceChatLive = true
+                    showVoiceChatLive = true
                 }) {
                     Image(systemName: viewModel.isListening ? "mic.fill" : "mic")
                         .font(.system(size: 20))
