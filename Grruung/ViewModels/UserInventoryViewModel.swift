@@ -22,6 +22,7 @@ class UserInventoryViewModel: ObservableObject {
             "userItemImage": inventory.userItemImage,
             "userItemQuantity": inventory.userItemQuantity,
             "userItemDescription": inventory.userItemDescription,
+            "userItemEffectDescription": inventory.userItemEffectDescription,
             "userItemCategory": inventory.userItemCategory.rawValue,
             "purchasedAt": Timestamp(date: inventory.purchasedAt)
         ]
@@ -64,6 +65,7 @@ class UserInventoryViewModel: ObservableObject {
                         let itemImage = data["userItemImage"] as? String,
                         let itemQuantity = data["userItemQuantity"] as? Int,
                         let itemDescription = data["userItemDescription"] as? String,
+                        let itemEffectDescription = data["userItemEffectDescription"] as? String,
                         let itemCategoryRaw = data["userItemCategory"] as? String,
                         let itemCategory = GRUserInventory.ItemCategory(rawValue: itemCategoryRaw),
                         let timestamp = data["purchasedAt"] as? Timestamp
@@ -79,6 +81,7 @@ class UserInventoryViewModel: ObservableObject {
                         userItemImage: itemImage,
                         userIteamQuantity: itemQuantity,
                         userItemDescription: itemDescription,
+                        userItemEffectDescription: itemEffectDescription,
                         userItemCategory: itemCategory,
                         purchasedAt: timestamp.dateValue()
                     )

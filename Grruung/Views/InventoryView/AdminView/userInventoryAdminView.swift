@@ -16,13 +16,14 @@ struct userInventoryAdminView: View {
     @State private var itemType: GRUserInventory.ItemType = .consumable
     @State private var itemCategory: GRUserInventory.ItemCategory = .drug
     @State private var itemDescription: String = ""
+    @State private var itemEffectDescription: String = ""
     @State private var itemQuantity: String = ""
     @State private var isOn1: Bool = false
     @State private var isOn2: Bool = false
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     
     var body: some View {
-        Text("인벤토리 아이템 생성기")
+        Text("아이템 생성기")
             .font(.largeTitle)
             .bold()
         TextField("아이템 번호", text: $itemNumber)
@@ -32,6 +33,9 @@ struct userInventoryAdminView: View {
             .textFieldStyle(.roundedBorder)
             .padding()
         TextField("아이템 설명", text: $itemDescription)
+            .textFieldStyle(.roundedBorder)
+            .padding()
+        TextField("아이템 효과 설명", text: $itemEffectDescription)
             .textFieldStyle(.roundedBorder)
             .padding()
         TextField("아이템 수량", text: $itemQuantity)
@@ -53,7 +57,7 @@ struct userInventoryAdminView: View {
         }
         .padding()
         Button(action: {
-            let item = GRUserInventory(userItemNumber: Int(itemNumber) ?? -1, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? 10, userItemDescription: itemDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date())
+            let item = GRUserInventory(userItemNumber: Int(itemNumber) ?? -1, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? 10, userItemDescription: itemDescription, userItemEffectDescription: itemEffectDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date())
             
             userInventoryViewModel.saveInventory(userId: garaUserId, inventory: item)
             
