@@ -13,30 +13,29 @@ struct SettingView: View {
     var body: some View {
         NavigationStack {
             List {
-                NavigationLink(destination: KoTestView()) {
+                NavigationLink(destination: AnimationTestView()) {
                     Text("고지용 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
-                NavigationLink(destination: KimTestView()) {
-                    Text("김준수 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
+//                NavigationLink(destination: KimTestView()) {
+//                    Text("김준수 테스트 뷰")
+//                        .foregroundStyle(.blue)
+//                }
                 NavigationLink(destination: NoTestView()) {
                     Text("노성경 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
-                NavigationLink(destination: ParkTestView()) {
-                    Text("박민우 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
-                NavigationLink(destination: SimTestView()) {
-                    Text("심연아 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
-                NavigationLink(destination: CheonTestView()) {
-                    Text("천수빈 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
+//                NavigationLink(destination: ParkTestView()) {
+//                    Text("박민우 테스트 뷰")
+//                        .foregroundStyle(.blue)
+//                }
+//                NavigationLink(destination: SimTestView()) {
+//                    Text("심연아 테스트 뷰")
+//                        .foregroundStyle(.blue)
+//                }
+//                NavigationLink(destination: CheonTestView()) {
+//                    Text("천수빈 테스트 뷰")
+//                        .foregroundStyle(.blue)
                 
                 Button(action: {
                     authService.signOut()

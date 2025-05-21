@@ -14,8 +14,6 @@
 ## Commit Convention
 1. feat/기능이름 으로 브랜치 생성 (예. feat/basics)
 
-
-
 ## Model Convention
 1. 구조체 이름 앞에 GR 붙이기 (예. GRUser) 
 2. Firebase에 저장할 때 컬렉션 타입(collection("컬렉션이름"))의 컬렉션이름은 복수형으로 표현 (예. db.collection("users").document(authResult.user.uid)))
@@ -25,7 +23,13 @@
                     
 
 ## Code Convention
-1. 들여쓰기 통일하기 2칸? 4칸? 
+1. 들여쓰기 통일하기 4칸
 
-
-
+## 설치해야할 패키지
+### Firebase
+1. FirebaseAnalytics
+2. FirebaseAuth
+3. FirebaseDatabase
+4. FirebaseFirestore
+5. FirebaseVertexAI
+6. FirebaseAppCheck
