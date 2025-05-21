@@ -17,6 +17,7 @@ struct GRCharacter: Identifiable {
     var name: String
     var imageName: String // 이미지 파일 이름 (SF Symbol 또는 Asset 이름)
     var birthDate: Date // 캐릭터 상태 정보
+    var createdAt: Date
     var status: GRCharacterStatus
     
     
@@ -25,12 +26,14 @@ struct GRCharacter: Identifiable {
          name: String,
          imageName: String,
          birthDate: Date,
+         createdAt: Date,
          status: GRCharacterStatus = GRCharacterStatus()) {
         self.id = id
         self.species = species
         self.name = name
         self.imageName = imageName
         self.birthDate = birthDate
+        self.createdAt = createdAt
         self.status = status
     }
     

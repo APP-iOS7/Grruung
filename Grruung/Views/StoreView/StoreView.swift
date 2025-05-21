@@ -49,7 +49,7 @@ struct StoreView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: selectedTab) { newIndex in
+                    .onChange(of: selectedTab) { oldIndex, newIndex in
                         withAnimation {
                             proxy.scrollTo(tabs[newIndex], anchor: .top)
                         }
