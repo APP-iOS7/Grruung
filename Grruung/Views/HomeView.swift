@@ -10,111 +10,198 @@ import SwiftUI
 struct HomeView: View {
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
-    let bars: [(icon: String, color: Color, width: CGFloat)] = [
-        ("🍴", Color.orange, 80),
-        ("♥️", Color.red, 120),
-        ("⚡️", Color.yellow, 100)
-    ]
-    let buttons = ["🛍️", "🛒", "⛰️"]
-    let icons = ["📖", "💬", "🔒"]
+    @State private var progressValue: CGFloat = 0.65 // 진행률을 동적으로 관리
+    @State private var showStoreView: Bool = false
     
+    let buttons = ["backpack.fill", "cart.fill", "mountain.2.fill"]
+    let icons = ["book.fill", "microphone.fill", "lock.fill"]
+    
+    // 캐릭터 상태 정보를 구조체로 관리
+    let stats: [(icon: String, color: Color, value: CGFloat)] = [
+        ("fork.knife", Color.orange, 0.7),
+        ("heart.fill", Color.red, 0.9),
+        ("bolt.fill", Color.yellow, 0.8)]
+    
+    // 하단 아이템 정보
+    let lockedItems: [(isLocked: Bool, icon: String?, name: String)] = [
+        (true, nil, "잠금1"),
+        (true, nil, "잠금2"),
+        (true, nil, "잠금3"),
+        (true, nil, "잠금4")]
+    
+    // MARK: - Body
     var body: some View {
-        VStack {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 20)
-                        .frame(height: 30)
-                        .foregroundColor(Color.gray.opacity(0.1))
-                    
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color(hex: "E8E8E9"), Color(hex: "999999")]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 200, height: 30)
-                    .cornerRadius(20)
-                }
-                .frame(height: 20)
-                .padding()
-                .padding(.top, 50)
+        NavigationStack {
+            VStack(spacing: 20) {
+                // 레벨 프로그레스 바
+                levelProgressBar
+                
+                // 메인 캐릭터 섹션
+                characterSection
+                
+                Spacer()
+                
+                // 상태 바 섹션
+                statsSection
+                
+                Spacer()
+                
+                // 아이템 그리드
+                itemsGrid
             }
-            .frame(height: 150)
-            
+            .padding()
+            .navigationTitle("나의 캐릭터")
+            .toolbar {
+            }
+        }
+    }
+    
+    // MARK: - UI Components
+    
+    // 레벨 프로그레스 바
+    private var levelProgressBar: some View {
+        VStack(alignment: .leading, spacing: 5) {
             HStack {
-                VStack(spacing: 10) {
-                    ForEach(buttons, id: \.self) { button in
-                        Button(action: {
-                            print("\(button) 버튼 클릭")
-                        }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(width: 60, height: 60)
-                                    .foregroundColor(Color.gray.opacity(0.2))
-                                Text(button)
-                            }
-                        }
-                    }
-                }
+                Text("레벨 2")
+                    .font(.caption)
+                    .fontWeight(.semibold)
                 
-                Image("CatLion")
-                    .resizable()
-                    .frame(width: 200, height: 200)
-                
-                VStack(spacing: 10) {
-                    ForEach(icons, id: \.self) { icon in
-                        Button(action: {
-                            print("\(icon) 버튼 클릭")
-                        }) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(width: 60, height: 60)
-                                    .foregroundColor(Color.gray.opacity(0.2))
-                                Text(icon)
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer()
-                .padding(.top, 10)
-            
-            VStack(spacing: 5) {
-                ForEach(bars, id: \.icon) { item in
-                    HStack(spacing: 15) {
-                        Text(item.icon)
-                            .
-                        font(.system(size: 14, weight: .medium))
-                        
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(height: 10)
-                                .foregroundColor(Color.gray.opacity(0.1))
-                            
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(width: item.width, height: 10)
-                                .foregroundColor(item.color)
-                        }
-                        .frame(width: 170, height: 10)
-                    }
-                    .padding(.horizontal, 20)
+                ZStack(alignment: .leading) {
+                    // 배경 바
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 30)
+                    
+                    // 진행 바
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(hex: "6159A0"))
+                        .frame(width: UIScreen.main.bounds.width * 0.7 * progressValue, height: 30)
                 }
             }
         }
-        
+        .padding(.top, 10)
+    }
+    
+    // 캐릭터 섹션
+    private var characterSection: some View {
+        HStack {
+            // 왼쪽 버튼들
+            VStack(spacing: 15) {
+                ForEach(buttons, id: \.self) { button in
+                    iconButton(systemName: button)
+                }
+            }
+            
+            Spacer()
+            
+            // 캐릭터 이미지
+            Image("CatLion")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 200)
+            
+            Spacer()
+            
+            // 오른쪽 버튼들
+            VStack(spacing: 15) {
+                ForEach(icons, id: \.self) { icon in
+                    iconButton(systemName: icon)
+                }
+            }
+        }
+    }
+    
+    // 상태 바 섹션
+    private var statsSection: some View {
+        VStack(spacing: 12) {
+            ForEach(stats, id: \.icon) { stat in
+                HStack(spacing: 15) {
+                    // 아이콘
+                    Image(systemName: stat.icon)
+                        .foregroundColor(stat.color)
+                        .frame(width: 30)
+                    
+                    // 상태 바
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(height: 12)
+                            .foregroundColor(Color.gray.opacity(0.1))
+                        
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: UIScreen.main.bounds.width * 0.5 * stat.value, height: 12)
+                            .foregroundColor(stat.color)
+                    }
+                }
+            }
+        }
+        .padding(.vertical)
+    }
+    
+    // 아이템 그리드
+    private var itemsGrid: some View {
         HStack(spacing: 15) {
-            ForEach(0..<4) { _ in
+            ForEach(lockedItems.indices, id: \.self) { index in
+                let item = lockedItems[index]
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 75, height: 75)
                         .foregroundColor(Color.gray.opacity(0.1))
-                    Image(systemName: "lock.fill")
+                    
+                    if item.isLocked {
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(.gray)
+                    } else {
+                        VStack(spacing: 5) {
+                            Image(systemName: item.icon ?? "")
+                                .font(.system(size: 24))
+                                .foregroundColor(.gray)
+                            
+                            Text(item.name)
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .onTapGesture {
+                    print("\(item.name) 아이템 선택됨")
                 }
             }
-            .padding(.top, 70)
+        }
+    }
+    
+    // 아이콘 버튼
+    @ViewBuilder
+    func iconButton(systemName: String) -> some View {
+        if systemName == "cart.fill" {
+            NavigationLink(destination: StoreView()) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(Color.gray.opacity(0.2))
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+            }
+        } else {
+            Button(action: {
+                print("\(systemName) 버튼 클릭")
+            }) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(Color.gray.opacity(0.2))
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+            }
         }
     }
 }
 
+
+// MARK: - Preview
 #Preview {
     HomeView()
 }
