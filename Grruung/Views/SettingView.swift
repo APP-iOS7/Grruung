@@ -25,10 +25,10 @@ struct SettingView: View {
                     Text("노성경 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
-                NavigationLink(destination: ParkTestView()) {
-                    Text("박민우 테스트 뷰")
-                        .foregroundStyle(.blue)
-                }
+//                NavigationLink(destination: ParkTestView()) {
+//                    Text("박민우 테스트 뷰")
+//                        .foregroundStyle(.blue)
+//                }
 //                NavigationLink(destination: SimTestView()) {
 //                    Text("심연아 테스트 뷰")
 //                        .foregroundStyle(.blue)
