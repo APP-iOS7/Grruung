@@ -179,14 +179,14 @@ struct CharDexSearchView: View {
 #Preview {
     CharDexSearchView(searchCharacters: [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, createdAt: Date()),
     ])
 }
