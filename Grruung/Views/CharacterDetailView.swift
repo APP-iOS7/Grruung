@@ -168,8 +168,8 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("종: \(viewModel.character.species.rawValue)")
                     .font(.subheadline)
-                Text("현재 성장 상태: \(viewModel.characterStatus.phase.rawValue) + \(currentStageIndex)")
-                    .font(.subheadline)
+//                Text("현재 성장 상태: \(viewModel.characterStatus.phase.rawValue) + \(currentStageIndex)")
+//                    .font(.subheadline)
                 if viewModel.characterStatus.address == Address.userHome.rawValue {
                     Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
                         .font(.subheadline)
