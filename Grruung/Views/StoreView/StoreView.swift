@@ -21,7 +21,7 @@ struct StoreView: View {
                         ForEach(tabs.indices) { index in
                             Button(action: { withAnimation {
                                 selectedTab = index
-                            }} {
+                            }}) {
                                 VStack {
                                     Text(tabs[index]).font(.headline)
                                         .foregroundColor(selectedTab == index ? GRColor.fontMainColor : .gray)
