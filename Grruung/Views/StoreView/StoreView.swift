@@ -121,6 +121,12 @@ struct SectionView: View {
             .id(id)
             .padding(.horizontal)
             
+            Divider()
+                .frame(height: 1)
+                .background(Color.black.opacity(0.7))
+                .padding(.vertical, 8)
+
+            
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
                     NavigationLink(destination: ProductDetailView(product: product)) {
