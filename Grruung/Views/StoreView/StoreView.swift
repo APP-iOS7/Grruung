@@ -10,10 +10,27 @@ import SwiftUI
 struct StoreView: View {
     let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
     @State private var selectedTab = 0
-
+    @State private var coins = 40
+    
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundColor(.yellow)
+                        Text("\(coins)")
+                            .font(.title2)
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.trailing, 6)
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
                 // 상단 탭
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 20) {
@@ -38,7 +55,7 @@ struct StoreView: View {
                     }
                     .padding(.horizontal)
                 }
-
+                
                 // ScrollViewReader로 섹션 이동
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -70,13 +87,13 @@ struct SectionView: View {
     let id: String
     let products: [Product]
     let proxy: ScrollViewProxy
-
+    
     let columns = [
         GridItem(.flexible()),
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Button(action: {
@@ -91,7 +108,7 @@ struct SectionView: View {
             }
             .id(id)
             .padding(.horizontal)
-
+            
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
                     NavigationLink(destination: ProductDetailView(product: product)) {
