@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StoreView: View {
-    let tabs = ["치료", "놀이", "회복"]
+    let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
     @State private var selectedTab = 0
 
     var body: some View {
@@ -39,17 +39,20 @@ struct StoreView: View {
                     .padding(.horizontal)
                 }
 
-                // ScrollViewReader로 섹션 이동 제목 누르면 거기로 이동
+                // ScrollViewReader로 섹션 이동
                 ScrollViewReader { proxy in
                     ScrollView {
                         VStack(alignment: .leading, spacing: 45) {
+                            // 각 섹션은 ID로 scrollTo 대상
+                            SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
                             SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                             SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
+                            SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
                         }
                         .padding()
                     }
-                    .onChange(of: selectedTab) { oldIndex, newIndex in
+                    .onChange(of: selectedTab) { _, newIndex in
                         withAnimation {
                             proxy.scrollTo(tabs[newIndex], anchor: .top)
                         }
@@ -61,6 +64,7 @@ struct StoreView: View {
     }
 }
 
+// 제품 리스트 보여주는 섹션 뷰
 struct SectionView: View {
     let title: String
     let id: String
@@ -85,7 +89,7 @@ struct SectionView: View {
                     .bold()
                     .foregroundColor(.primary)
             }
-            .id(id) // scroll 대상은 여전히 유지
+            .id(id)
             .padding(.horizontal)
 
             LazyVGrid(columns: columns, spacing: 8) {
