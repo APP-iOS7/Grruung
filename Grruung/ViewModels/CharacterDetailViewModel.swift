@@ -32,6 +32,7 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
     init(characterUUID: String = "") {
+        storageService.clearImageCache()
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
@@ -67,9 +68,9 @@ class CharacterDetailViewModel: ObservableObject {
             let folderName: String
             switch character.species {
             case .CatLion:
-                folderName = "고양이사자_growth_stages"
+                folderName = "catlion_growth_stages"
             case .quokka:
-                folderName = "쿼카_growth_stages"
+                folderName = "quokka_growth_stages"
             default:
                 folderName = "growth_stages"
             }

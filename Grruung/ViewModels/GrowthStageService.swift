@@ -58,4 +58,12 @@ class GrowthStageService: ObservableObject {
 
         return growthStages.sorted(by: { $0.order < $1.order })
     }
+    
+    func clearImageCache() {
+        URLCache.shared.removeAllCachedResponses()
+        // Firebase Storage 캐시도 초기화
+        let storage = Storage.storage()
+        storage.maxUploadRetryTime = 5
+        storage.maxDownloadRetryTime = 5
+    }
 }
