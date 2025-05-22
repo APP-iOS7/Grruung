@@ -11,6 +11,7 @@ struct StoreView: View {
     let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
     @State private var selectedTab = 0
     @State private var coins = 40
+    @State private var cash = 12000
     
     var body: some View {
         NavigationView {
@@ -18,18 +19,29 @@ struct StoreView: View {
                 HStack {
                     Spacer()
 
-                    HStack(spacing: 8) {
-                        Image(systemName: "circle.fill")
-                            .resizable()
-                            .frame(width: 25, height: 25)
-                            .foregroundColor(.yellow)
-                        Text("\(coins)")
-                            .font(.title2)
-                            .foregroundColor(.primary)
+                    HStack(spacing: 200) {
+                        //현금
+                        HStack(spacing: 6) {
+                            Image(systemName: "creditcard.fill")
+                                .resizable()
+                                .frame(width: 25, height: 20)
+                                .foregroundColor(.green)
+                            Text("\(cash)")
+                                .font(.title3)
+                        }
+
+                        //코인
+                        HStack(spacing: 8) {
+                            Image(systemName: "circle.fill")
+                                .resizable()
+                                .frame(width: 25, height: 25)
+                                .foregroundColor(.yellow)
+                            Text("\(coins)")
+                                .font(.title2)
+                        }
                     }
-                    .padding(.trailing, 6)
+                    .padding(.trailing, 20)
                 }
-                .padding(.horizontal)
                 .padding(.top, 8)
                 // 상단 탭
                 ScrollView(.horizontal, showsIndicators: false) {
