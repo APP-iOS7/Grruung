@@ -21,11 +21,11 @@ struct StoreView: View {
 
                     HStack(spacing: 200) {
                         //현금
-                        HStack(spacing: 6) {
-                            Image(systemName: "creditcard.fill")
+                        HStack(spacing: 8) {
+                            Image(systemName: "diamond.fill")
                                 .resizable()
-                                .frame(width: 25, height: 20)
-                                .foregroundColor(.green)
+                                .frame(width: 20, height: 25)
+                                .foregroundColor(.cyan)
                             Text("\(cash)")
                                 .font(.title3)
                         }
