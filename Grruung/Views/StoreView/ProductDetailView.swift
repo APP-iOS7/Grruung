@@ -92,7 +92,7 @@ struct ProductDetailView: View {
             .padding()
         }
         .sheet(isPresented: $showAlert) {
-            AlertView(product: product, isPresented: $showAlert)
+            AlertView(product: product, quantity: quantity, isPresented: $showAlert)
         }
     }
 }
