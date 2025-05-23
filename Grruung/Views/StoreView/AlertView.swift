@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct AlertView: View {
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    @State private var userInventories: [GRUserInventory] = []
     let product: Product
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
@@ -42,7 +44,7 @@ struct AlertView: View {
                 
                 // 버튼들
                 HStack(spacing: 12) {
-                    // YES 버튼
+                    // NO 버튼
                     AnimatedCancelButton {
                         withAnimation {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -50,10 +52,23 @@ struct AlertView: View {
                             }
                         }
                     }
-                    // NO 버튼
+                    // YES 버튼
                     AnimatedConfirmButton {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                             isPresented = false
+                        }
+                        
+                        let buyItem = GRUserInventory(userItemNumber: product.id.uuidString, userItemName: product.name, userItemType: .consumable, userItemImage: product.iconName, userIteamQuantity: quantity, userItemDescription: product.description, userItemEffectDescription: "", userItemCategory: .drug)
+                        
+                        userInventoryViewModel.fetchInventories(userId: "12345") { allItems in
+                            userInventories = allItems
+                        }
+                        
+                        // 인벤토리에 있는 아이템을 구매할 경우
+                        if let foundItem = userInventories.first(where: { $0.userItemNumber == buyItem.userItemNumber }) {
+                            userInventoryViewModel.updateItemQuantity(userId: "12345", item: foundItem, newQuantity: foundItem.userItemQuantity + quantity)
+                        } else {
+                            userInventoryViewModel.saveInventory(userId: "12345", inventory: buyItem)
                         }
                     }
                 }

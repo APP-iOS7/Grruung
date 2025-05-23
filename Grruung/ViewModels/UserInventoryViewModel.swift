@@ -58,7 +58,7 @@ class UserInventoryViewModel: ObservableObject {
                     let data = doc.data()
                     
                     guard
-                        let itemNumber = data["userItemNumber"] as? Int,
+                        let itemNumber = data["userItemNumber"] as? String,
                         let itemName = data["userItemName"] as? String,
                         let itemTypeRaw = data["userItemType"] as? String,
                         let itemType = GRUserInventory.ItemType(rawValue: itemTypeRaw),

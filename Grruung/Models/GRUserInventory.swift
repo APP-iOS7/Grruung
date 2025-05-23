@@ -10,7 +10,7 @@ import Foundation
 /// 유저의 인벤토리 모델
 /// - 상점에서 구매한 물품의 정보를 담는 구조체
 struct GRUserInventory {
-    var userItemNumber: Int
+    var userItemNumber: String
     var userItemName: String
     var userItemType: ItemType
     var userItemImage: String
@@ -22,7 +22,7 @@ struct GRUserInventory {
     var userItemCategory: ItemCategory
     var purchasedAt: Date
     
-    init(userItemNumber: Int, userItemName: String, userItemType: ItemType, userItemImage: String, userIteamQuantity: Int, userItemDescription: String, userItemEffectDescription: String ,userItemCategory: ItemCategory, purchasedAt: Date = Date()) {
+    init(userItemNumber: String, userItemName: String, userItemType: ItemType, userItemImage: String, userIteamQuantity: Int, userItemDescription: String, userItemEffectDescription: String ,userItemCategory: ItemCategory, purchasedAt: Date = Date()) {
         self.userItemNumber = userItemNumber
         self.userItemName = userItemName
         self.userItemType = userItemType

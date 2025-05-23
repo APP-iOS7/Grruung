@@ -66,7 +66,7 @@ struct userInventoryAdminView: View {
             }
             .padding()
             Button(action: {
-                let item = GRUserInventory(userItemNumber: Int(itemNumber) ?? -1, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? -1, userItemDescription: itemDescription, userItemEffectDescription: itemEffectDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date())
+                let item = GRUserInventory(userItemNumber: itemNumber, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? -1, userItemDescription: itemDescription, userItemEffectDescription: itemEffectDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date())
                 
                 userInventoryViewModel.saveInventory(userId: garaUserId, inventory: item)
                 

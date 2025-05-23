@@ -252,7 +252,7 @@ struct userInventoryDetailView: View {
 
 #Preview {
     userInventoryDetailView(item: GRUserInventory(
-        userItemNumber: 1,
+        userItemNumber: "1",
         userItemName: "비타민 젤리",
         userItemType: .consumable,
         userItemImage: "pill",
