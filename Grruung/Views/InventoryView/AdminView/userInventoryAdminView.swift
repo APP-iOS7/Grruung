@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct userInventoryAdminView: View {
-    private let garaUserId = "12345"
+    private let garaUserId = "23456"
     
     @State private var itemNumber: String = String(Int.random(in: 1...100))
     @State private var itemName: String = ""

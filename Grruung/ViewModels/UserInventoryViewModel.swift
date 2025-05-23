@@ -67,8 +67,10 @@ class UserInventoryViewModel: ObservableObject {
             
             guard !snapshot.documents.isEmpty else {
                 print("[조회결과] 문서 없음")
-                inventories = []
-                isLoading = false
+                await MainActor.run {
+                    inventories = []
+                    isLoading = false
+                }
                 return
             }
             

@@ -10,7 +10,7 @@ import SwiftUI
 struct AlertView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @State private var isProcessing = false
-    private let dummyUserId = "12345"
+    private let dummyUserId = "23456"
 
     let product: Product
     var quantity: Int
