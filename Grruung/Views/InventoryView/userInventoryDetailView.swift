@@ -79,8 +79,20 @@ struct userInventoryDetailView: View {
         .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
-                // TODO: 사용 수량 만큼 파이어베이스에 저장하기
-                // 캐릭터에게 아이템 성능 부여
+                if useItemCount > 0 {
+                    item.userItemQuantity -= Int(useItemCount)
+                    if item.userItemQuantity <= 0 {
+                        userInventoryViewModel.deleteItem(userId: garaUserId, item: item)
+                        // 이전 뷰로 돌아가기
+                        dismiss()
+                    } else {
+                        remainItemCount = Double(item.userItemQuantity)
+                        useItemCount = 0
+                        typeItemCount = Int(useItemCount).description
+                        userInventoryViewModel.updateItemQuantity(userId: garaUserId, item: item, newQuantity: item.userItemQuantity)
+                    }
+                }
+                // TODO: - 캐릭터에게 아이템 성능 부여
                 
             }
         }
