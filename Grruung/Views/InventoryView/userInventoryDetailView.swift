@@ -62,7 +62,7 @@ struct userInventoryDetailView: View {
                         .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
                 }
                 Text(item.userItemDescription)
-                    .lineLimit(1)
+//                    .lineLimit(1)
                 Text("보유: \(item.userItemQuantity)")
             }
         }
@@ -210,7 +210,7 @@ struct userInventoryDetailView: View {
         
         
         // MARK: 아이템 효과 설명 UI
-        Text("\(item.userItemName) 를 먹으면 몸에 좋아집니다")
+        Text(item.userItemEffectDescription)
         
         // MARK: 아이템 버튼 UI
         HStack {
@@ -252,12 +252,13 @@ struct userInventoryDetailView: View {
 
 #Preview {
     userInventoryDetailView(item: GRUserInventory(
-        userItemNumber: 1,
+        userItemNumber: "1",
         userItemName: "비타민 젤리",
         userItemType: .consumable,
         userItemImage: "pill",
         userIteamQuantity: Int.random(in: 1...10),
         userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
+        userItemEffectDescription: "회복력 + 100",
         userItemCategory: .drug,
         purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
     ))

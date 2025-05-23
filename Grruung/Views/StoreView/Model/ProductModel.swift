@@ -58,3 +58,32 @@ let recoveryProducts = [
     Product(iconName: "bird", name: "힐링하기", price: 229, bgColor: .purple.opacity(0.4), description: "잠시 멈추고 숨을 고르는 소중한 시간."),
     Product(iconName: "leaf", name: "산책하기", price: 129, bgColor: .mint.opacity(0.4), description: "몸과 마음이 모두 리프레시 되는 시간!")
 ]
+
+//한정판
+let limitedProducts = [
+    Product(iconName: "sparkles",   name: "스페셜 스파클",   price: 499,
+            bgColor: .indigo.opacity(0.5),
+            description: "희귀 성분이 반짝이는 건강 부스트 세럼. 한정 수량!"),
+    Product(iconName: "flame.fill", name: "울트라 부스터",        price: 559,
+            bgColor: .red.opacity(0.5),
+            description: "관절까지 뜨거운 에너지 폭발! 소진 시까지 판매."),
+    Product(iconName: "crown.fill", name: "킹덤 VIP 티켓",        price: 799,
+            bgColor: .yellow.opacity(0.5),
+            description: "왕실급 혜택을 누릴 수 있는 프리미엄 이용권."),
+    Product(iconName: "gift.fill",  name: "랜덤 깜짝박스", price: 699,
+            bgColor: .pink.opacity(0.5),
+            description: "프리미엄 아이템만 담은 고급 랜덤 박스!")
+]
+
+// 티켓
+let ticketProducts = [
+    Product(iconName: "ticket.fill", name: "10회 이용권", price: 399, bgColor: .orange.opacity(0.4),
+            description: "10회 이용 가능한 스탬프 티켓!"),
+    Product(iconName: "ticket.fill", name: "30일 패스",  price: 599, bgColor: .cyan.opacity(0.4),
+            description: "무제한으로 즐기는 30일 자유 이용권.")
+]
+
+// 모든 것들
+let allProducts: [Product] =
+    limitedProducts + ticketProducts
+

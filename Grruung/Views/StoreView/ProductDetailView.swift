@@ -91,9 +91,8 @@ struct ProductDetailView: View {
             }
             .padding()
         }
-        .navigationTitle("상세보기")
         .sheet(isPresented: $showAlert) {
-            AlertView(product: product, isPresented: $showAlert)
+            AlertView(product: product, quantity: quantity, isPresented: $showAlert)
         }
     }
 }
