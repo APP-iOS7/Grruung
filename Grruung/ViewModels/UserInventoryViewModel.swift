@@ -34,15 +34,29 @@ class UserInventoryViewModel: ObservableObject {
             .document(userId)
             .collection("items")
             .document(inventory.userItemName)
-            .setData(data)
-        print("저장: \(inventory.userItemName)")
+            .setData(data) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        self.errorMessage = error.localizedDescription
+                        print("❌ 저장 실패: \(error.localizedDescription)")
+                    } else {
+                        // 저장 성공 시 로컬 배열에도 추가
+                        if !self.inventories.contains(where: { $0.userItemNumber == inventory.userItemNumber }) {
+                            self.inventories.append(inventory)
+                        }
+                        print("저장: \(inventory.userItemName)")
+                    }
+                }
+            }
     }
     
     // MARK: - 아이템들 불러오기
     func fetchInventories(userId: String) async throws {
         print("[조회시작] 사용자 인벤토리 조회 시작 - userId: \(userId)")
-        isLoading = true
-        errorMessage = nil
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
         
         do {
             let snapshot = try await db.collection(collectionName)
@@ -94,14 +108,18 @@ class UserInventoryViewModel: ObservableObject {
                 )
             }
             
-            inventories = fetchedInventories
+            await MainActor.run {
+                self.inventories = fetchedInventories
+            }
             print("[조회완료] 총 \(fetchedInventories.count)개 아이템 로드 완료")
         } catch {
             print("❌ [조회실패] Firebase 조회 실패: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             throw error
         }
-        isLoading = false
+        await MainActor.run {
+            self.isLoading = false
+        }
     }
     
     // MARK: - 아이템 수량 업데이트
@@ -112,10 +130,17 @@ class UserInventoryViewModel: ObservableObject {
             .document(item.userItemName)
 
         itemRef.updateData(["userItemQuantity": newQuantity]) { error in
-            if let error = error {
-                print("❌ 수량 업데이트 실패: \(error.localizedDescription)")
-            } else {
-                print("✅ 수량 업데이트 성공")
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ 수량 업데이트 실패: \(error.localizedDescription)")
+                } else {
+                    // 로컬 배열 업데이트
+                    if let index = self.inventories.firstIndex(where: { $0.userItemNumber == item.userItemNumber }) {
+                        self.inventories[index].userItemQuantity = newQuantity
+                    }
+                    print("✅ 수량 업데이트 성공")
+                }
             }
         }
     }
@@ -128,10 +153,15 @@ class UserInventoryViewModel: ObservableObject {
             .document(item.userItemName)
 
         itemRef.delete { error in
-            if let error = error {
-                print("❌ 아이템 삭제 실패: \(error.localizedDescription)")
-            } else {
-                print("🗑️ 아이템 삭제 성공")
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.errorMessage = error.localizedDescription
+                    print("❌ 아이템 삭제 실패: \(error.localizedDescription)")
+                } else {
+                    // 로컬 배열에서 삭제
+                    self.inventories.removeAll { $0.userItemNumber == item.userItemNumber }
+                    print("🗑️ 아이템 삭제 성공")
+                }
             }
         }
     }
