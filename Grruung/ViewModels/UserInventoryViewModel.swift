@@ -17,8 +17,10 @@ class UserInventoryViewModel: ObservableObject {
     private let collectionName = "userInventories"
     
     // MARK: - 아이템 저장
-    func saveInventory(userId: String, inventory: GRUserInventory) {
-        let data: [String: Any] = [
+    @MainActor
+    func saveInventory(userId: String, inventory: GRUserInventory) async {
+        do {
+            let data: [String: Any] = [
             "userItemNumber": inventory.userItemNumber,
             "userItemName": inventory.userItemName,
             "userItemType": inventory.userItemType.rawValue,
@@ -30,24 +32,23 @@ class UserInventoryViewModel: ObservableObject {
             "purchasedAt": Timestamp(date: inventory.purchasedAt)
         ]
         
-        db.collection(collectionName)
+        try await db.collection(collectionName)
             .document(userId)
             .collection("items")
             .document(inventory.userItemName)
-            .setData(data) { error in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        self.errorMessage = error.localizedDescription
-                        print("❌ 저장 실패: \(error.localizedDescription)")
-                    } else {
-                        // 저장 성공 시 로컬 배열에도 추가
-                        if !self.inventories.contains(where: { $0.userItemNumber == inventory.userItemNumber }) {
-                            self.inventories.append(inventory)
-                        }
-                        print("저장: \(inventory.userItemName)")
-                    }
-                }
+            .setData(data)
+        
+            // 성공 시 로컬 배열에 추가
+            if !inventories.contains(where: { $0.userItemNumber == inventory.userItemNumber }) {
+                inventories.append(inventory)
             }
+            print("저장 성공: \(inventory.userItemName)")
+        
+        } catch {
+            errorMessage = error.localizedDescription
+            print("저장 실패: \(error.localizedDescription)")
+        }
+            
     }
     
     // MARK: - 아이템들 불러오기

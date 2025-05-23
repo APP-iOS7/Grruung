@@ -68,7 +68,7 @@ struct AlertView: View {
                     // YES 버튼
                     AnimatedConfirmButton {
                         Task {
-                            handlePurchase()
+                            await handlePurchase()
                         }
                     }
                 }
@@ -84,7 +84,7 @@ struct AlertView: View {
     }
     
     // MARK: - 구매 처리 메서드
-    private func handlePurchase() {
+    private func handlePurchase() async {
         // 중복 처리 방지
         guard !isProcessing else {
             print("[중복방지] 이미 처리 중입니다")
@@ -108,13 +108,15 @@ struct AlertView: View {
             )
             
             // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
-            if let existingItem = userInventoryViewModel.inventories.first(where: { $0.userItemNumber == buyItem.userItemNumber }) {
+            if let existingItem = userInventoryViewModel.inventories.first(where: {
+                $0.userItemNumber == buyItem.userItemNumber
+            }) {
                 print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
                 let newQuantity = existingItem.userItemQuantity + quantity
                 print("[수량업데이트] 새로운 수량: \(newQuantity)")
                 
                 // 수량 업데이트 (await로 즉시 처리)
-                userInventoryViewModel.updateItemQuantity(
+                await userInventoryViewModel.updateItemQuantity(
                     userId: dummyUserId,
                     item: existingItem,
                     newQuantity: newQuantity
@@ -123,7 +125,7 @@ struct AlertView: View {
                 print("[신규아이템] 새로운 아이템 추가")
                 
                 // 새 아이템 저장 (await로 즉시 처리)
-                userInventoryViewModel.saveInventory(
+                await userInventoryViewModel.saveInventory(
                     userId: dummyUserId,
                     inventory: buyItem
                 )
@@ -131,9 +133,13 @@ struct AlertView: View {
             
             print("🛒 [구매완료] 처리 완료!")
             
-            // 성공 시 즉시 창 닫기
-            isPresented = false
+            // 성공 시 창 닫기
+            await MainActor.run {
+                isPresented = false
+            }
             
+        } catch {
+            print("❌ 구매 처리 중 오류: \(error)")
         }
         
         isProcessing = false

@@ -66,19 +66,24 @@ struct userInventoryAdminView: View {
             }
             .padding()
             Button(action: {
-                let item = GRUserInventory(userItemNumber: itemNumber, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? -1, userItemDescription: itemDescription, userItemEffectDescription: itemEffectDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date())
-                
-                userInventoryViewModel.saveInventory(userId: garaUserId, inventory: item)
-                
-                itemName = ""
-                itemDescription = ""
-                itemQuantity = ""
-                itemNumber = String(Int.random(in: 1...100))
-                isOn1 = false
-                isOn2 = false
-            }, label: {
+                Task {
+                    let item = GRUserInventory(userItemNumber: itemNumber, userItemName: itemName, userItemType: isOn2 == false ? .consumable : .permanent, userItemImage: isOn1 == false ? "pill" : "soccerball", userIteamQuantity: Int(itemQuantity) ?? -1, userItemDescription: itemDescription, userItemEffectDescription: itemEffectDescription, userItemCategory: isOn1 == false ? .drug : .toy, purchasedAt: Date()
+                    )
+                    
+                    await userInventoryViewModel.saveInventory(userId: garaUserId, inventory: item)
+                    
+                    await MainActor.run {
+                        itemName = ""
+                        itemDescription = ""
+                        itemQuantity = ""
+                        itemNumber = String(Int.random(in: 1...100))
+                        isOn1 = false
+                        isOn2 = false
+                    }
+                }
+            }) {
                 Text("아이템 추가")
-            })
+            }
         }
         .onAppear {
             if itemEffectDescription.isEmpty {

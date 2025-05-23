@@ -104,6 +104,7 @@ struct StoreView: View {
                 }
             }
         }
+        .environmentObject(userInventoryViewModel)
     }
 }
 
