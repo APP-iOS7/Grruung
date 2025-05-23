@@ -61,13 +61,13 @@ class UserInventoryViewModel: ObservableObject {
                         let itemNumber = data["userItemNumber"] as? String,
                         let itemName = data["userItemName"] as? String,
                         let itemTypeRaw = data["userItemType"] as? String,
-                        let itemType = GRUserInventory.ItemType(rawValue: itemTypeRaw),
+                        let itemType = ItemType(rawValue: itemTypeRaw),
                         let itemImage = data["userItemImage"] as? String,
                         let itemQuantity = data["userItemQuantity"] as? Int,
                         let itemDescription = data["userItemDescription"] as? String,
                         let itemEffectDescription = data["userItemEffectDescription"] as? String,
                         let itemCategoryRaw = data["userItemCategory"] as? String,
-                        let itemCategory = GRUserInventory.ItemCategory(rawValue: itemCategoryRaw),
+                        let itemCategory = ItemCategory(rawValue: itemCategoryRaw),
                         let timestamp = data["purchasedAt"] as? Timestamp
                     else {
                         print("❌ 파싱 실패 for document \(doc.documentID)")

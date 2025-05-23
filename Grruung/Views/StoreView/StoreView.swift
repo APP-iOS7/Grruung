@@ -97,7 +97,7 @@ struct StoreView: View {
 struct SectionView: View {
     let title: String
     let id: String
-    let products: [Product]
+    let products: [GRShopItem]
     let proxy: ScrollViewProxy
     
     let columns = [
@@ -131,9 +131,9 @@ struct SectionView: View {
                 ForEach(products) { product in
                     NavigationLink(destination: ProductDetailView(product: product)) {
                         ProductItemView(
-                            iconName: product.iconName,
-                            name: product.name,
-                            price: product.price,
+                            iconName: product.itemImage,
+                            name: product.itemName,
+                            price: product.itemPrice,
                             bgColor: product.bgColor
                         )
                     }

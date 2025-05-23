@@ -13,8 +13,8 @@ struct userInventoryAdminView: View {
     @State private var itemNumber: String = String(Int.random(in: 1...100))
     @State private var itemName: String = ""
     @State private var itemImage: String = ""
-    @State private var itemType: GRUserInventory.ItemType = .consumable
-    @State private var itemCategory: GRUserInventory.ItemCategory = .drug
+    @State private var itemType: ItemType = .consumable
+    @State private var itemCategory: ItemCategory = .drug
     @State private var itemDescription: String = ""
     @State private var itemEffectDescription: String = ""
     @State private var itemQuantity: String = ""

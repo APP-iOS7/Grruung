@@ -10,7 +10,7 @@ import SwiftUI
 struct AlertView: View {
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     @State private var userInventories: [GRUserInventory] = []
-    let product: Product
+    let product: GRShopItem
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
     
@@ -31,7 +31,7 @@ struct AlertView: View {
                     )
                 
                 // 제목
-                Text("가격: \(product.price * quantity)")
+                Text("가격: \(product.itemPrice * quantity)")
                     .font(.headline)
                     .foregroundColor(.black)
                 
@@ -58,7 +58,7 @@ struct AlertView: View {
                             isPresented = false
                         }
                         
-                        let buyItem = GRUserInventory(userItemNumber: product.id.uuidString, userItemName: product.name, userItemType: .consumable, userItemImage: product.iconName, userIteamQuantity: quantity, userItemDescription: product.description, userItemEffectDescription: "", userItemCategory: .drug)
+                        let buyItem = GRUserInventory(userItemNumber: product.itemNumber, userItemName: product.itemName, userItemType: product.itemType, userItemImage: product.itemImage, userIteamQuantity: quantity, userItemDescription: product.itemDescription, userItemEffectDescription: product.itemEffectDescription, userItemCategory: product.itemCategory)
                         
                         userInventoryViewModel.fetchInventories(userId: "12345") { allItems in
                             userInventories = allItems

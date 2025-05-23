@@ -34,15 +34,6 @@ struct GRUserInventory {
         self.purchasedAt = purchasedAt
     }
     
-    enum ItemType: String {
-        case consumable = "소모품"
-        case permanent = "영구"
-    }
-    enum ItemCategory: String {
-        case drug = "약품"
-        case toy = "장난감"
-        /// 나중에~
-        // case avatar = "의류"
-    }
+    
 }
 
