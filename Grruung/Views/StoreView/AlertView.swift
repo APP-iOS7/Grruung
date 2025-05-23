@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct AlertView: View {
-    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    @State private var userInventories: [GRUserInventory] = []
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @State private var isProcessing = false
+    private let dummyUserId = "12345"
+
     let product: Product
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
@@ -42,33 +44,31 @@ struct AlertView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
+                // 처리 중 표시
+                if isProcessing {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("구매 처리 중...")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .padding()
+                }
+                
                 // 버튼들
                 HStack(spacing: 12) {
                     // NO 버튼
                     AnimatedCancelButton {
                         withAnimation {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                                 isPresented = false
-                            }
                         }
                     }
+                    
                     // YES 버튼
                     AnimatedConfirmButton {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            isPresented = false
-                        }
-                        
-                        let buyItem = GRUserInventory(userItemNumber: product.id.uuidString, userItemName: product.name, userItemType: .consumable, userItemImage: product.iconName, userIteamQuantity: quantity, userItemDescription: product.description, userItemEffectDescription: "", userItemCategory: .drug)
-                        
-                        userInventoryViewModel.fetchInventories(userId: "12345") { allItems in
-                            userInventories = allItems
-                        }
-                        
-                        // 인벤토리에 있는 아이템을 구매할 경우
-                        if let foundItem = userInventories.first(where: { $0.userItemNumber == buyItem.userItemNumber }) {
-                            userInventoryViewModel.updateItemQuantity(userId: "12345", item: foundItem, newQuantity: foundItem.userItemQuantity + quantity)
-                        } else {
-                            userInventoryViewModel.saveInventory(userId: "12345", inventory: buyItem)
+                        Task {
+                            handlePurchase()
                         }
                     }
                 }
@@ -81,6 +81,62 @@ struct AlertView: View {
             .padding(.horizontal, 30)
             .frame(maxWidth: 300)
         }
+    }
+    
+    // MARK: - 구매 처리 메서드
+    private func handlePurchase() {
+        // 중복 처리 방지
+        guard !isProcessing else {
+            print("[중복방지] 이미 처리 중입니다")
+            return
+        }
+        
+        isProcessing = true
+        print("[구매시작] 아이템 구매 처리 시작")
+        print("[구매정보] 아이템명: \(product.name), 수량: \(quantity)")
+        
+        do {
+            let buyItem = GRUserInventory(
+                userItemNumber: product.id.uuidString,
+                userItemName: product.name,
+                userItemType: .consumable,
+                userItemImage: product.iconName,
+                userIteamQuantity: quantity,
+                userItemDescription: product.description,
+                userItemEffectDescription: "",
+                userItemCategory: .drug
+            )
+            
+            // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
+            if let existingItem = userInventoryViewModel.inventories.first(where: { $0.userItemNumber == buyItem.userItemNumber }) {
+                print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
+                let newQuantity = existingItem.userItemQuantity + quantity
+                print("[수량업데이트] 새로운 수량: \(newQuantity)")
+                
+                // 수량 업데이트 (await로 즉시 처리)
+                userInventoryViewModel.updateItemQuantity(
+                    userId: dummyUserId,
+                    item: existingItem,
+                    newQuantity: newQuantity
+                )
+            } else {
+                print("[신규아이템] 새로운 아이템 추가")
+                
+                // 새 아이템 저장 (await로 즉시 처리)
+                userInventoryViewModel.saveInventory(
+                    userId: dummyUserId,
+                    inventory: buyItem
+                )
+            }
+            
+            print("🛒 [구매완료] 처리 완료!")
+            
+            // 성공 시 즉시 창 닫기
+            isPresented = false
+            
+        }
+        
+        isProcessing = false
     }
 }
 

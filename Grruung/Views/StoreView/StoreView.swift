@@ -13,6 +13,9 @@ struct StoreView: View {
     @State private var coins = 40
     @State private var cash = 12000
     
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    private let dummyUserId = "23456"
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -89,6 +92,17 @@ struct StoreView: View {
                 }
             }
             .navigationTitle("Store")
+        } //
+        .onAppear {
+            // 상점 진입 시 사용자 인벤토리 미리 로드
+            Task {
+                do {
+                    try await userInventoryViewModel.fetchInventories(userId: dummyUserId)
+                    print("[상점진입] 인벤토리 미리 로드 완료")
+                } catch {
+                    print("[상점진입] 인벤토리 로드 실패: \(error.localizedDescription)")
+                }
+            }
         }
     }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 struct userInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    private let garaUserId = "12345"
+    private let garaUserId = "23456"
     @State private var items: [GRUserInventory] = []
     
     private let inventoryEmptyText: [String] = [
@@ -48,13 +48,15 @@ struct userInventoryView: View {
     }
     
     var sortedItems: [GRUserInventory] {
+        let itemsToSort = userInventoryViewModel.inventories
+        
         switch sortItemCategory {
         case .all:
-            return items
+            return itemsToSort
         case .drug:
-            return items.filter { $0.userItemCategory == .drug }
+            return itemsToSort.filter { $0.userItemCategory == .drug }
         case .toy:
-            return items.filter { $0.userItemCategory == .toy }
+            return itemsToSort.filter { $0.userItemCategory == .toy }
         }
     }
     
@@ -100,38 +102,44 @@ struct userInventoryView: View {
                 .background(.yellow)
                 .cornerRadius(15)
                 .padding()
-                if let inventories = userInventoryViewModel.inventories {
-                    if inventories.isEmpty {
-                        Text(inventoryEmptyText.randomElement() ?? "텅...")
-                            .lineLimit(1)
-                            .font(.title2)
-                            .foregroundStyle(.gray)
-                            .padding()
-                    } else {
-                        LazyVGrid(columns: columns) {
-                            ForEach(sortedItems, id: \.userItemNumber) { item in
-                                NavigationLink(destination: userInventoryDetailView(item: item)) {
-                                    itemCellView(item)
-                                        .foregroundStyle(.black)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(lineWidth: 2)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                        }
-                    }
-                } else {
+                
+                if userInventoryViewModel.isLoading {
                     ProgressView("불러오는 중...")
+                } else if userInventoryViewModel.inventories.isEmpty {
+                    Text(inventoryEmptyText.randomElement() ?? "텅...")
+                        .lineLimit(1)
+                        .font(.title2)
+                        .foregroundStyle(.gray)
+                        .padding()
+                } else {
+                    LazyVGrid(columns: columns) {
+                        ForEach(sortedItems, id: \.userItemNumber) { item in
+                            NavigationLink(destination: userInventoryDetailView(item: item)) {
+                                itemCellView(item)
+                                    .foregroundStyle(.black)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(lineWidth: 2)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                    }
+                }
+                
+                // 에러 메시지 표시
+                if let errorMessage = userInventoryViewModel.errorMessage {
+                    Text("오류: \(errorMessage)")
+                        .foregroundColor(.red)
+                        .padding()
                 }
             }
             .onAppear {
-                userInventoryViewModel.fetchInventories(userId: garaUserId) { allItems in
-                    items = allItems
+                Task {
+                    try await userInventoryViewModel.fetchInventories(userId: garaUserId)
                 }
             }
             .navigationTitle("가방")
