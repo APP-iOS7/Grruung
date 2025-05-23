@@ -18,6 +18,7 @@ struct ProductDetailView: View {
     let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel 
     
     var body: some View {
         VStack(spacing: 0) {

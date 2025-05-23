@@ -16,7 +16,7 @@ struct userInventoryDetailView: View {
     // 사용할 아이템 갯수를 입력받을 변수
     @State private var typeItemCount: String = ""
     
-    private let garaUserId = "12345"
+    private let garaUserId = "23456"
     
     @EnvironmentObject var authService: AuthService
     
