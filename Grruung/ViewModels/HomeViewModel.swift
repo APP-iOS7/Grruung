@@ -20,6 +20,7 @@ class HomeViewModel: ObservableObject {
     @Published var expValue: Int = 0
     @Published var expMaxValue: Int = 100
     @Published var expPercent: CGFloat = 0.0
+    @Published var animationInProgress: Bool = false // 애니메이션 진행 상태
     
     // 스탯 관련
     @Published var satietyValue: Int = 50 // 포만감
