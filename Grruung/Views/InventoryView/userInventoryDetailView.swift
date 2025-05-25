@@ -62,7 +62,7 @@ struct userInventoryDetailView: View {
                         .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
                 }
                 Text(item.userItemDescription)
-//                    .lineLimit(1)
+                //                    .lineLimit(1)
                 Text("보유: \(item.userItemQuantity)")
             }
         }
@@ -128,136 +128,156 @@ struct userInventoryDetailView: View {
             Button("확인", role: .cancel) {}
         }
         
-        if let remainItemCount {
-            // MARK: 아이템 수량 관련 UI
-            VStack {
-                HStack {
-                    Text("수량: ")
-                    TextField("입력", text: $typeItemCount)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 50)
-                        .onSubmit {
-                            if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
-                                useItemCount = Double(typeItemCount) ?? useItemCount
-                            } else {
-                                showingItemCountAlert = true
-                                typeItemCount = Int(useItemCount).description
+        if item.userItemType == .consumable {
+            if let remainItemCount {
+                // MARK: 아이템 수량 관련 UI
+                VStack {
+                    HStack {
+                        Text("수량: ")
+                        TextField("입력", text: $typeItemCount)
+                            .keyboardType(.numberPad)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 50)
+                            .onSubmit {
+                                if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+                                    useItemCount = Double(typeItemCount) ?? useItemCount
+                                } else {
+                                    showingItemCountAlert = true
+                                    typeItemCount = Int(useItemCount).description
+                                }
                             }
-                        }
-                        .focused($isFocused)
-                        .toolbar {
-                            ToolbarItemGroup(placement: .keyboard) {
-                                Spacer()
-                                Button("확인") {
-                                    isFocused = false
-                                    if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
-                                        useItemCount = Double(typeItemCount) ?? useItemCount
-                                    } else {
-                                        showingItemCountAlert = true
-                                        typeItemCount = Int(useItemCount).description
+                            .focused($isFocused)
+                            .toolbar {
+                                ToolbarItemGroup(placement: .keyboard) {
+                                    Spacer()
+                                    Button("확인") {
+                                        isFocused = false
+                                        if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+                                            useItemCount = Double(typeItemCount) ?? useItemCount
+                                        } else {
+                                            showingItemCountAlert = true
+                                            typeItemCount = Int(useItemCount).description
+                                        }
                                     }
                                 }
                             }
-                        }
-                }
-                
-                HStack {
-                    Button(action: {
-                        useItemCount = 0
-                        typeItemCount = "0"
-                    }, label: {
-                        Text("최소")
-                            .foregroundStyle(.black)
-                    })
-                    Button(action: {
-                        if useItemCount > 0 {
-                            useItemCount -= 1
-                            typeItemCount = Int(useItemCount).description
-                        }
-                        
-                    }, label: {
-                        Image(systemName: "minus.circle.fill")
-                            .resizable()
-                            .frame(width: 25, height: 25)
-                            .foregroundStyle(useItemCount <= 0 ? .gray : .black)
-                    })
-                    .disabled(useItemCount <= 0)
-                    
-                    if remainItemCount > 0 {
-                        Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
                     }
                     
-                    Button(action: {
-                        if useItemCount < remainItemCount {
-                            useItemCount += 1
-                            typeItemCount = Int(useItemCount).description
+                    HStack {
+                        Button(action: {
+                            useItemCount = 0
+                            typeItemCount = "0"
+                        }, label: {
+                            Text("최소")
+                                .foregroundStyle(.black)
+                        })
+                        Button(action: {
+                            if useItemCount > 0 {
+                                useItemCount -= 1
+                                typeItemCount = Int(useItemCount).description
+                            }
+                            
+                        }, label: {
+                            Image(systemName: "minus.circle.fill")
+                                .resizable()
+                                .frame(width: 25, height: 25)
+                                .foregroundStyle(useItemCount <= 0 ? .gray : .black)
+                        })
+                        .disabled(useItemCount <= 0)
+                        
+                        if remainItemCount > 0 {
+                            Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
                         }
-                    }, label: {
-                        Image(systemName: "plus.circle.fill")
-                            .resizable()
-                            .frame(width: 25, height: 25)
-                            .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
-                    })
-                    .disabled(useItemCount >= remainItemCount)
-                    Button(action: {
-                        useItemCount = remainItemCount
-                        typeItemCount = Int(remainItemCount).description
-                    }, label: {
-                        Text("최대")
-                            .foregroundStyle(.black)
-                    })
+                        
+                        Button(action: {
+                            if useItemCount < remainItemCount {
+                                useItemCount += 1
+                                typeItemCount = Int(useItemCount).description
+                            }
+                        }, label: {
+                            Image(systemName: "plus.circle.fill")
+                                .resizable()
+                                .frame(width: 25, height: 25)
+                                .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
+                        })
+                        .disabled(useItemCount >= remainItemCount)
+                        Button(action: {
+                            useItemCount = remainItemCount
+                            typeItemCount = Int(remainItemCount).description
+                        }, label: {
+                            Text("최대")
+                                .foregroundStyle(.black)
+                        })
+                    }
+                    .padding(.horizontal, 16)
+                    
+                    Text("(\(Int(useItemCount)) / \(Int(remainItemCount)))")
                 }
-                .padding(.horizontal, 16)
-                
-                Text("(\(Int(useItemCount)) / \(Int(remainItemCount)))")
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.gray.opacity(0.3))
+                )
+                .padding(.horizontal)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.3))
-            )
-            .padding(.horizontal)
         }
-        
         
         // MARK: 아이템 효과 설명 UI
         Text(item.userItemEffectDescription)
         
         // MARK: 아이템 버튼 UI
         HStack {
-            Button(action: {
-                showingDeleteAlert = true
-            }, label: {
-                Text("버리기")
-                    .foregroundColor(.black)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.red)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-                    .cornerRadius(10)
-                    .padding(16)
-            })
-            
-            Button(action: {
-                showingUseAlert = true
-            }, label: {
-                Text("사용하기")
-                    .foregroundColor(.black)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(useItemCount <= 0 ? Color.gray : Color.green)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-                    .cornerRadius(10)
-                    .padding(16)
-            })
-            .disabled(useItemCount <= 0)
+            if item.userItemType == .permanent {
+                Button(action: {
+                    dismiss()
+                }, label: {
+                    Text("확인")
+                        .foregroundColor(.black)
+                        .padding()
+                        .frame(maxWidth: UIScreen.main.bounds.width / 3
+)
+                        .background(.green)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                        .padding(16)
+                })
+            } else {
+                Button(action: {
+                    showingDeleteAlert = true
+                }, label: {
+                    Text("버리기")
+                        .foregroundColor(.black)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(.red)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                        .padding(16)
+                })
+                
+                Button(action: {
+                    showingUseAlert = true
+                }, label: {
+                    Text("사용하기")
+                        .foregroundColor(.black)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(useItemCount <= 0 ? Color.gray : Color.green)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                        .padding(16)
+                })
+                .disabled(useItemCount <= 0)
+            }
         }
     }
 }
