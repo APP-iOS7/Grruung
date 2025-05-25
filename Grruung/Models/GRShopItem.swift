@@ -59,12 +59,12 @@ struct GRShopItem: Identifiable {
     }
 }
 
-enum ItemType: String {
+enum ItemType: String, CaseIterable {
     case consumable = "소모품"
     case permanent = "영구"
 }
 
-enum ItemCategory: String {
+enum ItemCategory: String, CaseIterable {
     case drug = "약품"
     case toy = "장난감"
     case etc = "기타"
@@ -72,9 +72,9 @@ enum ItemCategory: String {
     // case avatar = "의류"
 }
 
-enum ItemTag: String {
-case limited = "기간+한정상품"
-case normal = "일반상품"
+enum ItemTag: String, CaseIterable {
+    case limited = "기간+한정상품"
+    case normal = "일반상품"
 }
 
 let products = [
@@ -459,5 +459,5 @@ let ticketProducts = [
 
 // 모든 것들
 let allProducts: [GRShopItem] =
-    limitedProducts + ticketProducts
+    products + treatmentProducts + playProducts + limitedProducts + ticketProducts
 
