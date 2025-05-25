@@ -39,6 +39,7 @@ struct userInventoryView: View {
         case all = "전체"
         case drug = "약품"
         case toy = "장난감"
+        case etc = "기타"
     }
     
     enum SortItemType: String {
@@ -57,6 +58,8 @@ struct userInventoryView: View {
             return itemsToSort.filter { $0.userItemCategory == .drug }
         case .toy:
             return itemsToSort.filter { $0.userItemCategory == .toy }
+        case .etc:
+            return itemsToSort.filter { $0.userItemCategory == .etc}
         }
     }
     
