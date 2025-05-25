@@ -27,6 +27,9 @@ class HomeViewModel: ObservableObject {
     
     @Published var energyValue: Int = 50 // 에너지
     @Published var energyPercent: CGFloat = 0.5
+    @Published var energyTimer: Timer? // 에너지 증가 타이머
+    @Published var lastUpdateTime: Date = Date()
+    @Published var cancellables = Set<AnyCancellable>()
     
     @Published var happinessValue: Int = 50 // 행복도
     @Published var happinessPercent: CGFloat = 0.5
@@ -65,6 +68,13 @@ class HomeViewModel: ObservableObject {
     init() {
         loadCharacter()
         updateAllPercents()
+        startEnergyTimer()
+        setupAppStateObservers()
+    }
+    
+    deinit {
+        stopEnergyTimer()
+        cancellables.removeAll()
     }
     
     // MARK: - 데이터 로드
@@ -105,6 +115,65 @@ class HomeViewModel: ObservableObject {
         }
         
         updateAllPercents()
+    }
+    
+    // MARK: - 타이머 설정
+    private func startEnergyTimer() {
+        // 6분(360초) 마다 타이머 실행 → 에너지 +1
+        energyTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: true) { [weak self] _ in
+            self?.increaseEnergy()
+        }
+    }
+    
+    private func stopEnergyTimer() {
+        energyTimer?.invalidate() // 타이머 중지
+        energyTimer = nil
+    }
+    
+    private func increaseEnergy() {
+        // 캐릭터가 자는중이 아니며, 에너지가 최대가 아닐 경우 +1
+        guard !isSleeping else { return }
+        if energyValue < 100 {
+            energyValue += 1
+            updateAllPercents()
+            updateCharacterStatus()
+        }
+    }
+    
+    // MARK: - 앱 상태 처리
+    private func setupAppStateObservers() {
+        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppWillResignActive()
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppDidBecomeActive()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleAppWillResignActive() {
+        // 앱이 백그라운드로 나갈 때 시간 기록 및 타이머 정지
+        lastUpdateTime = Date()
+        stopEnergyTimer()
+    }
+    
+    private func handleAppDidBecomeActive() {
+        // 앱이 다시 켜졌을 때 지난 시간 계산
+        let now = Date()
+        let elapsedTime = now.timeIntervalSince(lastUpdateTime)
+        let energyToAdd = Int(elapsedTime / 360)
+        
+        if energyToAdd > 0 {
+            energyValue = min(100, energyValue + energyToAdd)
+            updateAllPercents()
+            updateCharacterStatus()
+        }
+        // 타이머 다시 시작
+        startEnergyTimer()
     }
     
     // MARK: - 내부 메서드
