@@ -183,7 +183,19 @@ struct HomeView: View {
                         .foregroundColor(.gray)
                 }
             }
-        } else {
+        } else if systemName == "backpack.fill" {
+            NavigationLink(destination: userInventoryView()) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(Color.gray.opacity(0.2))
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        else {
             Button(action: {
                 print("\(systemName) 버튼 클릭")
             }) {

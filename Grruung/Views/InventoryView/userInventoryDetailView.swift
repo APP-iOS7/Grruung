@@ -234,8 +234,7 @@ struct userInventoryDetailView: View {
                     Text("확인")
                         .foregroundColor(.black)
                         .padding()
-                        .frame(maxWidth: UIScreen.main.bounds.width / 3
-)
+                        .frame(maxWidth: UIScreen.main.bounds.width / 3)
                         .background(.green)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)

@@ -12,6 +12,7 @@ struct userInventoryView: View {
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     private let garaUserId = "23456"
     @State private var items: [GRUserInventory] = []
+    @State private var selectedItem: GRUserInventory? = nil
     
     private let inventoryEmptyText: [String] = [
         "텅...",
@@ -116,21 +117,27 @@ struct userInventoryView: View {
                         .padding()
                 } else {
                     LazyVGrid(columns: columns) {
-                        ForEach(sortedItems, id: \.userItemNumber) { item in
-                            NavigationLink(destination: userInventoryDetailView(item: item)) {
-                                itemCellView(item)
-                                    .foregroundStyle(.black)
+                                ForEach(sortedItems, id: \.userItemNumber) { item in
+                                    Button {
+                                        selectedItem = item
+                                    } label: {
+                                        itemCellView(item)
+                                            .foregroundStyle(.black)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(16)
+                                            .overlay {
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.bottom, 16)
+                                    }
+                                }
                             }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(lineWidth: 2)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                    }
+                            .sheet(item: $selectedItem) { item in
+                                    userInventoryDetailView(item: item)
+                                        .presentationDetents([.medium])
+                            }
                 }
                 
                 // 에러 메시지 표시
