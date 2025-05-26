@@ -35,6 +35,12 @@ class HomeViewModel: ObservableObject {
     @Published var cleanValue: Int = 50 // 청결도
     @Published var cleanPercent: CGFloat = 0.5
     
+    @Published var activityValue: Int = 50 // 활동량 (6분마다 1씩 회복)
+    @Published var activityPercent: CGFloat = 0.5
+    
+    @Published var healthyValue: Int = 50 // 건강도 (히든 스탯)
+    @Published var healthyPercent: CGFloat = 0.5
+    
     // 상태 관련
     @Published var isSleeping: Bool = false // 잠자기 상태
     
@@ -60,6 +66,20 @@ class HomeViewModel: ObservableObject {
         ("fork.knife", Color.orange, 0.5),
         ("heart.fill", Color.red, 0.5),
         ("bolt.fill", Color.yellow, 0.5)
+    ]
+    
+    // 액션 관리자
+    private let actionManager = ActionManager.shared
+    
+    // MARK: TODO.2 - 성장 단계에 따른 경험치 요구량을 업데이트
+    // 성장 단계별 경험치 요구량
+    private let phaseExpRequirements: [CharacterPhase: Int] = [
+        .egg: 50,
+        .infant: 100,
+        .child: 150,
+        .adolescent: 200,
+        .adult: 300,
+        .elder: 500
     ]
     
     // MARK: - 초기화
@@ -103,9 +123,36 @@ class HomeViewModel: ObservableObject {
             energyValue = character.status.stamina
             happinessValue = character.status.affection
             cleanValue = character.status.clean
+            healthyValue = character.status.healthy
+            activityValue = character.status.activity
         }
         
         updateAllPercents()
+    }
+    
+    // MARK: TODO.8 - 성장 단계별 기능 해금
+    private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
+        switch phase {
+        case .egg:
+            // 알 단계에서는 제한된 기능만 사용 가능
+            sideButtons[3].unlocked = false // 일기
+            sideButtons[4].unlocked = false // 채팅
+            
+        case .infant:
+            // 유아기에서는 일기 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = false // 채팅
+            
+        case .child:
+            // 소아기에서는 채팅 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = true // 채팅
+            
+        case .adolescent, .adult, .elder:
+            // 청년기 이상에서는 모든 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = true // 채팅
+        }
     }
     
     // MARK: - 내부 메서드
@@ -148,38 +195,130 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    private func addExp(_ amount: Int) {
-        expValue += amount
-        if expValue >= expMaxValue {
-            // 레벨업 처리
-            level += 1
-            expValue = expValue - expMaxValue
-            expMaxValue += 50 // 다음 레벨은 더 많은 경험치 필요
-            
-            // 레벨업 시 캐릭터 상태 업데이트
-            if let character = character {
-                var updatedStatus = character.status
-                updatedStatus.level = level
-                updatedStatus.exp = expValue
-                updatedStatus.expToNextLevel = expMaxValue
-                
-                // 레벨업 시 스탯 보너스
-                updatedStatus.satiety = min(100, updatedStatus.satiety + 10)
-                updatedStatus.stamina = min(100, updatedStatus.stamina + 10)
-                updatedStatus.affection = min(100, updatedStatus.affection + 10)
-                updatedStatus.healthy = min(100, updatedStatus.healthy + 10)
-                updatedStatus.clean = min(100, updatedStatus.clean + 10)
-                
-                // 캐릭터 업데이트
-                self.character?.status = updatedStatus
-                
-                // UI 값 업데이트
-                satietyValue = updatedStatus.satiety
-                energyValue = updatedStatus.stamina
-                happinessValue = updatedStatus.affection
-                cleanValue = updatedStatus.clean
-            }
+    // MARK: - 액션 관련 관리
+    
+    // 액션 버튼을 현재 상태에 맞게 갱신
+    private func refreshActionButtons() {
+        guard let character = character else { return }
+        
+        // ActionManager를 통해 현재 상황에 맞는 액션 버튼 가져오기
+        let buttons = actionManager.getActionsButtons(
+            phase: character.status.phase,
+            isSleeping: isSleeping
+        )
+        
+        // UI 표시용 actionButtons 업데이트
+        actionButtons = buttons.map { button in
+            (icon: button.icon, unlocked: button.unlocked, name: button.name)
         }
+    }
+    
+    // MARK: - 경험치 및 레벨업 관리
+    
+    // 경험치를 추가하고 레벨업을 체크합니다.
+    // - Parameter amount: 추가할 경험치량
+    private func addExp(_ amount: Int) {
+        // 성장 단계에 따른 경험치 보너스 적용
+        var adjustedAmount = amount
+        
+        if let character = character, character.status.phase == .egg {
+            // 운석(알) 상태에서는 경험치 5배로 획득
+            adjustedAmount *= 5
+        }
+        
+        expValue += adjustedAmount
+        
+        // 레벨업 체크
+        if expValue >= expMaxValue {
+            levelUp()
+        } else {
+            // 레벨업이 아닌 경우에도 퍼센트 업데이트 및 캐릭터 동기화
+            expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
+            updateCharacterStatus()
+        }
+    }
+    
+    // 레벨업 처리
+    private func levelUp() {
+        level += 1
+        expValue -= expMaxValue
+        
+        // 새로운 성장 단계 결정
+        let oldPhase = character?.status.phase
+        updateGrowthPhase()
+        
+        // 새 경험치 요구량 설정
+        updateExpRequirement()
+        
+        // 퍼센트 업데이트
+        expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
+        
+        // 레벨업 보너스 지급
+        applyLevelUpBonus()
+        
+        // 성장 단계가 변경 되었으면 기능 해금
+        if oldPhase != character?.status.phase {
+            unlockFeaturesByPhase(character?.status.phase ?? .egg)
+            // 액션 버튼 갱신
+            refreshActionButtons()
+        }
+        
+        // 캐릭터 상태 업데이트
+        updateCharacterStatus()
+        
+        // 레벨업 메시지
+        if oldPhase != character?.status.phase {
+            statusMessage = "축하합니다! \(character?.status.phase.rawValue ?? "")로 성장했어요!"
+        } else {
+            statusMessage = "레벨 업! 이제 레벨 \(level)입니다!"
+        }
+    }
+    
+    
+    // 현재 레벨에 맞는 성장 단계를 업데이트
+    private func updateGrowthPhase() {
+        guard var character = character else { return }
+        
+        // 레벨에 따른 성장 단계 결정
+        switch level {
+        case 0:
+            character.status.phase = .egg
+        case 1...2:
+            character.status.phase = .infant
+        case 3...5:
+            character.status.phase = .child
+        case 6...8:
+            character.status.phase = .adolescent
+        case 9...15:
+            character.status.phase = .adult
+        default:
+            character.status.phase = .elder
+        }
+        
+        self.character = character
+    }
+    
+    // MARK: TODO.2 - 성장 단계에 따른 경험치 요구량을 업데이트
+    private func updateExpRequirement() {
+        guard let character = character else { return }
+        
+        // 성장 단계에 맞는 경험치 요구량 설정
+        if let requirement = phaseExpRequirements[character.status.phase] {
+            expMaxValue = requirement
+        } else {
+            // 기본값 (성장 단계를 찾지 못했을 경우)
+            expMaxValue = 100 + (level * 50)
+        }
+    }
+    
+    // 레벨업 시 보너스 적용
+    private func applyLevelUpBonus() {
+        // 레벨 업 시 모든 스텟 20% 회복
+        satietyValue = min(100, satietyValue + 20)
+        energyValue = min(100, energyValue + 20)
+        activityValue = min(100, activityValue + 20)
+        
+        // 업데이트
         updateAllPercents()
     }
     
@@ -266,4 +405,6 @@ class HomeViewModel: ObservableObject {
         // 실제 앱에서는 여기서 Firestore에 저장
         // saveCharacterToFirestore()
     }
+    
+    
 }
