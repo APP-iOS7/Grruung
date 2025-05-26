@@ -18,6 +18,8 @@ struct userInventoryDetailView: View {
     
     @State var realUserId: String
     
+    @Binding var isEdited: Bool
+    
     @EnvironmentObject var authService: AuthService
     
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
@@ -79,6 +81,7 @@ struct userInventoryDetailView: View {
         .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
+                isEdited = true
                 if useItemCount > 0 {
                     item.userItemQuantity -= Int(useItemCount)
                     if item.userItemQuantity <= 0 {
@@ -109,6 +112,7 @@ struct userInventoryDetailView: View {
         .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
             Button("취소", role: .cancel) {}
             Button("확인", role: .destructive) {
+                isEdited = true
                 if useItemCount > 0 {
                     item.userItemQuantity -= Int(useItemCount)
                     if item.userItemQuantity <= 0 {

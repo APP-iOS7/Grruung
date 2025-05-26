@@ -13,6 +13,7 @@ struct userInventoryView: View {
     @State var realUserId = ""
     @State private var items: [GRUserInventory] = []
     @State private var selectedItem: GRUserInventory? = nil
+    @State private var isEdited: Bool = false
     
     private let inventoryEmptyText: [String] = [
         "텅...",
@@ -135,7 +136,10 @@ struct userInventoryView: View {
                                 }
                             }
                             .sheet(item: $selectedItem, onDismiss: {
-                                Task {
+                                // 수량 변경이 있는 경우에만 인벤토리 리로드
+                                if isEdited {
+                                    isEdited = false
+                                    Task {
                                         do {
                                             try await userInventoryViewModel.fetchInventories(userId: realUserId)
                                             print("모달 닫힘 후 인벤토리 리로드 완료")
@@ -143,8 +147,9 @@ struct userInventoryView: View {
                                             print("모달 닫힘 후 인벤토리 로드 실패: \(error)")
                                         }
                                     }
+                                }
                             }) { item in
-                                    userInventoryDetailView(item: item, realUserId: realUserId)
+                                userInventoryDetailView(item: item, realUserId: realUserId, isEdited: $isEdited)
                                         .presentationDetents([.medium])
                             }
                 }
