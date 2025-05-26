@@ -115,7 +115,7 @@ struct StoreView: View {
                 }
             }
         }
-//        .environmentObject(userInventoryViewModel)
+        .environmentObject(userInventoryViewModel)
     }
 }
 
@@ -176,4 +176,5 @@ struct SectionView: View {
 
 #Preview {
     StoreView()
+        .environmentObject(AuthService())
 }

@@ -173,7 +173,7 @@ struct HomeView: View {
     @ViewBuilder
     func iconButton(systemName: String) -> some View {
         if systemName == "cart.fill" {
-            NavigationLink(destination: StoreView()) {
+            NavigationLink(destination: StoreView() .environmentObject(AuthService())) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 60, height: 60)
@@ -184,7 +184,8 @@ struct HomeView: View {
                 }
             }
         } else if systemName == "backpack.fill" {
-            NavigationLink(destination: userInventoryView()) {
+            NavigationLink(destination: userInventoryView()
+                .environmentObject(AuthService())) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 60, height: 60)
