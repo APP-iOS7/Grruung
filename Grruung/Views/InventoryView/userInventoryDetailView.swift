@@ -16,7 +16,7 @@ struct userInventoryDetailView: View {
     // 사용할 아이템 갯수를 입력받을 변수
     @State private var typeItemCount: String = ""
     
-    private let garaUserId = "23456"
+    @State var realUserId: String
     
     @EnvironmentObject var authService: AuthService
     
@@ -82,14 +82,14 @@ struct userInventoryDetailView: View {
                 if useItemCount > 0 {
                     item.userItemQuantity -= Int(useItemCount)
                     if item.userItemQuantity <= 0 {
-                        userInventoryViewModel.deleteItem(userId: garaUserId, item: item)
+                        userInventoryViewModel.deleteItem(userId: realUserId, item: item)
                         // 이전 뷰로 돌아가기
                         dismiss()
                     } else {
                         remainItemCount = Double(item.userItemQuantity)
                         useItemCount = 0
                         typeItemCount = Int(useItemCount).description
-                        userInventoryViewModel.updateItemQuantity(userId: garaUserId, item: item, newQuantity: item.userItemQuantity)
+                        userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
                     }
                 }
                 // TODO: - 캐릭터에게 아이템 성능 부여
@@ -112,14 +112,14 @@ struct userInventoryDetailView: View {
                 if useItemCount > 0 {
                     item.userItemQuantity -= Int(useItemCount)
                     if item.userItemQuantity <= 0 {
-                        userInventoryViewModel.deleteItem(userId: garaUserId, item: item)
+                        userInventoryViewModel.deleteItem(userId: realUserId, item: item)
                         // 이전 뷰로 돌아가기
                         dismiss()
                     } else {
                         remainItemCount = Double(item.userItemQuantity)
                         useItemCount = 0
                         typeItemCount = Int(useItemCount).description
-                        userInventoryViewModel.updateItemQuantity(userId: garaUserId, item: item, newQuantity: item.userItemQuantity)
+                        userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
                     }
                 }
             }
@@ -281,17 +281,17 @@ struct userInventoryDetailView: View {
     }
 }
 
-#Preview {
-    userInventoryDetailView(item: GRUserInventory(
-        userItemNumber: "1",
-        userItemName: "비타민 젤리",
-        userItemType: .consumable,
-        userItemImage: "pill",
-        userIteamQuantity: Int.random(in: 1...10),
-        userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
-        userItemEffectDescription: "회복력 + 100",
-        userItemCategory: .drug,
-        purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-    ))
-    .environmentObject(AuthService())
-}
+//#Preview {
+//    userInventoryDetailView(item: GRUserInventory(
+//        userItemNumber: "1",
+//        userItemName: "비타민 젤리",
+//        userItemType: .consumable,
+//        userItemImage: "pill",
+//        userIteamQuantity: Int.random(in: 1...10),
+//        userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
+//        userItemEffectDescription: "회복력 + 100",
+//        userItemCategory: .drug,
+//        purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
+//    ), realUserId: "23456")
+//    .environmentObject(AuthService())
+//}

@@ -18,7 +18,8 @@ struct ProductDetailView: View {
     let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
-    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel 
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         VStack(spacing: 0) {
@@ -94,6 +95,8 @@ struct ProductDetailView: View {
         }
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
+                .environmentObject(userInventoryViewModel)
+                .environmentObject(authService)
         }
     }
 }

@@ -9,8 +9,9 @@ import SwiftUI
 
 struct AlertView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var authService: AuthService
     @State private var isProcessing = false
-    private let dummyUserId = "23456"
+    @State var realUserId = ""
     let product: GRShopItem
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
@@ -67,6 +68,11 @@ struct AlertView: View {
                     // YES 버튼
                     AnimatedConfirmButton {
                         Task {
+                            if authService.currentUserUID == "" {
+                                realUserId = "23456"
+                            } else {
+                                realUserId = authService.currentUserUID
+                            }
                             await handlePurchase()
                         }
                     }
@@ -116,7 +122,7 @@ struct AlertView: View {
                 
                 // 수량 업데이트 (await로 즉시 처리)
                 await userInventoryViewModel.updateItemQuantity(
-                    userId: dummyUserId,
+                    userId: realUserId,
                     item: existingItem,
                     newQuantity: newQuantity
                 )
@@ -125,7 +131,7 @@ struct AlertView: View {
                 
                 // 새 아이템 저장 (await로 즉시 처리)
                 await userInventoryViewModel.saveInventory(
-                    userId: dummyUserId,
+                    userId: realUserId,
                     inventory: buyItem
                 )
             }

@@ -10,7 +10,7 @@ import SwiftUI
 struct userInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    private let garaUserId = "23456"
+    @State var realUserId = ""
     @State private var items: [GRUserInventory] = []
     @State private var selectedItem: GRUserInventory? = nil
     
@@ -134,8 +134,17 @@ struct userInventoryView: View {
                                     }
                                 }
                             }
-                            .sheet(item: $selectedItem) { item in
-                                    userInventoryDetailView(item: item)
+                            .sheet(item: $selectedItem, onDismiss: {
+                                Task {
+                                        do {
+                                            try await userInventoryViewModel.fetchInventories(userId: realUserId)
+                                            print("모달 닫힘 후 인벤토리 리로드 완료")
+                                        } catch {
+                                            print("모달 닫힘 후 인벤토리 로드 실패: \(error)")
+                                        }
+                                    }
+                            }) { item in
+                                    userInventoryDetailView(item: item, realUserId: realUserId)
                                         .presentationDetents([.medium])
                             }
                 }
@@ -149,7 +158,12 @@ struct userInventoryView: View {
             }
             .onAppear {
                 Task {
-                    try await userInventoryViewModel.fetchInventories(userId: garaUserId)
+                    if authService.currentUserUID == "" {
+                        realUserId = "23456"
+                    } else {
+                        realUserId = authService.currentUserUID
+                    }
+                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
                 }
             }
             .navigationTitle("가방")
