@@ -406,5 +406,139 @@ class HomeViewModel: ObservableObject {
         // saveCharacterToFirestore()
     }
     
-    
+    // MARK: - 통합 액션 처리 메서드
+        
+    // 인덱스를 기반으로 액션을 실행합니다.
+    /// - Parameter index: 실행할 액션의 인덱스
+    func performAction(at index: Int) {
+        // 액션 버튼 배열의 유효한 인덱스인지 확인
+        guard index < actionButtons.count else {
+            print("⚠️ 잘못된 액션 인덱스: \(index)")
+            return
+        }
+        
+        let action = actionButtons[index]
+        
+        // 잠금 해제된 액션인지 확인
+        guard action.unlocked else {
+            print("🔒 '\(action.name)' 액션이 잠겨있습니다")
+            return
+        }
+        
+        // 잠자는 상태에서는 재우기/깨우기만 가능
+        if isSleeping && action.icon != "bed.double" {
+            print("😴 펫이 자고 있어서 깨우기만 가능합니다")
+            return
+        }
+        
+        // 액션 아이콘에 따라 해당 메서드 호출
+        switch action.icon {
+        case "fork.knife":
+            feedPet()
+            print("🍽️ 펫에게 밥을 줬습니다")
+            
+        case "gamecontroller.fill":
+            playWithPet()
+            print("🎮 펫과 놀아줬습니다")
+            
+        case "shower.fill":
+            washPet()
+            print("🚿 펫을 씻겨줬습니다")
+            
+        case "bed.double":
+            putPetToSleep()
+            print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
+            
+        default:
+            // ActionManager에서 가져온 액션 처리
+            if let actionManager = actionButtons.first(where: { $0.icon == action.icon }),
+               let actionId = getActionId(for: action.icon) {
+                executeActionManagerAction(actionId: actionId)
+            } else {
+                print("❓ 알 수 없는 액션: \(action.name), 아이콘: \(action.icon)")
+            }
+        }
+        
+        // 액션 실행 후 액션 버튼 갱신
+        refreshActionButtons()
+    }
+
+    // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
+    /// - Parameter icon: 액션 아이콘
+    /// - Returns: 해당하는 액션 ID
+    private func getActionId(for icon: String) -> String? {
+        switch icon {
+        case "hand.tap.fill":
+            return "tap_egg"
+        case "flame.fill":
+            return "warm_egg"
+        case "bubble.left.fill":
+            return "talk_egg"
+        case "fork.knife":
+            return "feed"
+        case "gamecontroller.fill":
+            return "play"
+        case "shower.fill":
+            return "wash"
+        case "bed.double":
+            return "sleep"
+        default:
+            return nil
+        }
+    }
+
+    // ActionManager를 통해 액션을 실행합니다.
+    /// - Parameter actionId: 실행할 액션 ID
+    private func executeActionManagerAction(actionId: String) {
+        guard let character = character,
+              let action = actionManager.getAction(id: actionId) else {
+            print("❌ 액션을 찾을 수 없습니다: \(actionId)")
+            return
+        }
+        
+        // 활동량 확인 (활동량이 부족하면 실행 불가)
+        if activityValue < action.activityCost {
+            print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다")
+            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
+            return
+        }
+        
+        // 활동량 소모
+        activityValue = max(0, activityValue - action.activityCost)
+        
+        // 액션 효과 적용
+        for (statName, value) in action.effects {
+            switch statName {
+            case "satiety":
+                satietyValue = max(0, min(100, satietyValue + value))
+            case "energy":
+                energyValue = max(0, min(100, energyValue + value))
+            case "happiness":
+                happinessValue = max(0, min(100, happinessValue + value))
+            case "clean":
+                cleanValue = max(0, min(100, cleanValue + value))
+            case "healthy":
+                healthyValue = max(0, min(100, healthyValue + value))
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득
+        if action.expGain > 0 {
+            addExp(action.expGain)
+        }
+        
+        // 성공 메시지 표시
+        if !action.successMessage.isEmpty {
+            statusMessage = action.successMessage
+        }
+        
+        // UI 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+        
+        print("✅ '\(action.name)' 액션을 실행했습니다")
+    }
 }
+
