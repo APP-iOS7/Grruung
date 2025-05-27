@@ -80,7 +80,7 @@ enum ItemTag: String, CaseIterable {
 let products = [
     GRShopItem(itemName: "주사 치료",
                itemType: .consumable,
-               itemImage: "syringe",
+               itemImage: "Injection",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,

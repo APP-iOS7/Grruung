@@ -38,7 +38,7 @@ struct ProductDetailView: View {
                     .padding(.horizontal)
                     
                     // 제품 이미지
-                    Image(systemName: product.itemImage)
+                    Image(product.itemImage)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
