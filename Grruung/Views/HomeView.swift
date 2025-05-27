@@ -241,7 +241,7 @@ struct HomeView: View {
                     HStack(spacing: 15) {
                         // 아이콘
                         Image(systemName: stat.icon)
-                            .foregroundColor(stat.color)
+                            .foregroundColor(stat.iconColor)
                             .frame(width: 30)
                         
                         // 상태 바

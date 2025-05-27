@@ -26,7 +26,7 @@ class HomeViewModel: ObservableObject {
     @Published var satietyValue: Int = 50 // 포만감
     @Published var satietyPercent: CGFloat = 0.5
     
-    @Published var staminaValue: Int = 50 // 에너지 = 체력
+    @Published var staminaValue: Int = 50 // 체력
     @Published var staminaPercent: CGFloat = 0.5
     
     @Published var activityValue: Int = 50 // 활동량 (6분마다 1씩 회복)
@@ -48,6 +48,11 @@ class HomeViewModel: ObservableObject {
     @Published var lastUpdateTime: Date = Date()
     @Published var cancellables = Set<AnyCancellable>()
     
+    private var statDecreaseTimer: Timer?      // 보이는 스탯 감소용
+    private var hiddenStatDecreaseTimer: Timer? // 히든 스탯 감소용
+    private var dailyAffectionTimer: Timer?    // 일일 애정도 체크용
+    private var lastActivityDate: Date = Date() // 마지막 활동 날짜
+    
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
@@ -66,21 +71,23 @@ class HomeViewModel: ObservableObject {
     ]
     
     // 스탯 표시 형식
-    @Published var stats: [(icon: String, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, 0.5),
-        ("heart.fill", Color.red, 0.5),
-        ("bolt.fill", Color.yellow, 0.5)
+    @Published var stats: [(icon: String, iconColor: Color, color: Color, value: CGFloat)] = [
+        ("fork.knife", Color.orange, Color.orange, 0.5),
+        ("heart.fill", Color.red, Color.red, 0.5),
+        ("bolt.fill", Color.yellow, Color.yellow, 0.5)
     ]
     
     // 스탯 값에 따라 색상을 반환하는 유틸 함수
     private func colorForValue(_ value: Int) -> Color {
         switch value {
-        case 0...30:
+        case 0...20:
             return .red
-        case 31...79:
-            return .yellow
-        default:
+        case 21...79:
             return .green
+        case 80...100:
+            return .blue
+        default:
+            return .gray
         }
     }
     
@@ -104,11 +111,18 @@ class HomeViewModel: ObservableObject {
         updateAllPercents()
         startEnergyTimer()
         setupAppStateObservers()
+        startStatDecreaseTimers()
     }
     
     deinit {
         stopEnergyTimer()
         cancellables.removeAll()
+        
+        statDecreaseTimer?.invalidate()
+        hiddenStatDecreaseTimer?.invalidate()
+        dailyAffectionTimer?.invalidate()
+        
+        print("⏰ 모든 타이머 정리됨")
     }
     
     // MARK: - 데이터 로드
@@ -160,7 +174,94 @@ class HomeViewModel: ObservableObject {
         refreshActionButtons()
     }
     
-    // MARK: - 타이머 설정
+    // MARK: - 타이머 관련 메서드
+    private func startStatDecreaseTimers() {
+        // 보이는 스탯 감소 (10분마다)
+        statDecreaseTimer = Timer.scheduledTimer(withTimeInterval: 600.0, repeats: true) { [weak self] _ in
+            self?.decreaseVisibleStats()
+        }
+        
+        // 히든 스탯 감소 (30분마다)
+        hiddenStatDecreaseTimer = Timer.scheduledTimer(withTimeInterval: 1800.0, repeats: true) { [weak self] _ in
+            self?.decreaseHiddenStats()
+        }
+        
+        // 일일 애정도 체크 (1시간마다)
+        dailyAffectionTimer = Timer.scheduledTimer(withTimeInterval: 3600.0, repeats: true) { [weak self] _ in
+            self?.checkDailyAffection()
+        }
+        
+        print("⏰ TODO 5: 자동 감소 타이머들 시작됨")
+    }
+    
+    // 보이는 스탯 감소 (포만감, 활동량)
+    private func decreaseVisibleStats() {
+        // 잠자는 중에는 감소 속도 절반
+        let decreaseAmount = isSleeping ? 1 : 2
+        
+        // 포만감 감소
+        satietyValue = max(0, satietyValue - decreaseAmount)
+        
+        if !isSleeping {
+            // 운동량 감소
+            staminaValue = max(0, staminaValue - 1)
+        }
+        
+        updateAllPercents()
+        updateCharacterStatus()
+        
+        print("📉 보이는 스탯 감소 - 포만감: -\(decreaseAmount)" + (isSleeping ? "" : ", 활동량: -1"))
+    }
+    
+    // 히든 스탯 감소 (건강, 청결)
+    private func decreaseHiddenStats() {
+        // 건강 감소
+        healthyValue = max(0, healthyValue - 1)
+        
+        // 청결도 감소
+        cleanValue = max(0, cleanValue - 2)
+        
+        updateAllPercents()
+        updateCharacterStatus()
+        
+        print("🔍 히든 스탯 감소 - 건강: -1, 청결: -2")
+        
+        // 상태가 너무 나빠지면 경고 메시지
+        //if healthyValue < 30 || cleanValue < 30 {
+        //    statusMessage = "건강이나 청결 상태가 좋지 않아요..."
+        //}
+    }
+    
+    // 일일 애정도 체크 (06시 기준, 활동 없으면 감소)
+    private func checkDailyAffection() {
+        let currentDate = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: currentDate)
+        
+        // 06:00시에만 체크
+        if hour == 6 {
+            let daysSinceLastActivity = calendar.dateComponents([.day], from: lastActivityDate, to: currentDate).day ?? 0
+            
+            if daysSinceLastActivity >= 1 {
+                let decreaseAmount = min(10, daysSinceLastActivity * 5)
+                happinessValue = max(0, happinessValue - decreaseAmount)
+                
+                updateAllPercents()
+                updateCharacterStatus()
+                
+                statusMessage = "오랫동안 관심을 받지 못해서 외로워해요..."
+                print("💔 TODO 5: 일일 애정도 감소 -\(decreaseAmount) (활동 없이 \(daysSinceLastActivity)일 경과)")
+            }
+        }
+    }
+    
+    // 활동 날짜 업데이트 메서드 추가
+    private func updateLastActivityDate() {
+        lastActivityDate = Date()
+        print("📅 TODO 5: 마지막 활동 날짜 업데이트")
+    }
+    
+    // 타이머 설정
     private func startEnergyTimer() {
         // 6분(360초) 마다 타이머 실행 → 에너지 +1, 운동량 -1, 포만감 -1
         energyTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: true) { [weak self] _ in
@@ -264,15 +365,16 @@ class HomeViewModel: ObservableObject {
         satietyPercent = CGFloat(satietyValue) / 100.0
         staminaPercent = CGFloat(staminaValue) / 100.0
         activityPercent = CGFloat(activityValue) / 100.0
+        
         happinessPercent = CGFloat(happinessValue) / 100.0
         cleanPercent = CGFloat(cleanValue) / 100.0
         expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
         
         // 스탯 배열 업데이트 (UI 표시용)
         stats = [
-            ("fork.knife", Color.orange, satietyPercent),
-            ("heart.fill", Color.red, staminaPercent),
-            ("bolt.fill", Color.yellow, activityPercent)
+            ("fork.knife", Color.orange, colorForValue(satietyValue), satietyPercent),      // 포만감
+            ("heart.fill", Color.red, colorForValue(staminaValue), staminaPercent),      // 체력
+            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)      // 활동량
         ]
         
         updateStatusMessage()
@@ -661,7 +763,7 @@ class HomeViewModel: ObservableObject {
         
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
-            print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다")
+            print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
             statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
             return
         }
@@ -700,6 +802,8 @@ class HomeViewModel: ObservableObject {
         // UI 업데이트
         updateAllPercents()
         updateCharacterStatus()
+        
+        updateLastActivityDate()
         
         print("✅ '\(action.name)' 액션을 실행했습니다")
     }
