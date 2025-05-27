@@ -164,7 +164,6 @@ struct SectionView: View {
                             iconName: product.itemImage,
                             name: product.itemName,
                             price: product.itemPrice,
-                            bgColor: product.bgColor
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
