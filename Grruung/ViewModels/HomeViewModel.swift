@@ -44,6 +44,10 @@ class HomeViewModel: ObservableObject {
     // 상태 관련
     @Published var isSleeping: Bool = false // 잠자기 상태
     
+    @Published var energyTimer: Timer? // 에너지 증가 타이머
+    @Published var lastUpdateTime: Date = Date()
+    @Published var cancellables = Set<AnyCancellable>()
+    
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
@@ -68,6 +72,18 @@ class HomeViewModel: ObservableObject {
         ("bolt.fill", Color.yellow, 0.5)
     ]
     
+    // 스탯 값에 따라 색상을 반환하는 유틸 함수
+    private func colorForValue(_ value: Int) -> Color {
+        switch value {
+        case 0...30:
+            return .red
+        case 31...79:
+            return .yellow
+        default:
+            return .green
+        }
+    }
+    
     // 액션 관리자
     private let actionManager = ActionManager.shared
     
@@ -86,6 +102,13 @@ class HomeViewModel: ObservableObject {
     init() {
         loadCharacter()
         updateAllPercents()
+        startEnergyTimer()
+        setupAppStateObservers()
+    }
+    
+    deinit {
+        stopEnergyTimer()
+        cancellables.removeAll()
     }
     
     // MARK: - 데이터 로드
@@ -135,6 +158,79 @@ class HomeViewModel: ObservableObject {
         
         // 캐릭터 로드 후 액션 버튼 갱신
         refreshActionButtons()
+    }
+    
+    // MARK: - 타이머 설정
+    private func startEnergyTimer() {
+        // 6분(360초) 마다 타이머 실행 → 에너지 +1, 운동량 -1, 포만감 -1
+        energyTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: true) { [weak self] _ in
+            self?.increaseEnergy()
+        }
+    }
+    
+    private func stopEnergyTimer() {
+        energyTimer?.invalidate() // 타이머 중지
+        energyTimer = nil
+    }
+    
+    private func increaseEnergy() {
+        // 캐릭터가 자는 중이 아니면 실행
+        guard !isSleeping else { return }
+        
+        // 에너지 증가 (최대 100)
+        if activityValue < 100 {
+            activityValue += 1
+        }
+        
+        // 애정도 감소 (최소 0)
+        if happinessValue > 0 {
+            happinessValue -= 1
+        }
+        
+        // 포만감 감소 (최소 0)
+        if satietyValue > 0 {
+            satietyValue -= 1
+        }
+        
+        // 상태 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+    }
+    
+    // MARK: - 앱 상태 처리
+    private func setupAppStateObservers() {
+        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppWillResignActive()
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppDidBecomeActive()
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleAppWillResignActive() {
+        // 앱이 백그라운드로 나갈 때 시간 기록 및 타이머 정지
+        lastUpdateTime = Date()
+        stopEnergyTimer()
+    }
+    
+    private func handleAppDidBecomeActive() {
+        // 앱이 다시 켜졌을 때 지난 시간 계산
+        let now = Date()
+        let elapsedTime = now.timeIntervalSince(lastUpdateTime)
+        let activityToAdd = Int(elapsedTime / 360)
+        
+        if activityToAdd > 0 {
+            activityValue = min(100, activityValue + activityToAdd)
+            updateAllPercents()
+            updateCharacterStatus()
+        }
+        // 타이머 다시 시작
+        startEnergyTimer()
     }
     
     // MARK: TODO.8 - 성장 단계별 기능 해금
