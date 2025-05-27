@@ -336,7 +336,7 @@ class HomeViewModel: ObservableObject {
     // 활동 날짜 업데이트 메서드 추가
     private func updateLastActivityDate() {
         lastActivityDate = Date()
-        print("📅 TODO 5: 마지막 활동 날짜 업데이트")
+        print("📅 마지막 활동 날짜 업데이트")
     }
     
     // 타이머 설정
