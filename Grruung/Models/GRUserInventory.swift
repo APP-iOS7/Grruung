@@ -9,7 +9,9 @@ import Foundation
 
 /// 유저의 인벤토리 모델
 /// - 상점에서 구매한 물품의 정보를 담는 구조체
-struct GRUserInventory {
+struct GRUserInventory: Identifiable {
+    var id: String
+    
     var userItemNumber: String
     var userItemName: String
     var userItemType: ItemType
@@ -22,7 +24,8 @@ struct GRUserInventory {
     var userItemCategory: ItemCategory
     var purchasedAt: Date
     
-    init(userItemNumber: String, userItemName: String, userItemType: ItemType, userItemImage: String, userIteamQuantity: Int, userItemDescription: String, userItemEffectDescription: String ,userItemCategory: ItemCategory, purchasedAt: Date = Date()) {
+    init(id: String = UUID().uuidString, userItemNumber: String, userItemName: String, userItemType: ItemType, userItemImage: String, userIteamQuantity: Int, userItemDescription: String, userItemEffectDescription: String ,userItemCategory: ItemCategory, purchasedAt: Date = Date()) {
+        self.id = id
         self.userItemNumber = userItemNumber
         self.userItemName = userItemName
         self.userItemType = userItemType
@@ -34,15 +37,6 @@ struct GRUserInventory {
         self.purchasedAt = purchasedAt
     }
     
-    enum ItemType: String {
-        case consumable = "소모품"
-        case permanent = "영구"
-    }
-    enum ItemCategory: String {
-        case drug = "약품"
-        case toy = "장난감"
-        /// 나중에~
-        // case avatar = "의류"
-    }
+    
 }
 

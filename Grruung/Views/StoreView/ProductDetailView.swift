@@ -15,10 +15,11 @@
 import SwiftUI
 
 struct ProductDetailView: View {
-    let product: Product
+    let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
-    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel 
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,18 +27,18 @@ struct ProductDetailView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // 제품명 + 가격
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(product.name)
+                        Text(product.itemName)
                             .font(.largeTitle)
                             .bold()
                         
-                        Text("₩\(product.price)")
+                        Text("₩\(product.itemPrice)")
                             .font(.title)
                             .bold()
                     }
                     .padding(.horizontal)
                     
                     // 제품 이미지
-                    Image(systemName: product.iconName)
+                    Image(systemName: product.itemImage)
                         .resizable()
                         .scaledToFit()
                         .frame(height: 200)
@@ -45,7 +46,7 @@ struct ProductDetailView: View {
                         .padding()
                     
                     // 설명
-                    Text(product.description)
+                    Text(product.itemDescription)
                         .font(.body)
                         .foregroundColor(.gray)
                         .padding(.horizontal)
@@ -94,6 +95,8 @@ struct ProductDetailView: View {
         }
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
+                .environmentObject(userInventoryViewModel)
+                .environmentObject(authService)
         }
     }
 }

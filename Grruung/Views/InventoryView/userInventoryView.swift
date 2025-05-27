@@ -10,8 +10,10 @@ import SwiftUI
 struct userInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    private let garaUserId = "23456"
+    @State var realUserId = ""
     @State private var items: [GRUserInventory] = []
+    @State private var selectedItem: GRUserInventory? = nil
+    @State private var isEdited: Bool = false
     
     private let inventoryEmptyText: [String] = [
         "텅...",
@@ -39,6 +41,7 @@ struct userInventoryView: View {
         case all = "전체"
         case drug = "약품"
         case toy = "장난감"
+        case etc = "기타"
     }
     
     enum SortItemType: String {
@@ -57,6 +60,8 @@ struct userInventoryView: View {
             return itemsToSort.filter { $0.userItemCategory == .drug }
         case .toy:
             return itemsToSort.filter { $0.userItemCategory == .toy }
+        case .etc:
+            return itemsToSort.filter { $0.userItemCategory == .etc}
         }
     }
     
@@ -113,21 +118,40 @@ struct userInventoryView: View {
                         .padding()
                 } else {
                     LazyVGrid(columns: columns) {
-                        ForEach(sortedItems, id: \.userItemNumber) { item in
-                            NavigationLink(destination: userInventoryDetailView(item: item)) {
-                                itemCellView(item)
-                                    .foregroundStyle(.black)
+                                ForEach(sortedItems, id: \.userItemNumber) { item in
+                                    Button {
+                                        selectedItem = item
+                                    } label: {
+                                        itemCellView(item)
+                                            .foregroundStyle(.black)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(16)
+                                            .overlay {
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.bottom, 16)
+                                    }
+                                }
                             }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(lineWidth: 2)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                    }
+                            .sheet(item: $selectedItem, onDismiss: {
+                                // 수량 변경이 있는 경우에만 인벤토리 리로드
+                                if isEdited {
+                                    isEdited = false
+                                    Task {
+                                        do {
+                                            try await userInventoryViewModel.fetchInventories(userId: realUserId)
+                                            print("모달 닫힘 후 인벤토리 리로드 완료")
+                                        } catch {
+                                            print("모달 닫힘 후 인벤토리 로드 실패: \(error)")
+                                        }
+                                    }
+                                }
+                            }) { item in
+                                userInventoryDetailView(item: item, realUserId: realUserId, isEdited: $isEdited)
+                                        .presentationDetents([.medium])
+                            }
                 }
                 
                 // 에러 메시지 표시
@@ -139,7 +163,12 @@ struct userInventoryView: View {
             }
             .onAppear {
                 Task {
-                    try await userInventoryViewModel.fetchInventories(userId: garaUserId)
+                    if authService.currentUserUID == "" {
+                        realUserId = "23456"
+                    } else {
+                        realUserId = authService.currentUserUID
+                    }
+                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
                 }
             }
             .navigationTitle("가방")

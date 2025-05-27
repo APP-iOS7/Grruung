@@ -13,8 +13,9 @@ struct StoreView: View {
     @State private var coins = 40
     @State private var cash = 12000
     
-    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    private let dummyUserId = "23456"
+    @StateObject var userInventoryViewModel = UserInventoryViewModel()
+    @EnvironmentObject var authService: AuthService
+    @State var realUserId = ""
     
     var body: some View {
         NavigationView {
@@ -77,10 +78,15 @@ struct StoreView: View {
                         VStack(alignment: .leading, spacing: 45) {
                             // 각 섹션은 ID로 scrollTo 대상
                             SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
                             SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
                             SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
                             SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
                         }
                         .padding()
                     }
@@ -96,8 +102,13 @@ struct StoreView: View {
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드
             Task {
+                if authService.currentUserUID == "" {
+                    realUserId = "23456"
+                } else {
+                    realUserId = authService.currentUserUID
+                }
                 do {
-                    try await userInventoryViewModel.fetchInventories(userId: dummyUserId)
+                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
                     print("[상점진입] 인벤토리 미리 로드 완료")
                 } catch {
                     print("[상점진입] 인벤토리 로드 실패: \(error.localizedDescription)")
@@ -112,7 +123,7 @@ struct StoreView: View {
 struct SectionView: View {
     let title: String
     let id: String
-    let products: [Product]
+    let products: [GRShopItem]
     let proxy: ScrollViewProxy
     
     let columns = [
@@ -120,6 +131,8 @@ struct SectionView: View {
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
+    
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -144,11 +157,13 @@ struct SectionView: View {
             
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
-                    NavigationLink(destination: ProductDetailView(product: product)) {
+                    NavigationLink(destination: ProductDetailView(product: product)
+                        .environmentObject(userInventoryViewModel))
+                    {
                         ProductItemView(
-                            iconName: product.iconName,
-                            name: product.name,
-                            price: product.price,
+                            iconName: product.itemImage,
+                            name: product.itemName,
+                            price: product.itemPrice,
                             bgColor: product.bgColor
                         )
                     }
@@ -161,4 +176,5 @@ struct SectionView: View {
 
 #Preview {
     StoreView()
+        .environmentObject(AuthService())
 }

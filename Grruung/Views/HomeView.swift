@@ -173,7 +173,30 @@ struct HomeView: View {
     @ViewBuilder
     func iconButton(systemName: String) -> some View {
         if systemName == "cart.fill" {
-            NavigationLink(destination: StoreView()) {
+            NavigationLink(destination: StoreView() .environmentObject(AuthService())) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(Color.gray.opacity(0.2))
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+            }
+        } else if systemName == "backpack.fill" {
+            NavigationLink(destination: userInventoryView()
+                .environmentObject(AuthService())) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(Color.gray.opacity(0.2))
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+            }
+        } else if systemName == "mountain.2.fill" {
+            NavigationLink(destination: CharDexView()) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 60, height: 60)

@@ -9,10 +9,10 @@ import SwiftUI
 
 struct AlertView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var authService: AuthService
     @State private var isProcessing = false
-    private let dummyUserId = "23456"
-
-    let product: Product
+    @State var realUserId = ""
+    let product: GRShopItem
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
     
@@ -33,7 +33,7 @@ struct AlertView: View {
                     )
                 
                 // 제목
-                Text("가격: \(product.price * quantity)")
+                Text("가격: \(product.itemPrice * quantity)")
                     .font(.headline)
                     .foregroundColor(.black)
                 
@@ -68,6 +68,11 @@ struct AlertView: View {
                     // YES 버튼
                     AnimatedConfirmButton {
                         Task {
+                            if authService.currentUserUID == "" {
+                                realUserId = "23456"
+                            } else {
+                                realUserId = authService.currentUserUID
+                            }
                             await handlePurchase()
                         }
                     }
@@ -93,18 +98,18 @@ struct AlertView: View {
         
         isProcessing = true
         print("[구매시작] 아이템 구매 처리 시작")
-        print("[구매정보] 아이템명: \(product.name), 수량: \(quantity)")
+        print("[구매정보] 아이템명: \(product.itemName), 수량: \(quantity)")
         
         do {
             let buyItem = GRUserInventory(
-                userItemNumber: product.id.uuidString,
-                userItemName: product.name,
-                userItemType: .consumable,
-                userItemImage: product.iconName,
+                userItemNumber: product.itemNumber,
+                userItemName: product.itemName,
+                userItemType: product.itemType,
+                userItemImage: product.itemImage,
                 userIteamQuantity: quantity,
-                userItemDescription: product.description,
-                userItemEffectDescription: "",
-                userItemCategory: .drug
+                userItemDescription: product.itemDescription,
+                userItemEffectDescription: product.itemEffectDescription,
+                userItemCategory: product.itemCategory
             )
             
             // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
@@ -117,7 +122,7 @@ struct AlertView: View {
                 
                 // 수량 업데이트 (await로 즉시 처리)
                 await userInventoryViewModel.updateItemQuantity(
-                    userId: dummyUserId,
+                    userId: realUserId,
                     item: existingItem,
                     newQuantity: newQuantity
                 )
@@ -126,7 +131,7 @@ struct AlertView: View {
                 
                 // 새 아이템 저장 (await로 즉시 처리)
                 await userInventoryViewModel.saveInventory(
-                    userId: dummyUserId,
+                    userId: realUserId,
                     inventory: buyItem
                 )
             }
