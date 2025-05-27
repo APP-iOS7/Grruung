@@ -89,7 +89,7 @@ struct WriteStoryStartView: View {
                 .padding(.bottom, 16)
             }
             .navigationDestination(isPresented: $navigateToWriteView) {
-                WriteStoryView(currentMode: currentViewMode, characterUUID: characterUUID)
+                WriteStoryView(currentMode: currentViewMode, characterUUID: characterUUID, userID: userId)
             }
         }
         .navigationTitle("이야기 들려주기")
@@ -102,7 +102,10 @@ struct WriteStoryStartView: View {
                     .padding(.top, 8)
             }
         }
-        
+        .onAppear {
+            // 화면이 나타날 때마다 글쓰기 횟수 새로 로드
+            writingCountVM.loadWritingCount(userID: userId)
+        }
         .alert("글쓰기 횟수 부족", isPresented: $showNoCountAlert) {
             Button("확인", role: .cancel) { }
             Button("충전하기") {
