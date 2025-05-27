@@ -53,6 +53,47 @@ class HomeViewModel: ObservableObject {
     private var dailyAffectionTimer: Timer?    // 일일 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
     
+    // FIXME: 디버그 모드 설정 추가
+#if DEBUG
+    private let isDebugMode = true
+    private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
+#else
+    private let isDebugMode = false
+    private let debugSpeedMultiplier = 1
+#endif
+    
+    private var energyTimerInterval: TimeInterval {
+#if DEBUG
+        return 10.0 // 디버그: 10초마다
+#else
+        return 360.0 // 릴리즈: 6분마다
+#endif
+    }
+    
+    private var statDecreaseInterval: TimeInterval {
+#if DEBUG
+        return 20.0 // 디버그: 20초마다
+#else
+        return 600.0 // 릴리즈: 10분마다
+#endif
+    }
+    
+    private var hiddenStatDecreaseInterval: TimeInterval {
+#if DEBUG
+        return 60.0 // 디버그: 1분마다
+#else
+        return 1800.0 // 릴리즈: 30분마다
+#endif
+    }
+    
+    private var dailyAffectionInterval: TimeInterval {
+#if DEBUG
+        return 120.0 // 디버그: 2분마다
+#else
+        return 3600.0 // 릴리즈: 1시간마다
+#endif
+    }
+    
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
@@ -112,6 +153,14 @@ class HomeViewModel: ObservableObject {
         startEnergyTimer()
         setupAppStateObservers()
         startStatDecreaseTimers()
+#if DEBUG
+        print("🚀 디버그 모드 활성화!")
+        print("   - 타이머 속도: \(debugSpeedMultiplier)배 빠르게")
+        print("   - 스탯 변화: \(debugSpeedMultiplier)배")
+        print("   - 경험치 획득: \(debugSpeedMultiplier)배")
+        print("   - 에너지 회복: \(energyTimerInterval)초마다")
+        print("   - 스탯 감소: \(statDecreaseInterval)초마다")
+#endif
     }
     
     deinit {
@@ -177,54 +226,74 @@ class HomeViewModel: ObservableObject {
     // MARK: - 타이머 관련 메서드
     private func startStatDecreaseTimers() {
         // 보이는 스탯 감소 (10분마다)
-        statDecreaseTimer = Timer.scheduledTimer(withTimeInterval: 600.0, repeats: true) { [weak self] _ in
+        statDecreaseTimer = Timer.scheduledTimer(withTimeInterval: statDecreaseInterval, repeats: true) { [weak self] _ in
             self?.decreaseVisibleStats()
         }
         
         // 히든 스탯 감소 (30분마다)
-        hiddenStatDecreaseTimer = Timer.scheduledTimer(withTimeInterval: 1800.0, repeats: true) { [weak self] _ in
+        hiddenStatDecreaseTimer = Timer.scheduledTimer(withTimeInterval: hiddenStatDecreaseInterval, repeats: true) { [weak self] _ in
             self?.decreaseHiddenStats()
         }
         
         // 일일 애정도 체크 (1시간마다)
-        dailyAffectionTimer = Timer.scheduledTimer(withTimeInterval: 3600.0, repeats: true) { [weak self] _ in
+        dailyAffectionTimer = Timer.scheduledTimer(withTimeInterval: dailyAffectionInterval, repeats: true) { [weak self] _ in
             self?.checkDailyAffection()
         }
         
-        print("⏰ TODO 5: 자동 감소 타이머들 시작됨")
+#if DEBUG
+        print("⏰ 디버그 모드: 자동 감소 타이머들 시작됨")
+        print("   - 보이는 스탯 감소: \(statDecreaseInterval)초마다")
+        print("   - 히든 스탯 감소: \(hiddenStatDecreaseInterval)초마다")
+        print("   - 일일 애정도 체크: \(dailyAffectionInterval)초마다")
+#endif
     }
     
     // 보이는 스탯 감소 (포만감, 활동량)
     private func decreaseVisibleStats() {
         // 잠자는 중에는 감소 속도 절반
-        let decreaseAmount = isSleeping ? 1 : 2
+        let baseDecreaseAmount = isSleeping ? 1 : 2
+        // 디버그 모드에서는 배수 적용
+        let finalDecreaseAmount = isDebugMode ? (baseDecreaseAmount * debugSpeedMultiplier) : baseDecreaseAmount
         
         // 포만감 감소
-        satietyValue = max(0, satietyValue - decreaseAmount)
+        satietyValue = max(0, satietyValue - finalDecreaseAmount)
         
-        if !isSleeping {
-            // 운동량 감소
-            staminaValue = max(0, staminaValue - 1)
-        }
+        // 운동량 감소 (피로 누적)
+            if !isSleeping {
+                let staminaDecrease = isDebugMode ? debugSpeedMultiplier : 1
+                staminaValue = max(0, staminaValue - staminaDecrease)
+            }
         
         updateAllPercents()
         updateCharacterStatus()
         
-        print("📉 보이는 스탯 감소 - 포만감: -\(decreaseAmount)" + (isSleeping ? "" : ", 활동량: -1"))
+#if DEBUG
+        print("📉 디버그 모드 스탯 감소: 포만감 -\(finalDecreaseAmount)" + (isSleeping ? "" : ", 운동량 -\(isDebugMode ? debugSpeedMultiplier : 1)"))
+#else
+        print("📉 보이는 스탯 감소 - 포만감: -\(finalDecreaseAmount)" + (isSleeping ? "" : ", 운동량: -1"))
+#endif
     }
     
     // 히든 스탯 감소 (건강, 청결)
     private func decreaseHiddenStats() {
-        // 건강 감소
-        healthyValue = max(0, healthyValue - 1)
+        // 디버그 모드에서는 배수로 감소
+        let healthDecrease = isDebugMode ? debugSpeedMultiplier : 1
+        let cleanDecrease = isDebugMode ? (2 * debugSpeedMultiplier) : 2
         
-        // 청결도 감소
-        cleanValue = max(0, cleanValue - 2)
+        // 건강도 서서히 감소
+        healthyValue = max(0, healthyValue - healthDecrease)
+        
+        // 청결도 서서히 감소
+        cleanValue = max(0, cleanValue - cleanDecrease)
         
         updateAllPercents()
         updateCharacterStatus()
         
-        print("🔍 히든 스탯 감소 - 건강: -1, 청결: -2")
+#if DEBUG
+        print("🔍 디버그 모드 히든 스탯 감소: 건강 -\(healthDecrease), 청결 -\(cleanDecrease)")
+#else
+        print("🔍 히든 스탯 감소 - 건강: -\(healthDecrease), 청결: -\(cleanDecrease)")
+#endif
         
         // 상태가 너무 나빠지면 경고 메시지
         //if healthyValue < 30 || cleanValue < 30 {
@@ -238,19 +307,28 @@ class HomeViewModel: ObservableObject {
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: currentDate)
         
-        // 06:00시에만 체크
-        if hour == 6 {
+        // 디버그 모드에서는 시간 체크 없이 바로 실행
+        let shouldCheck = isDebugMode ? true : (hour == 6)
+        
+        if shouldCheck {
             let daysSinceLastActivity = calendar.dateComponents([.day], from: lastActivityDate, to: currentDate).day ?? 0
+            let adjustedDays = isDebugMode ? max(1, daysSinceLastActivity) : daysSinceLastActivity // 디버그에서는 최소 1일로 처리
             
-            if daysSinceLastActivity >= 1 {
-                let decreaseAmount = min(10, daysSinceLastActivity * 5)
-                happinessValue = max(0, happinessValue - decreaseAmount)
+            if adjustedDays >= 1 {
+                let baseDecrease = min(10, adjustedDays * 5)
+                let finalDecrease = isDebugMode ? (baseDecrease * debugSpeedMultiplier) : baseDecrease
+                happinessValue = max(0, happinessValue - finalDecrease)
                 
                 updateAllPercents()
                 updateCharacterStatus()
                 
                 statusMessage = "오랫동안 관심을 받지 못해서 외로워해요..."
-                print("💔 TODO 5: 일일 애정도 감소 -\(decreaseAmount) (활동 없이 \(daysSinceLastActivity)일 경과)")
+                
+#if DEBUG
+                print("💔 디버그 모드 일일 애정도 감소: -\(finalDecrease)")
+#else
+                print("💔 일일 애정도 감소 -\(finalDecrease) (활동 없이 \(adjustedDays)일 경과)")
+#endif
             }
         }
     }
@@ -264,9 +342,13 @@ class HomeViewModel: ObservableObject {
     // 타이머 설정
     private func startEnergyTimer() {
         // 6분(360초) 마다 타이머 실행 → 에너지 +1, 운동량 -1, 포만감 -1
-        energyTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: true) { [weak self] _ in
+        energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
             self?.increaseEnergy()
         }
+        
+#if DEBUG
+        print("⏰ 디버그 모드: 에너지 타이머 시작 (\(energyTimerInterval)초마다, \(debugSpeedMultiplier)배 빠르게)")
+#endif
     }
     
     private func stopEnergyTimer() {
@@ -276,26 +358,55 @@ class HomeViewModel: ObservableObject {
     
     private func increaseEnergy() {
         // 캐릭터가 자는 중이 아니면 실행
-        guard !isSleeping else { return }
+        guard !isSleeping else {
+            performSleepRecovery()
+            return
+        }
+        
+        // 디버그 모드에서는 배수로 회복
+        let recoveryAmount = isDebugMode ? debugSpeedMultiplier : 1
+
         
         // 에너지 증가 (최대 100)
         if activityValue < 100 {
-            activityValue += 1
+               activityValue = min(100, activityValue + recoveryAmount)
         }
         
-        // 애정도 감소 (최소 0)
+        // 애정도 감소 (최소 0) - 디버그 모드에서는 배수로 감소
+        let decreaseAmount = isDebugMode ? debugSpeedMultiplier : 1
         if happinessValue > 0 {
-            happinessValue -= 1
+            happinessValue = max(0, happinessValue - decreaseAmount)
         }
         
-        // 포만감 감소 (최소 0)
+        // 포만감 감소 (최소 0) - 디버그 모드에서는 배수로 감소
         if satietyValue > 0 {
-            satietyValue -= 1
+            satietyValue = max(0, satietyValue - decreaseAmount)
         }
         
         // 상태 업데이트
         updateAllPercents()
         updateCharacterStatus()
+        
+#if DEBUG
+        print("⚡ 디버그 모드 회복: 활동량 +\(recoveryAmount), 행복도 -\(decreaseAmount), 포만감 -\(decreaseAmount)")
+#endif
+    }
+    
+    private func performSleepRecovery() {
+        let baseRecoveryMultiplier = Int.random(in: 2...5)
+        let finalRecoveryMultiplier = isDebugMode ? (baseRecoveryMultiplier * debugSpeedMultiplier) : baseRecoveryMultiplier
+        
+        // 활동량 회복
+        activityValue = min(100, activityValue + (5 * finalRecoveryMultiplier))
+        
+        updateAllPercents()
+        updateCharacterStatus()
+        
+        #if DEBUG
+        print("😴 디버그 모드 수면 회복: 활동량 +\(5 * finalRecoveryMultiplier) (\(finalRecoveryMultiplier)배 회복)")
+        #else
+        print("😴 수면 중 회복: 체력 +\(10 * finalRecoveryMultiplier), 활동량 +\(5 * finalRecoveryMultiplier) (\(finalRecoveryMultiplier)배 회복)")
+        #endif
     }
     
     // MARK: - 앱 상태 처리
@@ -434,24 +545,34 @@ class HomeViewModel: ObservableObject {
     // 경험치를 추가하고 레벨업을 체크합니다.
     // - Parameter amount: 추가할 경험치량
     private func addExp(_ amount: Int) {
-        // 성장 단계에 따른 경험치 보너스 적용
+        // 성장 단계에 따른 경험치 보너스 적용 (기존 로직 유지)
         var adjustedAmount = amount
         
         if let character = character, character.status.phase == .egg {
-            // 운석(알) 상태에서는 경험치 5배로 획득
+            // 운석(알) 상태에서는 경험치 5배로 획득 (기존 로직 유지)
             adjustedAmount *= 5
         }
         
+        // 디버그 모드에서는 추가로 배수 적용
+        if isDebugMode {
+            adjustedAmount *= debugSpeedMultiplier
+            print("⭐ 디버그 모드 경험치: 기본 \(amount) → 최종 \(adjustedAmount) (\(debugSpeedMultiplier)배)")
+        }
+        
+        let oldExp = expValue
         expValue += adjustedAmount
         
-        // 레벨업 체크
+        // 레벨업 체크 (기존 로직 유지)
         if expValue >= expMaxValue {
             levelUp()
         } else {
-            // 레벨업이 아닌 경우에도 퍼센트 업데이트 및 캐릭터 동기화
             expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
             updateCharacterStatus()
         }
+        
+#if DEBUG
+        print("⭐ 경험치 변화: \(oldExp) → \(expValue) (+\(adjustedAmount))")
+#endif
     }
     
     // 레벨업 처리
@@ -789,9 +910,14 @@ class HomeViewModel: ObservableObject {
             }
         }
         
-        // 경험치 획득
+        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
         if action.expGain > 0 {
-            addExp(action.expGain)
+            let oldExp = expValue
+            addExp(action.expGain) // 여기서 디버그 모드 배수가 자동 적용됨
+            
+#if DEBUG
+            print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
+#endif
         }
         
         // 성공 메시지 표시
@@ -802,7 +928,6 @@ class HomeViewModel: ObservableObject {
         // UI 업데이트
         updateAllPercents()
         updateCharacterStatus()
-        
         updateLastActivityDate()
         
         print("✅ '\(action.name)' 액션을 실행했습니다")
