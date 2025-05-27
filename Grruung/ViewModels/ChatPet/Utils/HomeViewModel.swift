@@ -213,13 +213,6 @@ class HomeViewModel: ObservableObject {
         cleanPercent = CGFloat(cleanValue) / 100.0
         expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
         
-        // 스탯 배열 업데이트 (UI 표시용)
-        //        stats = [
-        //            ("fork.knife", Color.orange, satietyPercent),
-        //            ("heart.fill", Color.red, happinessPercent),
-        //            ("bolt.fill", Color.yellow, energyPercent)
-        //        ]
-        
         updateStatusMessage()
     }
     
