@@ -156,11 +156,11 @@ class HomeViewModel: ObservableObject {
         ("bed.double", true, "재우기")
     ]
     
-    // 스탯 표시 형식
+    // 스탯 표시 형식 수정 (3개의 보이는 스탯만)
     @Published var stats: [(icon: String, iconColor: Color, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, Color.orange, 0.5),
-        ("heart.fill", Color.red, Color.red, 0.5),
-        ("bolt.fill", Color.yellow, Color.yellow, 0.5)
+        ("fork.knife", Color.orange, Color.orange, 1.0), // 포만감
+        ("figure.run", Color.blue, Color.blue, 1.0),     // 운동량
+        ("bolt.fill", Color.yellow, Color.yellow, 1.0)   // 활동량
     ]
     
     // 스탯 값에 따라 색상을 반환하는 유틸 함수
@@ -222,19 +222,19 @@ class HomeViewModel: ObservableObject {
     // MARK: - 데이터 로드
     func loadCharacter() {
         // 실제로는 Firestore나 Firebase에서 캐릭터 정보를 로드
-        // 지금은 더미 데이터 생성
+        // Start 캐릭터 로드 시 수정된 스탯 초기값 적용
         let status = GRCharacterStatus(
             level: 0,
             exp: 0,
-            expToNextLevel: 100,
+            expToNextLevel: 50, // 운석 단계 경험치 요구량
             phase: .egg,
-            satiety: 100,
-            stamina: 100,
-            activity: 100,
-            
-            affection: 100,
-            healthy: 100,
-            clean: 100
+            satiety: 100,     // 시작값 100
+            stamina: 100,     // 시작값 100
+            activity: 100,    // 시작값 100
+            affection: 0,     // 시작값 0
+            affectionCycle: 0, // 시작값 0
+            healthy: 50,      // 시작값 50
+            clean: 50         // 시작값 50
         )
         
         character = GRCharacter(
@@ -253,10 +253,13 @@ class HomeViewModel: ObservableObject {
             
             satietyValue = character.status.satiety
             staminaValue = character.status.stamina
-            happinessValue = character.status.affection
-            cleanValue = character.status.clean
-            healthyValue = character.status.healthy
             activityValue = character.status.activity
+            
+            // 히든 스탯 로드 수정
+            affectionValue = character.status.affection
+            weeklyAffectionValue = character.status.affectionCycle
+            healthyValue = character.status.healthy
+            cleanValue = character.status.clean
             
             // 성장 단계에 맞는 기능 해금
             unlockFeaturesByPhase(character.status.phase)
@@ -270,26 +273,32 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 타이머 관련 메서드
     private func startStatDecreaseTimers() {
-        // 보이는 스탯 감소 (10분마다)
+        // 활동량(피로도) 회복 타이머 (15분마다)
+        energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
+            self?.recoverActivity()
+        }
+        
+        // 보이는 스탯 감소 (20분마다)
         statDecreaseTimer = Timer.scheduledTimer(withTimeInterval: statDecreaseInterval, repeats: true) { [weak self] _ in
             self?.decreaseVisibleStats()
         }
         
-        // 히든 스탯 감소 (30분마다)
+        // 히든 스탯 감소 (1시간마다)
         hiddenStatDecreaseTimer = Timer.scheduledTimer(withTimeInterval: hiddenStatDecreaseInterval, repeats: true) { [weak self] _ in
             self?.decreaseHiddenStats()
         }
         
-        // 일일 애정도 체크 (1시간마다)
-        dailyAffectionTimer = Timer.scheduledTimer(withTimeInterval: dailyAffectionInterval, repeats: true) { [weak self] _ in
-            self?.checkDailyAffection()
+        // 주간 애정도 체크 (1시간마다 체크하되, 월요일 00시에만 실제 처리)
+        weeklyAffectionTimer = Timer.scheduledTimer(withTimeInterval: weeklyAffectionInterval, repeats: true) { [weak self] _ in
+            self?.checkWeeklyAffection()
         }
         
 #if DEBUG
-        print("⏰ 디버그 모드: 자동 감소 타이머들 시작됨")
+        print("⏰ 디버그 모드: 모든 타이머들 시작됨")
+        print("   - 활동량 회복: \(energyTimerInterval)초마다")
         print("   - 보이는 스탯 감소: \(statDecreaseInterval)초마다")
         print("   - 히든 스탯 감소: \(hiddenStatDecreaseInterval)초마다")
-        print("   - 일일 애정도 체크: \(dailyAffectionInterval)초마다")
+        print("   - 주간 애정도 체크: \(weeklyAffectionInterval)초마다")
 #endif
     }
     
