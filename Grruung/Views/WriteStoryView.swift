@@ -43,6 +43,9 @@ struct WriteStoryView: View {
     private var currentDateString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy년 MM월 dd일"
+        if currentMode == .edit || currentMode == .read {
+            return formatter.string(from: currentPost?.createdAt ?? Date())
+        }
         return formatter.string(from: Date())
     }
     
@@ -328,22 +331,21 @@ struct WriteStoryView: View {
 } // end of WriteStoryView
 
 
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-    }
-}
-
-
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "vlW4ySOc0E7frCnpNniZ")
-    }
-}
-
 //#Preview {
 //    NavigationStack {
-//        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "eW0tG0WuoZ1mr7Ft4Mec")
+//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+//    }
+//}
+//
+//
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
 //    }
 //}
 
+#Preview {
+    NavigationStack {
+        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
+    }
+}
