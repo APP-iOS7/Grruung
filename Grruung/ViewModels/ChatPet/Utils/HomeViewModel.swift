@@ -133,7 +133,7 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 타이머 설정
     private func startEnergyTimer() {
-        // 6분(360초) 마다 타이머 실행 → 에너지 +1
+        // 6분(360초) 마다 타이머 실행 → 에너지 +1, 운동량 -1, 포만감 -1
         energyTimer = Timer.scheduledTimer(withTimeInterval: 360, repeats: true) { [weak self] _ in
             self?.increaseEnergy()
         }
@@ -145,14 +145,27 @@ class HomeViewModel: ObservableObject {
     }
     
     private func increaseEnergy() {
-        // 캐릭터가 자는중이 아니며, 에너지가 최대가 아닐 경우 +1
+        // 캐릭터가 자는 중이 아니면 실행
         guard !isSleeping else { return }
         
+        // 에너지 증가 (최대 100)
         if energyValue < 100 {
             energyValue += 1
-            updateAllPercents()
-            updateCharacterStatus()
         }
+        
+        // 애정도 감소 (최소 0)
+        if happinessValue > 0 {
+            happinessValue -= 1
+        }
+        
+        // 포만감 감소 (최소 0)
+        if satietyValue > 0 {
+            satietyValue -= 1
+        }
+        
+        // 상태 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
     }
     
     // MARK: - 앱 상태 처리
