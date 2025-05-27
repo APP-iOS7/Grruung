@@ -23,35 +23,35 @@ struct GRCharacterStatus {
     var exp: Int // 현재 경험치
     var expToNextLevel: Int // 다음 레벨까지 남은 경험치
     var phase: CharacterPhase // 현재 시기
-    var satiety: Int // 포만감 (레벨 * 50, 예: 레벨 1이면 50)
-    var stamina: Int // 운동량
-    var activity: Int // 활동량(피로도)
-    var affection: Int // 애정도
+    var satiety: Int // 포만감 (0~100, 시작값 100)
+    var stamina: Int // 운동량 (0~100, 시작값 100)
+    var activity: Int // 활동량/피로도 (0~100, 시작값 100)
     var address: String // 거주지
     var birthDate: Date // 생일
     
-    // MARK: - 유저에게 보이지 않는 데이터
-    var affectionCycle: Int  // 주기별 애정도
-    var affectionEntry: Int // 펫 애정도
-    var healthy: Int // 건강도
-    var clean: Int // 청결도
+    // MARK: - 유저에게 보이지 않는 데이터 (히든 스탯)
+    var affection: Int // 누적 애정도 (0~1000, 시작값 0)
+    var affectionCycle: Int // 주간 애정도 (0~100, 시작값 0)
+    var healthy: Int // 건강도 (0~100, 시작값 50)
+    var clean: Int // 청결도 (0~100, 시작값 50)
     var appearance: [String: String] // 외모 (성장 이후 바뀔 수 있음)
     
+    // MARK: - 초기값
     init(level: Int = 1,
          exp: Int = 0,
          expToNextLevel: Int = 100,
          phase: CharacterPhase = .egg,
-         satiety: Int = 50,
-         stamina: Int = 50,
-         activity: Int = 50,
-         affection: Int = 50,
-         affectionCycle: Int = 50,
-         affectionEntry: Int = 0,
-         healthy: Int = 50,
-         clean: Int = 50,
+         satiety: Int = 100, // 시작값 100
+         stamina: Int = 100, // 시작값 100
+         activity: Int = 100, // 시작값 100
+         affection: Int = 0, // 시작값 0
+         affectionCycle: Int = 0, // 시작값 0
+         healthy: Int = 50, // 시작값 50
+         clean: Int = 50, // 시작값 50
          address: String = "usersHome",
          birthDate: Date = Date(),
          appearance: [String: String] = [:]) {
+        
         self.level = level
         self.exp = exp
         self.expToNextLevel = expToNextLevel
@@ -61,7 +61,6 @@ struct GRCharacterStatus {
         self.activity = activity
         self.affection = affection
         self.affectionCycle = affectionCycle
-        self.affectionEntry = affectionEntry
         self.healthy = healthy
         self.clean = clean
         self.address = address
@@ -90,7 +89,7 @@ struct GRCharacterStatus {
     // 레벨업 시 호출되는 메서드
     mutating func levelUp() {
         level += 1
-        exp = 0
+        exp = 0 // 경험치 초과분 이월 없이 0으로 초기화
         expToNextLevel = calculateNextLevelExp()
         updatePhase()
     }
@@ -112,6 +111,10 @@ struct GRCharacterStatus {
             status += "피곤함 "
         }
         
+        if activity < 30 {
+            status += "지침 "
+        }
+        
         if clean < 30 {
             status += "지저분함 "
         }
@@ -120,7 +123,7 @@ struct GRCharacterStatus {
             status += "아픔 "
         }
         
-        if affection < 30 {
+        if affection < 100 { // 애정도는 더 높은 기준 적용
             status += "외로움 "
         }
         
