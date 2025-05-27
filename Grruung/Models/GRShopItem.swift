@@ -12,7 +12,7 @@ struct GRShopItem: Identifiable {
     let id = UUID()
     let itemNumber: String
     var itemName: String
-    var itemTarget: GRCharacter
+    var itemTarget: PetSpecies
     var itemType: ItemType
     var itemImage: String
     var itemQuantity: Int
@@ -27,7 +27,7 @@ struct GRShopItem: Identifiable {
     let bgColor: Color
     
     init(itemName: String,
-         itemTarget: GRCharacter = GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "", birthDate: Date(), createdAt: Date()),
+         itemTarget: PetSpecies = .Undefined,
          itemType: ItemType,
          itemImage: String,
          itemQuantity: Int,
