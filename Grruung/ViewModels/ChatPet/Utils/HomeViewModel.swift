@@ -58,11 +58,25 @@ class HomeViewModel: ObservableObject {
     ]
     
     // 스탯 표시 형식
-    @Published var stats: [(icon: String, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, 0.5),
-        ("heart.fill", Color.red, 0.5),
-        ("bolt.fill", Color.yellow, 0.5)
-    ]
+    var stats: [(icon: String, iconColor: Color, barColor: Color, value: CGFloat)] {
+        return [
+            ("fork.knife", Color.orange, colorForValue(satietyValue), CGFloat(satietyValue) / 100),
+            ("heart.fill", Color.red, colorForValue(happinessValue), CGFloat(happinessValue) / 100),
+            ("bolt.fill", Color.yellow, colorForValue(energyValue), CGFloat(energyValue) / 100)
+        ]
+    }
+    
+    /// 스탯 값에 따라 색상을 반환하는 유틸 함수
+    private func colorForValue(_ value: Int) -> Color {
+        switch value {
+        case 0...30:
+            return .red
+        case 31...79:
+            return .yellow
+        default:
+            return .green
+        }
+    }
     
     // MARK: - 초기화
     init() {
@@ -133,6 +147,7 @@ class HomeViewModel: ObservableObject {
     private func increaseEnergy() {
         // 캐릭터가 자는중이 아니며, 에너지가 최대가 아닐 경우 +1
         guard !isSleeping else { return }
+        
         if energyValue < 100 {
             energyValue += 1
             updateAllPercents()
@@ -186,11 +201,11 @@ class HomeViewModel: ObservableObject {
         expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
         
         // 스탯 배열 업데이트 (UI 표시용)
-        stats = [
-            ("fork.knife", Color.orange, satietyPercent),
-            ("heart.fill", Color.red, happinessPercent),
-            ("bolt.fill", Color.yellow, energyPercent)
-        ]
+        //        stats = [
+        //            ("fork.knife", Color.orange, satietyPercent),
+        //            ("heart.fill", Color.red, happinessPercent),
+        //            ("bolt.fill", Color.yellow, energyPercent)
+        //        ]
         
         updateStatusMessage()
     }
@@ -335,3 +350,4 @@ class HomeViewModel: ObservableObject {
         // saveCharacterToFirestore()
     }
 }
+

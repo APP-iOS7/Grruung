@@ -124,7 +124,7 @@ struct HomeView: View {
                 HStack(spacing: 15) {
                     // 아이콘
                     Image(systemName: stat.icon)
-                        .foregroundColor(stat.color)
+                        .foregroundColor(stat.iconColor)
                         .frame(width: 30)
                     
                     // 상태 바
@@ -138,7 +138,7 @@ struct HomeView: View {
                             // 진행 바
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: geometry.size.width * stat.value, height: 12)
-                                .foregroundColor(stat.color)
+                                .foregroundColor(stat.barColor)
                         }
                     }
                     .frame(height: 12)
