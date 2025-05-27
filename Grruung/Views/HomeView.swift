@@ -240,7 +240,7 @@ struct HomeView: View {
                 HStack(spacing: 15) {
                     // 아이콘
                     Image(systemName: stat.icon)
-                        .foregroundColor(stat.color)
+                        .foregroundColor(stat.iconColor)
                         .frame(width: 30)
                     
                     // 상태 바
@@ -254,8 +254,9 @@ struct HomeView: View {
                             // 진행 바
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: geometry.size.width * stat.value, height: 12)
-                                .foregroundColor(stat.color)
+                                //.foregroundColor(stat.color)
                             // TODO: TODO 0 애니메이션
+                                .foregroundColor(stat.barColor)
                         }
                     }
                     .frame(height: 12)
@@ -284,6 +285,7 @@ struct HomeView: View {
                         } else {
                             VStack(spacing: 5) {
                                 // 자고 있을 때 재우기 버튼의 아이콘 변경
+/*
                                 Image(systemName: action.icon)
                                     .font(.system(size: 24))
                                     .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
@@ -295,7 +297,24 @@ struct HomeView: View {
                         }
                     }
                 }
-                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))
+                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))*/
+
+                                let iconName = (index == 3 && viewModel.isSleeping) ? "bed.double.fill" : action.icon
+                                Image(systemName: iconName)
+                                    .font(.system(size: 24))
+                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
+                                
+                                // 자고 있을 때 재우기 버튼의 텍스트 변경
+                                let actionName = (index == 3 && viewModel.isSleeping) ? "깨우기" : action.name
+                                Text(actionName)
+                                    .font(.caption2)
+                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
+                            }
+                        }
+                    }
+                }
+                .disabled(!action.unlocked || (viewModel.isSleeping && index != 3))
+feat/homeview_merge
             }
         }
     }
@@ -313,6 +332,27 @@ struct HomeView: View {
                 handleSideButtonAction(systemName: systemName)
             }) {
                 buttonContent(systemName: systemName, name: name, unlocked: unlocked)
+
+            }
+            .disabled(!unlocked || viewModel.isSleeping)
+        }
+    }
+    
+    // 버튼 내용 (재사용 가능한 부분)
+    @ViewBuilder
+    func buttonContent(systemName: String, name: String, unlocked: Bool) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .frame(width: 60, height: 60)
+                .foregroundColor(unlocked ? Color.gray.opacity(0.2) : Color.gray.opacity(0.05))
+            
+            if unlocked {
+                Image(systemName: systemName)
+                    .font(.system(size: 24))
+                    .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+            } else {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.gray)
             }
             .disabled(!unlocked || viewModel.isSleeping)
         }
@@ -338,6 +378,47 @@ struct HomeView: View {
     }
     
     // MARK: - 액션 처리 메서드
+    
+    // 사이드 버튼 처리
+    private func handleSideButtonAction(systemName: String) {
+        switch systemName {
+        case "backpack.fill": // 인벤토리
+            print("인벤토리 버튼 클릭")
+            // 인벤토리 화면으로 이동하는 로직 (나중에 추가)
+        case "mountain.2.fill": // 동산
+            print("동산 버튼 클릭")
+            // 동산 화면으로 이동하는 로직 (나중에 추가)
+        case "book.fill": // 일기
+            print("일기 버튼 클릭")
+            // 일기 화면으로 이동하는 로직 (나중에 추가)
+        case "microphone.fill": // 채팅
+            print("채팅 버튼 클릭")
+            // 채팅 화면으로 이동하는 로직 (나중에 추가)
+        case "gearshape.fill": // 설정
+            print("설정 버튼 클릭")
+            // 설정 화면으로 이동하는 로직 (나중에 추가)
+        default:
+            break
+        }
+    }
+    
+    // MARK: - 액션 처리 메서드
+    
+    // 액션 버튼 처리
+    private func performAction(at index: Int) {
+        switch index {
+        case 0: // 밥주기
+            viewModel.feedPet()
+        case 1: // 놀아주기
+            viewModel.playWithPet()
+        case 2: // 씻기기
+            viewModel.washPet()
+        case 3: // 재우기/깨우기
+            viewModel.putPetToSleep()
+        default:
+            break
+        }
+    }
     
     // 사이드 버튼 처리
     private func handleSideButtonAction(systemName: String) {
