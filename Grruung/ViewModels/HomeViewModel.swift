@@ -48,7 +48,7 @@ class HomeViewModel: ObservableObject {
     
     private var statDecreaseTimer: Timer?      // 보이는 스탯 감소용
     private var hiddenStatDecreaseTimer: Timer? // 히든 스탯 감소용
-    private var dailyAffectionTimer: Timer?    // 일일 애정도 체크용
+    private var weeklyAffectionTimer: Timer?    // 주간 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
     
     // 디버그 모드 설정 추가
@@ -195,7 +195,6 @@ class HomeViewModel: ObservableObject {
     init() {
         loadCharacter()
         updateAllPercents()
-        startEnergyTimer()
         setupAppStateObservers()
         startStatDecreaseTimers()
 #if DEBUG
@@ -209,12 +208,10 @@ class HomeViewModel: ObservableObject {
     }
     
     deinit {
-        stopEnergyTimer()
         cancellables.removeAll()
-        
         statDecreaseTimer?.invalidate()
         hiddenStatDecreaseTimer?.invalidate()
-        dailyAffectionTimer?.invalidate()
+        weeklyAffectionTimer?.invalidate()
         
         print("⏰ 모든 타이머 정리됨")
     }
@@ -272,6 +269,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 타이머 관련 메서드
+    
     private func startStatDecreaseTimers() {
         // 활동량(피로도) 회복 타이머 (15분마다)
         energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
@@ -302,29 +300,40 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
+    private func stopAllTimers() {
+        energyTimer?.invalidate()
+        statDecreaseTimer?.invalidate()
+        hiddenStatDecreaseTimer?.invalidate()
+        weeklyAffectionTimer?.invalidate()
+    }
+    
     // 보이는 스탯 감소 (포만감, 활동량)
     private func decreaseVisibleStats() {
         // 잠자는 중에는 감소 속도 절반
-        let baseDecreaseAmount = isSleeping ? 1 : 2
+        let satietyDecrease = isSleeping ? 1 : 2
+        let staminaDecrease = isSleeping ? 1 : 2
+        
         // 디버그 모드에서는 배수 적용
-        let finalDecreaseAmount = isDebugMode ? (baseDecreaseAmount * debugSpeedMultiplier) : baseDecreaseAmount
+        let finalSatietyDecrease = isDebugMode ? (satietyDecrease * debugSpeedMultiplier) : satietyDecrease
+        let finalStaminaDecrease = isDebugMode ? (staminaDecrease * debugSpeedMultiplier) : staminaDecrease
         
         // 포만감 감소
-        satietyValue = max(0, satietyValue - finalDecreaseAmount)
+        if satietyValue > 0 {
+            satietyValue = max(0, satietyValue - finalSatietyDecrease)
+        }
         
-        // 운동량 감소 (피로 누적)
-            if !isSleeping {
-                let staminaDecrease = isDebugMode ? debugSpeedMultiplier : 1
-                staminaValue = max(0, staminaValue - staminaDecrease)
-            }
+        // 운동량 감소 (잠자는 중에도 천천히 감소)
+        if staminaValue > 0 {
+            staminaValue = max(0, staminaValue - finalStaminaDecrease)
+        }
         
         updateAllPercents()
         updateCharacterStatus()
         
 #if DEBUG
-        print("📉 디버그 모드 스탯 감소: 포만감 -\(finalDecreaseAmount)" + (isSleeping ? "" : ", 운동량 -\(isDebugMode ? debugSpeedMultiplier : 1)"))
+        print("📉 디버그 모드 보이는 스탯 감소: 포만감 -\(finalSatietyDecrease), 운동량 -\(finalStaminaDecrease)" + (isSleeping ? " (수면 중)" : ""))
 #else
-        print("📉 보이는 스탯 감소 - 포만감: -\(finalDecreaseAmount)" + (isSleeping ? "" : ", 운동량: -1"))
+        print("📉 보이는 스탯 감소 - 포만감: -\(finalSatietyDecrease), 운동량: -\(finalStaminaDecrease)" + (isSleeping ? " (수면 중)" : ""))
 #endif
     }
     
@@ -335,10 +344,14 @@ class HomeViewModel: ObservableObject {
         let cleanDecrease = isDebugMode ? (2 * debugSpeedMultiplier) : 2
         
         // 건강도 서서히 감소
-        healthyValue = max(0, healthyValue - healthDecrease)
+        if healthyValue > 0 {
+            healthyValue = max(0, healthyValue - healthDecrease)
+        }
         
         // 청결도 서서히 감소
-        cleanValue = max(0, cleanValue - cleanDecrease)
+        if cleanValue > 0 {
+            cleanValue = max(0, cleanValue - cleanDecrease)
+        }
         
         updateAllPercents()
         updateCharacterStatus()
@@ -350,38 +363,71 @@ class HomeViewModel: ObservableObject {
 #endif
         
         // 상태가 너무 나빠지면 경고 메시지
-        //if healthyValue < 30 || cleanValue < 30 {
-        //    statusMessage = "건강이나 청결 상태가 좋지 않아요..."
-        //}
+        if healthyValue < 30 || cleanValue < 30 {
+            statusMessage = "건강이나 청결 상태가 좋지 않아요..."
+        }
     }
     
-    // 일일 애정도 체크 (06시 기준, 활동 없으면 감소)
-    private func checkDailyAffection() {
+    // 주간 애정도 체크 - 매주 월요일 00시에 주간 애정도를 누적 애정도에 추가
+    private func checkWeeklyAffection() {
         let currentDate = Date()
         let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: currentDate) // 1=일요일, 2=월요일
         let hour = calendar.component(.hour, from: currentDate)
         
-        // 디버그 모드에서는 시간 체크 없이 바로 실행
-        let shouldCheck = isDebugMode ? true : (hour == 6)
+        // 디버그 모드에서는 시간 체크 없이 바로 실행, 아니면 월요일 00시에만 실행
+        let shouldProcessWeeklyAffection = isDebugMode ? true : (weekday == 2 && hour == 0)
         
-        if shouldCheck {
-            let daysSinceLastActivity = calendar.dateComponents([.day], from: lastActivityDate, to: currentDate).day ?? 0
-            let adjustedDays = isDebugMode ? max(1, daysSinceLastActivity) : daysSinceLastActivity // 디버그에서는 최소 1일로 처리
+        if shouldProcessWeeklyAffection && weeklyAffectionValue > 0 {
+            // 주간 애정도를 누적 애정도에 추가
+            let bonusMultiplier = isDebugMode ? debugSpeedMultiplier : 1
+            let affectionToAdd = weeklyAffectionValue * bonusMultiplier
             
-            if adjustedDays >= 1 {
-                let baseDecrease = min(10, adjustedDays * 5)
-                let finalDecrease = isDebugMode ? (baseDecrease * debugSpeedMultiplier) : baseDecrease
-                happinessValue = max(0, happinessValue - finalDecrease)
-                
+            affectionValue = min(1000, affectionValue + affectionToAdd)
+            
+            // 주간 애정도 초기화
+            weeklyAffectionValue = 0
+            
+            updateAllPercents()
+            updateCharacterStatus()
+            
+            statusMessage = "한 주 동안의 사랑이 쌓였어요! 애정도가 증가했습니다."
+            
+#if DEBUG
+            print("💖 디버그 모드 주간 애정도 처리: +\(affectionToAdd) (누적 애정도: \(affectionValue))")
+#else
+            print("💖 주간 애정도 처리: +\(affectionToAdd) (누적 애정도: \(affectionValue))")
+#endif
+        }
+        
+        // 활동이 없으면 누적 애정도 감소 체크
+        checkAffectionDecrease()
+    }
+    
+    // 활동 부족으로 인한 애정도 감소 체크
+    private func checkAffectionDecrease() {
+        let currentDate = Date()
+        let calendar = Calendar.current
+        let daysSinceLastActivity = calendar.dateComponents([.day], from: lastActivityDate, to: currentDate).day ?? 0
+        
+        // 디버그 모드에서는 1일 이상, 일반 모드에서는 3일 이상 활동 없으면 애정도 감소
+        let daysThreshold = isDebugMode ? 1 : 3
+        
+        if daysSinceLastActivity >= daysThreshold {
+            let baseDecrease = min(50, daysSinceLastActivity * 10)
+            let finalDecrease = isDebugMode ? (baseDecrease * debugSpeedMultiplier) : baseDecrease
+            
+            if affectionValue > 0 {
+                affectionValue = max(0, affectionValue - finalDecrease)
                 updateAllPercents()
                 updateCharacterStatus()
                 
                 statusMessage = "오랫동안 관심을 받지 못해서 외로워해요..."
                 
 #if DEBUG
-                print("💔 디버그 모드 일일 애정도 감소: -\(finalDecrease)")
+                print("💔 디버그 모드 애정도 감소: -\(finalDecrease) (\(daysSinceLastActivity)일간 활동 없음)")
 #else
-                print("💔 일일 애정도 감소 -\(finalDecrease) (활동 없이 \(adjustedDays)일 경과)")
+                print("💔 애정도 감소: -\(finalDecrease) (\(daysSinceLastActivity)일간 활동 없음)")
 #endif
             }
         }
@@ -393,48 +439,15 @@ class HomeViewModel: ObservableObject {
         print("📅 마지막 활동 날짜 업데이트")
     }
     
-    // 타이머 설정
-    private func startEnergyTimer() {
-        // 6분(360초) 마다 타이머 실행 → 에너지 +1, 운동량 -1, 포만감 -1
-        energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
-            self?.increaseEnergy()
-        }
+    // 활동량(피로도) 회복 처리 - 15분마다 실행
+    private func recoverActivity() {
+        // 캐릭터가 자는 중이면 더 빠른 회복
+        let baseRecoveryAmount = isSleeping ? 15 : 10
+        let finalRecoveryAmount = isDebugMode ? (baseRecoveryAmount * debugSpeedMultiplier) : baseRecoveryAmount
         
-#if DEBUG
-        print("⏰ 디버그 모드: 에너지 타이머 시작 (\(energyTimerInterval)초마다, \(debugSpeedMultiplier)배 빠르게)")
-#endif
-    }
-    
-    private func stopEnergyTimer() {
-        energyTimer?.invalidate() // 타이머 중지
-        energyTimer = nil
-    }
-    
-    private func increaseEnergy() {
-        // 캐릭터가 자는 중이 아니면 실행
-        guard !isSleeping else {
-            performSleepRecovery()
-            return
-        }
-        
-        // 디버그 모드에서는 배수로 회복
-        let recoveryAmount = isDebugMode ? debugSpeedMultiplier : 1
-
-        
-        // 에너지 증가 (최대 100)
+        // 활동량 회복 (최대 100)
         if activityValue < 100 {
-               activityValue = min(100, activityValue + recoveryAmount)
-        }
-        
-        // 애정도 감소 (최소 0) - 디버그 모드에서는 배수로 감소
-        let decreaseAmount = isDebugMode ? debugSpeedMultiplier : 1
-        if happinessValue > 0 {
-            happinessValue = max(0, happinessValue - decreaseAmount)
-        }
-        
-        // 포만감 감소 (최소 0) - 디버그 모드에서는 배수로 감소
-        if satietyValue > 0 {
-            satietyValue = max(0, satietyValue - decreaseAmount)
+            activityValue = min(100, activityValue + finalRecoveryAmount)
         }
         
         // 상태 업데이트
@@ -442,7 +455,9 @@ class HomeViewModel: ObservableObject {
         updateCharacterStatus()
         
 #if DEBUG
-        print("⚡ 디버그 모드 회복: 활동량 +\(recoveryAmount), 행복도 -\(decreaseAmount), 포만감 -\(decreaseAmount)")
+        print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 중 보너스)" : ""))
+#else
+        print("⚡ 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 중)" : ""))
 #endif
     }
     
@@ -481,7 +496,7 @@ class HomeViewModel: ObservableObject {
     private func handleAppWillResignActive() {
         // 앱이 백그라운드로 나갈 때 시간 기록 및 타이머 정지
         lastUpdateTime = Date()
-        stopEnergyTimer()
+        stopAllTimers()
     }
     
     private func handleAppDidBecomeActive() {
@@ -495,8 +510,8 @@ class HomeViewModel: ObservableObject {
             updateAllPercents()
             updateCharacterStatus()
         }
-        // 타이머 다시 시작
-        startEnergyTimer()
+        
+        startStatDecreaseTimers() // 모든 타이머 재시작
     }
     
     // MARK: TODO.8 - 성장 단계별 기능 해금
