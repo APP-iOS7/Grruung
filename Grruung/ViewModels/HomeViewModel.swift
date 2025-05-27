@@ -540,41 +540,53 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 내부 메서드
+    
+    // 모든 스탯의 퍼센트 값을 업데이트
     private func updateAllPercents() {
-        // 스탯 퍼센트 업데이트
+        // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
         satietyPercent = CGFloat(satietyValue) / 100.0
         staminaPercent = CGFloat(staminaValue) / 100.0
         activityPercent = CGFloat(activityValue) / 100.0
         
-        happinessPercent = CGFloat(happinessValue) / 100.0
-        cleanPercent = CGFloat(cleanValue) / 100.0
-        expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
+        // 경험치 퍼센트 업데이트
+        expPercent = expMaxValue > 0 ? CGFloat(expValue) / CGFloat(expMaxValue) : 0.0
         
-        // 스탯 배열 업데이트 (UI 표시용)
+        // UI 표시용 스탯 배열 업데이트 (3개의 보이는 스탯만)
         stats = [
             ("fork.knife", Color.orange, colorForValue(satietyValue), satietyPercent),      // 포만감
-            ("heart.fill", Color.red, colorForValue(staminaValue), staminaPercent),      // 체력
-            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)      // 활동량
+            ("figure.run", Color.blue, colorForValue(staminaValue), staminaPercent),       // 운동량
+            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
         ]
         
+        // 상태 메시지 업데이트
         updateStatusMessage()
     }
     
+    // 캐릭터 상태에 따른 메시지를 업데이트
     private func updateStatusMessage() {
         if isSleeping {
             statusMessage = "쿨쿨... 잠을 자고 있어요."
             return
         }
         
-        if satietyValue < 30 {
-            statusMessage = "배고파요... 밥 주세요!"
-        } else if staminaValue < 30 {
-            statusMessage = "너무 피곤해요... 쉬고 싶어요."
-        } else if happinessValue < 30 {
-            statusMessage = "심심해요... 놀아주세요!"
+        // 우선순위에 따른 상태 메시지 (낮은 스탯 우선)
+        if satietyValue < 20 {
+            statusMessage = "너무 배고파요... 밥 주세요!"
+        } else if activityValue < 20 {
+            statusMessage = "너무 지쳐요... 쉬고 싶어요."
+        } else if staminaValue < 20 {
+            statusMessage = "몸이 너무 피곤해요..."
+        } else if healthyValue < 30 {
+            statusMessage = "몸이 아파요... 병원에 가고 싶어요."
         } else if cleanValue < 30 {
             statusMessage = "더러워요... 씻겨주세요!"
-        } else if satietyValue > 80 && staminaValue > 80 && happinessValue > 80 {
+        } else if satietyValue < 50 {
+            statusMessage = "조금 배고파요..."
+        } else if activityValue < 50 {
+            statusMessage = "좀 피곤해요..."
+        } else if affectionValue < 100 {
+            statusMessage = "심심해요... 놀아주세요!"
+        } else if satietyValue > 80 && staminaValue > 80 && activityValue > 80 {
             statusMessage = "정말 행복해요! 감사합니다!"
         } else {
             statusMessage = "오늘도 좋은 하루에요!"
