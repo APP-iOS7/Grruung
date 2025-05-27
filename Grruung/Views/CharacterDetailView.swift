@@ -9,17 +9,6 @@ import SwiftUI
 
 
 struct CharacterDetailView: View {
-    //  --------------------- 더미 데이터 ---------------------
-    let growthStages: [(stage: String, image: String)] = [
-        ("애기", "lizard.fill"),
-        ("유아기", "hare.fill"),
-        ("소아기", "ant.fill"),
-        ("청년기", "tortoise.fill"),
-        ("성년기", "dog.fill"),
-        ("노년기", "bird.fill")
-    ]
-    // --------------------- 더미 데이터 끝 ---------------------
-    
     @StateObject private var viewModel: CharacterDetailViewModel
     
     @Environment(\.dismiss) var dismiss
@@ -48,24 +37,18 @@ struct CharacterDetailView: View {
     // 외부에서 전달받은 characterUUID
     var characterUUID: String
     
-    // 현재 성장 단계 인덱스
     private var currentStageIndex: Int {
-        switch viewModel.characterStatus.phase {
-        case .egg:
-            return 0
-        case .infant:
-            return 1
-        case .child:
-            return 2
-        case .adolescent:
-            return 3
-        case .adult:
-            return 4
-        case .elder:
-            return 5
+        let phaseString = viewModel.characterStatus.phase.rawValue
+        switch phaseString {
+        case "운석": return 0
+        case "유아기": return 1
+        case "소아기": return 2
+        case "청년기": return 3
+        case "성년기": return 4
+        case "노년기": return 5
+        default: return 0
         }
     }
-    
     // 초기화 메서드를 수정하여 characterUUID를 전달
     init(characterUUID: String) {
         self.characterUUID = characterUUID
@@ -162,7 +145,8 @@ struct CharacterDetailView: View {
     private var characterInfoSection: some View {
         HStack {
             if !viewModel.character.imageName.isEmpty {
-                AsyncImage(url: URL(string: viewModel.character.imageName)) { image in
+                //                AsyncImage(url: URL(string: viewModel.character.imageName)) { image in
+                AsyncImage(url: viewModel.growthStages.indices.contains(currentStageIndex) ? viewModel.growthStages[currentStageIndex].imageURL : nil) { image in
                     image
                         .resizable()
                         .scaledToFit()
@@ -185,6 +169,8 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                 Text("종: \(viewModel.character.species.rawValue)")
                     .font(.subheadline)
+                //                Text("현재 성장 상태: \(viewModel.characterStatus.phase.rawValue) + \(currentStageIndex)")
+                //                    .font(.subheadline)
                 if viewModel.characterStatus.address == Address.userHome.rawValue {
                     Text("사는 곳: \(viewModel.user.userName)의 \(deviceModel)")
                         .font(.subheadline)
@@ -212,10 +198,24 @@ struct CharacterDetailView: View {
                 HStack {
                     ForEach(0...currentStageIndex, id: \.self) { index in
                         VStack {
-                            Image(systemName: growthStages[index].image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
+                            if index < viewModel.growthStages.count, let url = viewModel.growthStages[index].imageURL {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 60, height: 60)
+                                } placeholder: {
+                                    Image(systemName: "photo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 60, height: 60)
+                                }
+                            } else {
+                                Image(systemName: "photo")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 60, height: 60)
+                            }
                         }
                         .padding()
                         if index != currentStageIndex  {

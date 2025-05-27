@@ -131,7 +131,9 @@ class WriteStoryViewModel: ObservableObject {
                 characterUUID: data["characterUUID"] as? String ?? "",
                 postTitle: data["postTitle"] as? String ?? "",
                 postBody: data["postBody"] as? String ?? "",
-                postImage: data["postImage"] as? String ?? ""
+                postImage: data["postImage"] as? String ?? "",
+                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
             )
         } catch {
             throw error
