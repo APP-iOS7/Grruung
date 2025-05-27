@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import Foundation
 
 struct AlertView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     @State private var isProcessing = false
     @State var realUserId = ""
+    @State private var showNotEnoughMoneyAlert = false
     let product: GRShopItem
     var quantity: Int
     @Binding var isPresented: Bool // 팝업 제어용
@@ -61,7 +64,7 @@ struct AlertView: View {
                     // NO 버튼
                     AnimatedCancelButton {
                         withAnimation {
-                                isPresented = false
+                            isPresented = false
                         }
                     }
                     
@@ -86,6 +89,9 @@ struct AlertView: View {
             .padding(.horizontal, 30)
             .frame(maxWidth: 300)
         }
+        .alert("잔액이 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
+            Button("확인", role: .cancel) { }
+        }
     }
     
     // MARK: - 구매 처리 메서드
@@ -99,6 +105,39 @@ struct AlertView: View {
         isProcessing = true
         print("[구매시작] 아이템 구매 처리 시작")
         print("[구매정보] 아이템명: \(product.itemName), 수량: \(quantity)")
+        
+        // 유저정보가 있는지 확인
+        guard let user = userViewModel.user else {
+            print("❌ 유저 정보 없음")
+            isProcessing = false
+            return
+        }
+
+        let totalPrice = product.itemPrice * quantity
+        
+        // 상품이 골드인지 다이아인지
+        let hasEnoughCurrency: Bool
+        switch product.itemCurrencyType {
+        case .gold:
+            hasEnoughCurrency = user.gold >= totalPrice
+        case .diamond:
+            hasEnoughCurrency = user.diamond >= totalPrice
+        }
+        
+        guard hasEnoughCurrency else {
+            print("❌ 잔액 부족: 구매 금액 \(totalPrice), 보유 금액 \(product.itemCurrencyType == .gold ? user.gold : user.diamond)")
+            
+            await MainActor.run {
+                isPresented = false
+                showNotEnoughMoneyAlert = true
+            }
+            
+            isProcessing = false
+            return
+        }
+        
+        let updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
+        let updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
         
         do {
             let buyItem = GRUserInventory(
@@ -119,7 +158,7 @@ struct AlertView: View {
                 print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
                 let newQuantity = existingItem.userItemQuantity + quantity
                 print("[수량업데이트] 새로운 수량: \(newQuantity)")
-                
+                                
                 // 수량 업데이트 (await로 즉시 처리)
                 await userInventoryViewModel.updateItemQuantity(
                     userId: realUserId,
@@ -136,6 +175,7 @@ struct AlertView: View {
                 )
             }
             
+            userViewModel.updateCurrency(userId: realUserId, gold: updatedGold, diamond: updatedDiamond)
             print("🛒 [구매완료] 처리 완료!")
             
             // 성공 시 창 닫기

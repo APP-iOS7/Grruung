@@ -67,7 +67,7 @@ struct userInventoryView: View {
     
     fileprivate func itemCellView(_ item: GRUserInventory) -> HStack<TupleView<(some View, VStack<TupleView<(HStack<TupleView<(Text, Spacer, Text)>>, some View, Text)>>)>> {
         return HStack {
-            Image(systemName: item.userItemImage)
+            Image(item.userItemImage)
                 .resizable()
                 .frame(width: 60, height: 60)
                 .aspectRatio(contentMode: .fit)

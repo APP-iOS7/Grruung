@@ -43,7 +43,7 @@ struct userInventoryDetailView: View {
     var body: some View {
         // MARK: 아이템 설명 UI
         HStack {
-            Image(systemName: item.userItemImage)
+            Image(item.userItemImage)
                 .resizable()
                 .frame(width: 60, height: 60)
                 .aspectRatio(contentMode: .fit)

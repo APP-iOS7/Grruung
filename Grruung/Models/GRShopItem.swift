@@ -19,6 +19,7 @@ struct GRShopItem: Identifiable {
     var limitedQuantity: Int
     var purchasedQuantity: Int
     var itemPrice: Int
+    var itemCurrencyType: ItemCurrencyType
     var itemDescription: String
     var itemEffectDescription: String
     var itemTag: ItemTag
@@ -34,6 +35,7 @@ struct GRShopItem: Identifiable {
          limitedQuantity: Int,
          purchasedQuantity: Int,
          itemPrice: Int,
+         itemCurrencyType: ItemCurrencyType = .gold,
          itemDescription: String,
          itemEffectDescription: String,
          itemTag: ItemTag,
@@ -50,6 +52,7 @@ struct GRShopItem: Identifiable {
         self.limitedQuantity = limitedQuantity
         self.purchasedQuantity = purchasedQuantity
         self.itemPrice = itemPrice
+        self.itemCurrencyType = itemCurrencyType
         self.itemDescription = itemDescription
         self.itemEffectDescription = itemEffectDescription
         self.itemTag = itemTag
@@ -75,6 +78,11 @@ enum ItemCategory: String, CaseIterable {
 enum ItemTag: String, CaseIterable {
     case limited = "기간+한정상품"
     case normal = "일반상품"
+}
+
+enum ItemCurrencyType: String, CaseIterable {
+    case gold = "골드"
+    case diamond = "다이아"
 }
 
 let products = [

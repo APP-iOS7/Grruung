@@ -80,14 +80,20 @@ struct StoreView: View {
                             // 각 섹션은 ID로 scrollTo 대상
                             SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
+                                .environmentObject(userViewModel)
+                            
                             SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
+                                .environmentObject(userViewModel)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
+                                .environmentObject(userViewModel)
                             SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
+                                .environmentObject(userViewModel)
                             SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
+                                .environmentObject(userViewModel)
                         }
                         .padding()
                     }
@@ -143,6 +149,7 @@ struct SectionView: View {
     ]
     
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -168,7 +175,8 @@ struct SectionView: View {
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
                     NavigationLink(destination: ProductDetailView(product: product)
-                        .environmentObject(userInventoryViewModel))
+                        .environmentObject(userInventoryViewModel)
+                        .environmentObject(userViewModel))
                     {
                         ProductItemView(
                             iconName: product.itemImage,

@@ -19,6 +19,7 @@ struct ProductDetailView: View {
     @State private var quantity: Int = 1
     @State private var showAlert = false
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     
     var body: some View {
@@ -96,6 +97,7 @@ struct ProductDetailView: View {
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
                 .environmentObject(userInventoryViewModel)
+                .environmentObject(userViewModel)
                 .environmentObject(authService)
         }
     }
