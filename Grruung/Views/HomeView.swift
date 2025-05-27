@@ -173,7 +173,8 @@ struct HomeView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(Color(hex: "6159A0"))
                             .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
-                        // TODO: TODO 0. 애니메이션 작업
+                            .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
+
                     }
                     .frame(height: 30)
                 }
@@ -255,7 +256,7 @@ struct HomeView: View {
                                 RoundedRectangle(cornerRadius: 10)
                                     .frame(width: geometry.size.width * stat.value, height: 12)
                                     .foregroundColor(stat.color)
-                                // TODO: TODO 0 애니메이션
+                                    .animation(.easeInOut(duration: 0.6), value: stat.value)
                             }
                         }
                         .frame(height: 12)
