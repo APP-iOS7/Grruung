@@ -26,17 +26,17 @@ class HomeViewModel: ObservableObject {
     @Published var satietyValue: Int = 50 // 포만감
     @Published var satietyPercent: CGFloat = 0.5
     
-    @Published var energyValue: Int = 50 // 에너지
-    @Published var energyPercent: CGFloat = 0.5
+    @Published var staminaValue: Int = 50 // 에너지 = 체력
+    @Published var staminaPercent: CGFloat = 0.5
+    
+    @Published var activityValue: Int = 50 // 활동량 (6분마다 1씩 회복)
+    @Published var activityPercent: CGFloat = 0.5
     
     @Published var happinessValue: Int = 50 // 행복도
     @Published var happinessPercent: CGFloat = 0.5
     
     @Published var cleanValue: Int = 50 // 청결도
     @Published var cleanPercent: CGFloat = 0.5
-    
-    @Published var activityValue: Int = 50 // 활동량 (6분마다 1씩 회복)
-    @Published var activityPercent: CGFloat = 0.5
     
     @Published var healthyValue: Int = 50 // 건강도 (히든 스탯)
     @Published var healthyPercent: CGFloat = 0.5
@@ -93,16 +93,17 @@ class HomeViewModel: ObservableObject {
         // 실제로는 Firestore나 Firebase에서 캐릭터 정보를 로드
         // 지금은 더미 데이터 생성
         let status = GRCharacterStatus(
-            level: 1,
+            level: 0,
             exp: 0,
             expToNextLevel: 100,
-            phase: .infant,
-            satiety: 50,
-            stamina: 50,
-            activity: 50,
-            affection: 50,
-            healthy: 50,
-            clean: 50
+            phase: .egg,
+            satiety: 100,
+            stamina: 100,
+            activity: 100,
+            
+            affection: 100,
+            healthy: 100,
+            clean: 100
         )
         
         character = GRCharacter(
@@ -120,14 +121,20 @@ class HomeViewModel: ObservableObject {
             expMaxValue = character.status.expToNextLevel
             
             satietyValue = character.status.satiety
-            energyValue = character.status.stamina
+            staminaValue = character.status.stamina
             happinessValue = character.status.affection
             cleanValue = character.status.clean
             healthyValue = character.status.healthy
             activityValue = character.status.activity
+            
+            // 성장 단계에 맞는 기능 해금
+            unlockFeaturesByPhase(character.status.phase)
         }
         
         updateAllPercents()
+        
+        // 캐릭터 로드 후 액션 버튼 갱신
+        refreshActionButtons()
     }
     
     // MARK: TODO.8 - 성장 단계별 기능 해금
@@ -159,7 +166,8 @@ class HomeViewModel: ObservableObject {
     private func updateAllPercents() {
         // 스탯 퍼센트 업데이트
         satietyPercent = CGFloat(satietyValue) / 100.0
-        energyPercent = CGFloat(energyValue) / 100.0
+        staminaPercent = CGFloat(staminaValue) / 100.0
+        activityPercent = CGFloat(activityValue) / 100.0
         happinessPercent = CGFloat(happinessValue) / 100.0
         cleanPercent = CGFloat(cleanValue) / 100.0
         expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
@@ -167,8 +175,8 @@ class HomeViewModel: ObservableObject {
         // 스탯 배열 업데이트 (UI 표시용)
         stats = [
             ("fork.knife", Color.orange, satietyPercent),
-            ("heart.fill", Color.red, happinessPercent),
-            ("bolt.fill", Color.yellow, energyPercent)
+            ("heart.fill", Color.red, staminaPercent),
+            ("bolt.fill", Color.yellow, activityPercent)
         ]
         
         updateStatusMessage()
@@ -182,13 +190,13 @@ class HomeViewModel: ObservableObject {
         
         if satietyValue < 30 {
             statusMessage = "배고파요... 밥 주세요!"
-        } else if energyValue < 30 {
+        } else if staminaValue < 30 {
             statusMessage = "너무 피곤해요... 쉬고 싶어요."
         } else if happinessValue < 30 {
             statusMessage = "심심해요... 놀아주세요!"
         } else if cleanValue < 30 {
             statusMessage = "더러워요... 씻겨주세요!"
-        } else if satietyValue > 80 && energyValue > 80 && happinessValue > 80 {
+        } else if satietyValue > 80 && staminaValue > 80 && happinessValue > 80 {
             statusMessage = "정말 행복해요! 감사합니다!"
         } else {
             statusMessage = "오늘도 좋은 하루에요!"
@@ -199,18 +207,28 @@ class HomeViewModel: ObservableObject {
     
     // 액션 버튼을 현재 상태에 맞게 갱신
     private func refreshActionButtons() {
-        guard let character = character else { return }
+        guard let character = character else {
+            // 캐릭터가 없으면 기본 액션(캐릭터 추가) 등장 설정
+            actionButtons = [
+                ("plus.circle", false, "캐릭터 생성")
+            ]
+            return
+        }
         
-        // ActionManager를 통해 현재 상황에 맞는 액션 버튼 가져오기
-        let buttons = actionManager.getActionsButtons(
+        // ActionManager를 통해 현재 상황에 맞는 버튼들 가져오기
+        let managerButtons = actionManager.getActionsButtons(
             phase: character.status.phase,
-            isSleeping: isSleeping
+            isSleeping: isSleeping,
+            count: 4
         )
         
-        // UI 표시용 actionButtons 업데이트
-        actionButtons = buttons.map { button in
+        // ActionButton을 HomeViewModel의 튜플 형식으로 변환
+        actionButtons = managerButtons.map { button in
             (icon: button.icon, unlocked: button.unlocked, name: button.name)
         }
+        
+        print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계, 잠자는 상태: \(isSleeping)")
+        print("📋 현재 액션들: \(actionButtons.map { $0.name }.joined(separator: ", "))")
     }
     
     // MARK: - 경험치 및 레벨업 관리
@@ -315,7 +333,7 @@ class HomeViewModel: ObservableObject {
     private func applyLevelUpBonus() {
         // 레벨 업 시 모든 스텟 20% 회복
         satietyValue = min(100, satietyValue + 20)
-        energyValue = min(100, energyValue + 20)
+        staminaValue = min(100, staminaValue + 20)
         activityValue = min(100, activityValue + 20)
         
         // 업데이트
@@ -323,52 +341,52 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 액션 메서드
-    
-    // 1. 밥주기
-    func feedPet() {
-        guard !isSleeping else { return }
-        
-        satietyValue = min(100, satietyValue + 15)
-        energyValue = min(100, energyValue + 5)
-        happinessValue = min(100, happinessValue + 3)
-        
-        addExp(3)
-        updateAllPercents()
-        
-        // 캐릭터 모델 업데이트
-        updateCharacterStatus()
-    }
-    
-    // 2. 놀아주기
-    func playWithPet() {
-        guard !isSleeping else { return }
-        
-        happinessValue = min(100, happinessValue + 12)
-        energyValue = max(0, energyValue - 8)
-        satietyValue = max(0, satietyValue - 5)
-        
-        addExp(5)
-        updateAllPercents()
-        
-        // 캐릭터 모델 업데이트
-        updateCharacterStatus()
-    }
-    
-    // 3. 씻기기
-    func washPet() {
-        guard !isSleeping else { return }
-        
-        cleanValue = min(100, cleanValue + 15)
-        happinessValue = min(100, happinessValue + 5)
-        energyValue = max(0, energyValue - 3)
-        
-        addExp(4)
-        updateAllPercents()
-        
-        // 캐릭터 모델 업데이트
-        updateCharacterStatus()
-    }
-    
+    /*
+     // 1. 밥주기
+     func feedPet() {
+     guard !isSleeping else { return }
+     
+     satietyValue = min(100, satietyValue + 15)
+     energyValue = min(100, energyValue + 5)
+     happinessValue = min(100, happinessValue + 3)
+     
+     addExp(3)
+     updateAllPercents()
+     
+     // 캐릭터 모델 업데이트
+     updateCharacterStatus()
+     }
+     
+     // 2. 놀아주기
+     func playWithPet() {
+     guard !isSleeping else { return }
+     
+     happinessValue = min(100, happinessValue + 12)
+     energyValue = max(0, energyValue - 8)
+     satietyValue = max(0, satietyValue - 5)
+     
+     addExp(5)
+     updateAllPercents()
+     
+     // 캐릭터 모델 업데이트
+     updateCharacterStatus()
+     }
+     
+     // 3. 씻기기
+     func washPet() {
+     guard !isSleeping else { return }
+     
+     cleanValue = min(100, cleanValue + 15)
+     happinessValue = min(100, happinessValue + 5)
+     energyValue = max(0, energyValue - 3)
+     
+     addExp(4)
+     updateAllPercents()
+     
+     // 캐릭터 모델 업데이트
+     updateCharacterStatus()
+     }
+     */
     // 4. 재우기/깨우기
     func putPetToSleep() {
         if isSleeping {
@@ -378,9 +396,12 @@ class HomeViewModel: ObservableObject {
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
-            energyValue = min(100, energyValue + 20)
+            staminaValue = min(100, staminaValue + 20)
             updateAllPercents()
         }
+        
+        // 수면 상태 변경 시 액션 버튼 갱신
+        refreshActionButtons()
         
         // 캐릭터 모델 업데이트
         updateCharacterStatus()
@@ -392,7 +413,7 @@ class HomeViewModel: ObservableObject {
         
         // 캐릭터 상태 업데이트
         character.status.satiety = satietyValue
-        character.status.stamina = energyValue
+        character.status.stamina = staminaValue
         character.status.affection = happinessValue
         character.status.clean = cleanValue
         character.status.exp = expValue
@@ -407,7 +428,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 통합 액션 처리 메서드
-        
+    
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
     func performAction(at index: Int) {
@@ -433,18 +454,19 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-        case "fork.knife":
-            feedPet()
-            print("🍽️ 펫에게 밥을 줬습니다")
-            
-        case "gamecontroller.fill":
-            playWithPet()
-            print("🎮 펫과 놀아줬습니다")
-            
-        case "shower.fill":
-            washPet()
-            print("🚿 펫을 씻겨줬습니다")
-            
+            /*
+             case "fork.knife":
+             feedPet()
+             print("🍽️ 펫에게 밥을 줬습니다")
+             
+             case "gamecontroller.fill":
+             playWithPet()
+             print("🎮 펫과 놀아줬습니다")
+             
+             case "shower.fill":
+             washPet()
+             print("🚿 펫을 씻겨줬습니다")
+             */
         case "bed.double":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
@@ -462,12 +484,13 @@ class HomeViewModel: ObservableObject {
         // 액션 실행 후 액션 버튼 갱신
         refreshActionButtons()
     }
-
+    
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
     /// - Parameter icon: 액션 아이콘
     /// - Returns: 해당하는 액션 ID
     private func getActionId(for icon: String) -> String? {
         switch icon {
+            // 기존 액션들
         case "hand.tap.fill":
             return "tap_egg"
         case "flame.fill":
@@ -482,11 +505,55 @@ class HomeViewModel: ObservableObject {
             return "wash"
         case "bed.double":
             return "sleep"
+            
+            // FIXME: 새로 추가된 이벤트 액션들 매핑
+            // 건강 관리 액션들
+        case "pills.fill":
+            return "give_medicine"
+        case "capsule.fill":
+            return "vitamins"
+        case "stethoscope":
+            return "check_health"
+            
+            // 기타 관련 액션들
+        case "sun.max.fill":
+            return "weather_sunny"
+        case "figure.walk":
+            return "walk_together"
+        case "figure.seated.side":
+            return "rest_together"
+            
+            // 장소 관련 액션들
+        case "house.fill":
+            return "go_home"
+        case "tree.fill":
+            return "go_outside"
+            
+            // 감정 관리 액션들
+        case "hand.raised.fill":
+            return "comfort"
+        case "hands.clap.fill":
+            return "encourage"
+            
+            // 청결 관리 액션들
+        case "comb.fill":
+            return "brush_fur"
+        case "sparkles":
+            return "full_grooming"
+            
+            // 특별 액션들
+        case "figure.strengthtraining.traditional":
+            return "special_training"
+        case "party.popper.fill":
+            return "party"
+        case "drop.fill":
+            return "hot_spring"
+            
         default:
             return nil
         }
     }
-
+    
     // ActionManager를 통해 액션을 실행합니다.
     /// - Parameter actionId: 실행할 액션 ID
     private func executeActionManagerAction(actionId: String) {
@@ -512,7 +579,7 @@ class HomeViewModel: ObservableObject {
             case "satiety":
                 satietyValue = max(0, min(100, satietyValue + value))
             case "energy":
-                energyValue = max(0, min(100, energyValue + value))
+                staminaValue = max(0, min(100, staminaValue + value))
             case "happiness":
                 happinessValue = max(0, min(100, happinessValue + value))
             case "clean":
