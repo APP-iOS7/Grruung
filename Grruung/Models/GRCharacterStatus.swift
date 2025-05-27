@@ -24,8 +24,8 @@ struct GRCharacterStatus {
     var expToNextLevel: Int // 다음 레벨까지 남은 경험치
     var phase: CharacterPhase // 현재 시기
     var satiety: Int // 포만감 (레벨 * 50, 예: 레벨 1이면 50)
-    var stamina: Int // 체력
-    var activity: Int // 운동량/활동량
+    var stamina: Int // 운동량
+    var activity: Int // 활동량(피로도)
     var affection: Int // 애정도
     var address: String // 거주지
     var birthDate: Date // 생일
