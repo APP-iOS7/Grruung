@@ -10,10 +10,11 @@ import SwiftUI
 struct StoreView: View {
     let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
     @State private var selectedTab = 0
-    @State private var coins = 40
-    @State private var cash = 12000
+    @State private var gold = 0
+    @State private var diamond = 0
     
     @StateObject var userInventoryViewModel = UserInventoryViewModel()
+    @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     @State var realUserId = ""
     
@@ -22,7 +23,7 @@ struct StoreView: View {
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
-
+                    
                     HStack(spacing: 200) {
                         //현금
                         HStack(spacing: 8) {
@@ -30,17 +31,17 @@ struct StoreView: View {
                                 .resizable()
                                 .frame(width: 20, height: 25)
                                 .foregroundColor(.cyan)
-                            Text("\(cash)")
+                            Text("\(diamond)")
                                 .font(.title3)
                         }
-
+                        
                         //코인
                         HStack(spacing: 8) {
                             Image(systemName: "circle.fill")
                                 .resizable()
                                 .frame(width: 25, height: 25)
                                 .foregroundColor(.yellow)
-                            Text("\(coins)")
+                            Text("\(gold)")
                                 .font(.title2)
                         }
                     }
@@ -102,17 +103,26 @@ struct StoreView: View {
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드
             Task {
-                if authService.currentUserUID == "" {
-                    realUserId = "23456"
-                } else {
-                    realUserId = authService.currentUserUID
+                realUserId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
+                
+                do {
+                    try await userViewModel.fetchUser(userId: realUserId)
+                    print("[유저로드] \(realUserId) user 로드 완료")
+                    
+                    gold = userViewModel.user?.gold ?? 0
+                    diamond = userViewModel.user?.diamond ?? 0
+                } catch {
+                    print("[유저로드] 유저 로드 실패: \(error.localizedDescription)")
                 }
+                
                 do {
                     try await userInventoryViewModel.fetchInventories(userId: realUserId)
                     print("[상점진입] 인벤토리 미리 로드 완료")
                 } catch {
                     print("[상점진입] 인벤토리 로드 실패: \(error.localizedDescription)")
                 }
+                
+                
             }
         }
         .environmentObject(userInventoryViewModel)
@@ -153,7 +163,7 @@ struct SectionView: View {
                 .frame(height: 1)
                 .background(Color.black.opacity(0.7))
                 .padding(.vertical, 8)
-
+            
             
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
@@ -177,4 +187,5 @@ struct SectionView: View {
 #Preview {
     StoreView()
         .environmentObject(AuthService())
+        .environmentObject(UserViewModel())
 }

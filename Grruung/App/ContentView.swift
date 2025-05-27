@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
+    @StateObject private var userViewModel = UserViewModel()
     
     var body: some View {
         Group {
@@ -20,6 +21,7 @@ struct ContentView: View {
                 LoginView()
             }
         }
+        .environmentObject(userViewModel)
         .onAppear {
             // 앱 시작 시 자동으로 로그인 상태 확인
             authService.checkAuthState()
