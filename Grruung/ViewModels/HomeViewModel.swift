@@ -22,24 +22,22 @@ class HomeViewModel: ObservableObject {
     @Published var expPercent: CGFloat = 0.0
     @Published var animationInProgress: Bool = false // 애니메이션 진행 상태
     
-    // 스탯 관련
-    @Published var satietyValue: Int = 50 // 포만감
-    @Published var satietyPercent: CGFloat = 0.5
+    // 보이는 스탯 (UI 표시)
+    @Published var satietyValue: Int = 100 // 포만감 (0~100, 시작값 100)
+    @Published var satietyPercent: CGFloat = 1.0
     
-    @Published var staminaValue: Int = 50 // 체력
-    @Published var staminaPercent: CGFloat = 0.5
+    @Published var staminaValue: Int = 100 // 운동량 (0~100, 시작값 100)
+    @Published var staminaPercent: CGFloat = 1.0
     
-    @Published var activityValue: Int = 50 // 활동량 (6분마다 1씩 회복)
-    @Published var activityPercent: CGFloat = 0.5
+    @Published var activityValue: Int = 100 // 활동량/피로도 (0~100, 시작값 100) - 행동력 개념
+    @Published var activityPercent: CGFloat = 1.0
     
-    @Published var happinessValue: Int = 50 // 행복도
-    @Published var happinessPercent: CGFloat = 0.5
+    // 히든 스탯 (UI에 직접 표시 안함)
+    @Published var affectionValue: Int = 0 // 누적 애정도 (0~1000, 시작값 0)
+    @Published var weeklyAffectionValue: Int = 0 // 주간 애정도 (0~100, 시작값 0)
     
-    @Published var cleanValue: Int = 50 // 청결도
-    @Published var cleanPercent: CGFloat = 0.5
-    
-    @Published var healthyValue: Int = 50 // 건강도 (히든 스탯)
-    @Published var healthyPercent: CGFloat = 0.5
+    @Published var healthyValue: Int = 50 // 건강도 (0~100, 시작값 50)
+    @Published var cleanValue: Int = 50 // 청결도 (0~100, 시작값 50)
     
     // 상태 관련
     @Published var isSleeping: Bool = false // 잠자기 상태
@@ -53,7 +51,8 @@ class HomeViewModel: ObservableObject {
     private var dailyAffectionTimer: Timer?    // 일일 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
     
-    // FIXME: 디버그 모드 설정 추가
+    // 디버그 모드 설정 추가
+    /*
 #if DEBUG
     private let isDebugMode = true
     private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
@@ -89,6 +88,52 @@ class HomeViewModel: ObservableObject {
     private var dailyAffectionInterval: TimeInterval {
 #if DEBUG
         return 120.0 // 디버그: 2분마다
+#else
+        return 3600.0 // 릴리즈: 1시간마다
+#endif
+    }
+
+*/ // 초기 밸런스 세팅
+    
+#if DEBUG
+    private let isDebugMode = true
+    private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
+#else
+    private let isDebugMode = false
+    private let debugSpeedMultiplier = 1
+#endif
+    
+    // 활동량(피로도) 회복 주기: 6분 → 15분으로 조정
+    private var energyTimerInterval: TimeInterval {
+#if DEBUG
+        return 30.0 // 디버그: 30초마다
+#else
+        return 900.0 // 릴리즈: 15분마다 (15 * 60 = 900초)
+#endif
+    }
+    
+    // 보이는 스탯 감소 주기: 10분 → 20분으로 조정
+    private var statDecreaseInterval: TimeInterval {
+#if DEBUG
+        return 40.0 // 디버그: 40초마다
+#else
+        return 1200.0 // 릴리즈: 20분마다 (20 * 60 = 1200초)
+#endif
+    }
+    
+    // 히든 스탯 감소 주기: 30분 → 1시간으로 조정
+    private var hiddenStatDecreaseInterval: TimeInterval {
+#if DEBUG
+        return 120.0 // 디버그: 2분마다
+#else
+        return 3600.0 // 릴리즈: 1시간마다 (60 * 60 = 3600초)
+#endif
+    }
+    
+    // 주간 애정도 체크 주기: 1시간마다 체크하되, 월요일 00시에만 실제 처리
+    private var weeklyAffectionInterval: TimeInterval {
+#if DEBUG
+        return 180.0 // 디버그: 3분마다
 #else
         return 3600.0 // 릴리즈: 1시간마다
 #endif
