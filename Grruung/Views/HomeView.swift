@@ -211,6 +211,7 @@ struct HomeView: View {
     }
     
     // 상태 바 섹션(3개의 보이는 스탯만 표시)
+    // 마음에 안들면 롤백
     private var statsSection: some View {
         VStack(spacing: 15) {
             // 스탯 제목
@@ -268,6 +269,7 @@ struct HomeView: View {
     }
     
     // 상태 메시지에 따른 색상을 반환
+    // 마음에 안들면 삭제
     private func getMessageColor() -> Color {
         let message = viewModel.statusMessage.lowercased()
         
@@ -285,6 +287,7 @@ struct HomeView: View {
     }
     
     // 스탯 아이콘에 따른 한글 이름을 반환
+    // 마음에 안들면 삭제
     private func getStatName(for icon: String) -> String {
         switch icon {
         case "fork.knife":
@@ -299,6 +302,7 @@ struct HomeView: View {
     }
     
     // 스탯 아이콘에 따른 현재 수치를 반환
+    // 마음에 안들면 삭제
     private func getStatValue(for icon: String) -> String {
         switch icon {
         case "fork.knife":
@@ -313,71 +317,136 @@ struct HomeView: View {
     }
     
     // 액션 버튼 그리드
+    // 마음에 안들면 롤백
     private var actionButtonsGrid: some View {
-        HStack(spacing: 15) {
-            // FIXME: ForEach에서 RandomAccessCollection 에러 해결
-            ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
-                Button(action: {
-                    viewModel.performAction(at: index)
-                }) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(width: 75, height: 75)
-                            .foregroundColor(action.unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
-                        
-                        if !action.unlocked {
-                            Image(systemName: "lock.fill")
-                                .foregroundColor(.gray)
-                        } else {
-                            VStack(spacing: 5) {
-                                // 자고 있을 때 재우기 버튼의 아이콘 변경
-
-                                Image(systemName: action.icon)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+        VStack(spacing: 15) {
+            // 액션 버튼 제목
+            HStack {
+                Text("활동")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                Spacer()
+                
+                // 활동량 표시
+                HStack(spacing: 5) {
+                    Image(systemName: "bolt.fill")
+                        .foregroundColor(.yellow)
+                        .font(.caption)
+                    Text("\(viewModel.activityValue)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(viewModel.activityValue < 20 ? .red : .primary)
+                }
+            }
+            
+            // 액션 버튼들
+            HStack(spacing: 15) {
+                ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
+                    Button(action: {
+                        viewModel.performAction(at: index)
+                    }) {
+                        VStack(spacing: 8) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .frame(width: 75, height: 75)
+                                    .foregroundColor(getActionButtonBackgroundColor(action: action))
                                 
-                                Text(action.name)
-                                    .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+                                if !action.unlocked {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 24))
+                                } else {
+                                    // 수면 상태에 따른 아이콘 변경
+                                    let iconName = getActionIcon(action: action, index: index)
+                                    Image(systemName: iconName)
+                                        .font(.system(size: 24))
+                                        .foregroundColor(getActionIconColor(action: action, index: index))
+                                }
                             }
+                            
+                            // 액션 이름
+                            Text(getActionName(action: action, index: index))
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(getActionTextColor(action: action, index: index))
+                                .multilineTextAlignment(.center)
                         }
                     }
+                    .disabled(!action.unlocked || isActionDisabled(action: action, index: index))
+                    .scaleEffect(action.unlocked && !isActionDisabled(action: action, index: index) ? 1.0 : 0.95)
+                    .animation(.easeInOut(duration: 0.2), value: action.unlocked)
                 }
-                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))
-/*
-                                let iconName = (index == 3 && viewModel.isSleeping) ? "bed.double.fill" : action.icon
-                                Image(systemName: iconName)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
-                                
-                                // 자고 있을 때 재우기 버튼의 텍스트 변경
-                                let actionName = (index == 3 && viewModel.isSleeping) ? "깨우기" : action.name
-                                Text(actionName)
-                                    .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
-                            }
-                        }
-                    }
-                }
-                .disabled(!action.unlocked || (viewModel.isSleeping && index != 3))*/
             }
         }
+    }
+    
+    // 액션 버튼 배경색을 반환합니다.
+    private func getActionButtonBackgroundColor(action: (icon: String, unlocked: Bool, name: String)) -> Color {
+        if !action.unlocked {
+            return Color.gray.opacity(0.1)
+        } else if viewModel.isSleeping && action.icon != "bed.double" {
+            return Color.gray.opacity(0.05)
+        } else {
+            return Color.gray.opacity(0.15)
+        }
+    }
+    
+    // 수면 상태에 따른 액션 아이콘을 반환합니다.
+    private func getActionIcon(action: (icon: String, unlocked: Bool, name: String), index: Int) -> String {
+        if action.icon == "bed.double" && viewModel.isSleeping {
+            return "bed.double.fill"
+        }
+        return action.icon
+    }
+    
+    // 액션 아이콘 색상을 반환합니다.
+    private func getActionIconColor(action: (icon: String, unlocked: Bool, name: String), index: Int) -> Color {
+        if viewModel.isSleeping && action.icon != "bed.double" {
+            return .gray
+        } else if action.icon == "bed.double" {
+            return viewModel.isSleeping ? .blue : .purple
+        } else {
+            return .primary
+        }
+    }
+    
+    // 수면 상태에 따른 액션 이름을 반환합니다.
+    private func getActionName(action: (icon: String, unlocked: Bool, name: String), index: Int) -> String {
+        if action.icon == "bed.double" && viewModel.isSleeping {
+            return "깨우기"
+        }
+        return action.name
+    }
+    
+    // 액션 텍스트 색상을 반환합니다.
+    private func getActionTextColor(action: (icon: String, unlocked: Bool, name: String), index: Int) -> Color {
+        if viewModel.isSleeping && action.icon != "bed.double" {
+            return .gray
+        } else {
+            return .primary
+        }
+    }
+    
+    // 액션이 비활성화되어야 하는지 확인합니다.
+    private func isActionDisabled(action: (icon: String, unlocked: Bool, name: String), index: Int) -> Bool {
+        return viewModel.isSleeping && action.icon != "bed.double"
     }
     
     // 아이콘 버튼
     @ViewBuilder
     func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
         if systemName == "cart.fill" {
+            // 상점 버튼은 NavigationLink로 처리
             NavigationLink(destination: StoreView()) {
-                buttonContent(systemName: systemName, name: name, unlocked: unlocked)
+                sideButtonContent(systemName: systemName, name: name, unlocked: unlocked)
             }
-            .disabled(!unlocked)
+            .disabled(!unlocked || viewModel.isSleeping)
         } else {
+            // 다른 사이드 버튼들
             Button(action: {
                 handleSideButtonAction(systemName: systemName)
             }) {
-                buttonContent(systemName: systemName, name: name, unlocked: unlocked)
-
+                sideButtonContent(systemName: systemName, name: name, unlocked: unlocked)
             }
             .disabled(!unlocked || viewModel.isSleeping)
         }
@@ -385,20 +454,38 @@ struct HomeView: View {
     
     // 버튼 내용 (재사용 가능한 부분)
     @ViewBuilder
-    func buttonContent(systemName: String, name: String, unlocked: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .frame(width: 60, height: 60)
-                .foregroundColor(unlocked ? Color.gray.opacity(0.2) : Color.gray.opacity(0.05))
-            
-            if unlocked {
-                Image(systemName: systemName)
-                    .font(.system(size: 24))
-                    .foregroundColor(viewModel.isSleeping ? .gray : .primary)
-            } else {
-                Image(systemName: "lock.fill")
-                    .foregroundColor(.gray)
+    private func sideButtonContent(systemName: String, name: String, unlocked: Bool) -> some View {
+        VStack(spacing: 5) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .frame(width: 60, height: 60)
+                    .foregroundColor(getSideButtonBackgroundColor(unlocked: unlocked))
+                
+                if unlocked {
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                } else {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.gray)
+                }
             }
+            
+            // 버튼 이름 (작은 텍스트)
+            Text(name)
+                .font(.caption2)
+                .foregroundColor(unlocked ? (viewModel.isSleeping ? .gray : .secondary) : .gray)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    // 사이드 버튼 배경색을 반환합니다.
+    private func getSideButtonBackgroundColor(unlocked: Bool) -> Color {
+        if unlocked {
+            return viewModel.isSleeping ? Color.gray.opacity(0.1) : Color.gray.opacity(0.2)
+        } else {
+            return Color.gray.opacity(0.05)
         }
     }
     
@@ -409,38 +496,19 @@ struct HomeView: View {
         switch systemName {
         case "backpack.fill": // 인벤토리
             print("인벤토리 버튼 클릭")
-            // 인벤토리 화면으로 이동하는 로직 (나중에 추가)
+            // TODO: 인벤토리 화면으로 이동하는 로직
         case "mountain.2.fill": // 동산
             print("동산 버튼 클릭")
-            // 동산 화면으로 이동하는 로직 (나중에 추가)
+            // TODO: 동산 화면으로 이동하는 로직
         case "book.fill": // 일기
             print("일기 버튼 클릭")
-            // 일기 화면으로 이동하는 로직 (나중에 추가)
+            // TODO: 일기 화면으로 이동하는 로직
         case "microphone.fill": // 채팅
             print("채팅 버튼 클릭")
-            // 채팅 화면으로 이동하는 로직 (나중에 추가)
+            // TODO: 채팅 화면으로 이동하는 로직
         case "gearshape.fill": // 설정
             print("설정 버튼 클릭")
-            // 설정 화면으로 이동하는 로직 (나중에 추가)
-        default:
-            break
-        }
-    }
-    
-    // MARK: - 액션 처리 메서드
-    
-    // 액션 버튼 처리
-    private func performAction(at index: Int) {
-        switch index {
-            /*
-        case 0: // 밥주기
-            viewModel.feedPet()
-        case 1: // 놀아주기
-            viewModel.playWithPet()
-        case 2: // 씻기기
-            viewModel.washPet()*/
-        case 3: // 재우기/깨우기
-            viewModel.putPetToSleep()
+            // TODO: 설정 화면으로 이동하는 로직
         default:
             break
         }
