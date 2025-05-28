@@ -300,11 +300,19 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
+    // 모든 타이머를 정지합니다.
     private func stopAllTimers() {
         energyTimer?.invalidate()
+        energyTimer = nil
+        
         statDecreaseTimer?.invalidate()
+        statDecreaseTimer = nil
+        
         hiddenStatDecreaseTimer?.invalidate()
+        hiddenStatDecreaseTimer = nil
+        
         weeklyAffectionTimer?.invalidate()
+        weeklyAffectionTimer = nil
     }
     
     // 보이는 스탯 감소 (포만감, 활동량)
@@ -479,6 +487,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 앱 상태 처리
+    
     private func setupAppStateObservers() {
         NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
             .sink { [weak self] _ in
@@ -494,25 +503,54 @@ class HomeViewModel: ObservableObject {
     }
     
     private func handleAppWillResignActive() {
-        // 앱이 백그라운드로 나갈 때 시간 기록 및 타이머 정지
+        // 앱이 백그라운드로 나갈 때 시간 기록 및 모든 타이머 정지
         lastUpdateTime = Date()
         stopAllTimers()
+        
+#if DEBUG
+        print("📱 앱이 백그라운드로 이동 - 모든 타이머 정지")
+#endif
     }
     
     private func handleAppDidBecomeActive() {
-        // 앱이 다시 켜졌을 때 지난 시간 계산
+        // 앱이 다시 켜졌을 때 지난 시간 계산하여 오프라인 보상 적용
         let now = Date()
         let elapsedTime = now.timeIntervalSince(lastUpdateTime)
-        let activityToAdd = Int(elapsedTime / 360)
         
-        if activityToAdd > 0 {
-            activityValue = min(100, activityValue + activityToAdd)
+        // 오프라인 보상 계산 (15분마다 활동량 회복 기준)
+        let offlineRecoveryIntervals = Int(elapsedTime / (isDebugMode ? 30.0 : 900.0))
+        
+        if offlineRecoveryIntervals > 0 {
+            let totalRecovery = offlineRecoveryIntervals * (isDebugMode ? (10 * debugSpeedMultiplier) : 10)
+            activityValue = min(100, activityValue + totalRecovery)
+            
+            // 오프라인 중 스탯 감소도 적용
+            let offlineDecreaseIntervals = Int(elapsedTime / (isDebugMode ? 40.0 : 1200.0))
+            if offlineDecreaseIntervals > 0 {
+                let totalDecrease = offlineDecreaseIntervals * (isDebugMode ? (2 * debugSpeedMultiplier) : 2)
+                satietyValue = max(0, satietyValue - totalDecrease)
+                staminaValue = max(0, staminaValue - totalDecrease)
+                
+#if DEBUG
+                print("📱 오프라인 보상: 활동량 +\(totalRecovery), 포만감/운동량 -\(offlineDecreaseIntervals > 0 ? totalDecrease : 0)")
+#endif
+            }
+            
             updateAllPercents()
             updateCharacterStatus()
+            
+            statusMessage = "오랜만이에요! 그동안 조금씩 회복했어요."
         }
         
-        startStatDecreaseTimers() // 모든 타이머 재시작
+        // 모든 타이머 다시 시작
+        startStatDecreaseTimers()
+        
+#if DEBUG
+        print("📱 앱이 포그라운드로 복귀 - 모든 타이머 재시작")
+#endif
     }
+    
+    
     
     // MARK: TODO.8 - 성장 단계별 기능 해금
     private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
@@ -537,6 +575,10 @@ class HomeViewModel: ObservableObject {
             sideButtons[3].unlocked = true // 일기
             sideButtons[4].unlocked = true // 채팅
         }
+        
+#if DEBUG
+        print("🔓 기능 해금 업데이트: \(phase.rawValue) 단계")
+#endif
     }
     
     // MARK: - 내부 메서드
@@ -598,7 +640,7 @@ class HomeViewModel: ObservableObject {
     // 액션 버튼을 현재 상태에 맞게 갱신
     private func refreshActionButtons() {
         guard let character = character else {
-            // 캐릭터가 없으면 기본 액션(캐릭터 추가) 등장 설정
+            // 캐릭터가 없으면 기본 액션(캐릭터 생성) 등장 설정
             actionButtons = [
                 ("plus.circle", false, "캐릭터 생성")
             ]
@@ -617,8 +659,10 @@ class HomeViewModel: ObservableObject {
             (icon: button.icon, unlocked: button.unlocked, name: button.name)
         }
         
+#if DEBUG
         print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계, 잠자는 상태: \(isSleeping)")
         print("📋 현재 액션들: \(actionButtons.map { $0.name }.joined(separator: ", "))")
+#endif
     }
     
     // MARK: - 경험치 및 레벨업 관리
