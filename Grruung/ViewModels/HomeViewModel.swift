@@ -53,47 +53,47 @@ class HomeViewModel: ObservableObject {
     
     // 디버그 모드 설정 추가
     /*
-#if DEBUG
-    private let isDebugMode = true
-    private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
-#else
-    private let isDebugMode = false
-    private let debugSpeedMultiplier = 1
-#endif
-    
-    private var energyTimerInterval: TimeInterval {
-#if DEBUG
-        return 10.0 // 디버그: 10초마다
-#else
-        return 360.0 // 릴리즈: 6분마다
-#endif
-    }
-    
-    private var statDecreaseInterval: TimeInterval {
-#if DEBUG
-        return 20.0 // 디버그: 20초마다
-#else
-        return 600.0 // 릴리즈: 10분마다
-#endif
-    }
-    
-    private var hiddenStatDecreaseInterval: TimeInterval {
-#if DEBUG
-        return 60.0 // 디버그: 1분마다
-#else
-        return 1800.0 // 릴리즈: 30분마다
-#endif
-    }
-    
-    private var dailyAffectionInterval: TimeInterval {
-#if DEBUG
-        return 120.0 // 디버그: 2분마다
-#else
-        return 3600.0 // 릴리즈: 1시간마다
-#endif
-    }
-
-*/ // 초기 밸런스 세팅
+     #if DEBUG
+     private let isDebugMode = true
+     private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
+     #else
+     private let isDebugMode = false
+     private let debugSpeedMultiplier = 1
+     #endif
+     
+     private var energyTimerInterval: TimeInterval {
+     #if DEBUG
+     return 10.0 // 디버그: 10초마다
+     #else
+     return 360.0 // 릴리즈: 6분마다
+     #endif
+     }
+     
+     private var statDecreaseInterval: TimeInterval {
+     #if DEBUG
+     return 20.0 // 디버그: 20초마다
+     #else
+     return 600.0 // 릴리즈: 10분마다
+     #endif
+     }
+     
+     private var hiddenStatDecreaseInterval: TimeInterval {
+     #if DEBUG
+     return 60.0 // 디버그: 1분마다
+     #else
+     return 1800.0 // 릴리즈: 30분마다
+     #endif
+     }
+     
+     private var dailyAffectionInterval: TimeInterval {
+     #if DEBUG
+     return 120.0 // 디버그: 2분마다
+     #else
+     return 3600.0 // 릴리즈: 1시간마다
+     #endif
+     }
+     
+     */ // 초기 밸런스 세팅
     
 #if DEBUG
     private let isDebugMode = true
@@ -479,11 +479,11 @@ class HomeViewModel: ObservableObject {
         updateAllPercents()
         updateCharacterStatus()
         
-        #if DEBUG
+#if DEBUG
         print("😴 디버그 모드 수면 회복: 활동량 +\(5 * finalRecoveryMultiplier) (\(finalRecoveryMultiplier)배 회복)")
-        #else
+#else
         print("😴 수면 중 회복: 체력 +\(10 * finalRecoveryMultiplier), 활동량 +\(5 * finalRecoveryMultiplier) (\(finalRecoveryMultiplier)배 회복)")
-        #endif
+#endif
     }
     
     // MARK: - 앱 상태 처리
@@ -660,8 +660,13 @@ class HomeViewModel: ObservableObject {
         }
         
 #if DEBUG
-        print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계, 잠자는 상태: \(isSleeping)")
+        print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계 (레벨 \(character.status.level)), 잠자는 상태: \(isSleeping)")
         print("📋 현재 액션들: \(actionButtons.map { $0.name }.joined(separator: ", "))")
+        print("📊 레벨별 상세 정보:")
+        print("   - 현재 레벨: \(level)")
+        print("   - 현재 단계: \(character.status.phase.rawValue)")
+        print("   - 잠자는 상태: \(isSleeping)")
+        print("   - 총 액션 수: \(actionButtons.count)")
 #endif
     }
     
@@ -835,7 +840,7 @@ class HomeViewModel: ObservableObject {
             isSleeping = true
             // 수면 시 즉시 회복 효과
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
-//            staminaValue = min(100, staminaValue + sleepBonus)
+            //            staminaValue = min(100, staminaValue + sleepBonus)
             activityValue = min(100, activityValue + sleepBonus)
             
             statusMessage = "쿨쿨... 잠을 자고 있어요."
@@ -971,13 +976,15 @@ class HomeViewModel: ObservableObject {
     /// - Returns: 해당하는 액션 ID
     private func getActionId(for icon: String) -> String? {
         switch icon {
-            // 기존 액션들
+            // 운석 전용 액션들 (phaseExclusive = true)
         case "hand.tap.fill":
             return "tap_egg"
         case "flame.fill":
             return "warm_egg"
         case "bubble.left.fill":
             return "talk_egg"
+            
+            // 기본 액션들 (유아기 이상)
         case "fork.knife":
             return "feed"
         case "gamecontroller.fill":
@@ -987,7 +994,6 @@ class HomeViewModel: ObservableObject {
         case "bed.double":
             return "sleep"
             
-            // FIXME: 새로 추가된 이벤트 액션들 매핑
             // 건강 관리 액션들
         case "pills.fill":
             return "give_medicine"
@@ -1031,6 +1037,9 @@ class HomeViewModel: ObservableObject {
             return "hot_spring"
             
         default:
+#if DEBUG
+            print("❓ 알 수 없는 액션 아이콘: \(icon)")
+#endif
             return nil
         }
     }
