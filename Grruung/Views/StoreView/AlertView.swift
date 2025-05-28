@@ -14,7 +14,7 @@ struct AlertView: View {
     @EnvironmentObject var authService: AuthService
     @State private var isProcessing = false
     @State var realUserId = ""
-    @State private var remainGold: Int = 0
+    @State private var notEnoughCurrencyAmount: Int = 0
     let product: GRShopItem
     var quantity: Int
     
@@ -93,7 +93,7 @@ struct AlertView: View {
             .padding(.horizontal, 30)
             .frame(maxWidth: 300)
         }
-        .alert("\(remainGold) \(product.itemCurrencyType.rawValue)가 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
+        .alert("\(notEnoughCurrencyAmount) \(product.itemCurrencyType.rawValue)가 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
             Button("확인", role: .cancel) {
                 isPresented = false
             }
@@ -131,7 +131,7 @@ struct AlertView: View {
         }
         
         guard hasEnoughCurrency else {
-            remainGold = abs(user.gold - totalPrice)
+            notEnoughCurrencyAmount = abs((product.itemCurrencyType.rawValue == "다이아" ? user.diamond : user.gold) - totalPrice)
             print("❌ 잔액 부족: 구매 금액 \(totalPrice), 보유 금액 \(product.itemCurrencyType == .gold ? user.gold : user.diamond)")
             
             await MainActor.run {
