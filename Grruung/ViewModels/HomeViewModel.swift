@@ -67,20 +67,17 @@ class HomeViewModel: ObservableObject {
     
     // 스탯 표시 형식
     @Published var stats: [(icon: String, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, 0.5),
-        ("heart.fill", Color.red, 0.5),
-        ("bolt.fill", Color.yellow, 0.5)
+        ("fork.knife", .orange, 0.5),
+        ("heart.fill", .red, 0.5),
+        ("bolt.fill", .yellow, 0.5)
     ]
     
     // 스탯 값에 따라 색상을 반환하는 유틸 함수
-    private func colorForValue(_ value: Int) -> Color {
+    func colorForValue(_ value: CGFloat) -> Color {
         switch value {
-        case 0...30:
-            return .red
-        case 31...79:
-            return .yellow
-        default:
-            return .green
+        case 0...0.3: return .red
+        case 0.3...0.79: return .yellow
+        default: return .green
         }
     }
     

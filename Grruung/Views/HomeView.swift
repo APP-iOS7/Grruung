@@ -235,35 +235,35 @@ struct HomeView: View {
     
     // 상태 바 섹션
     private var statsSection: some View {
-            VStack(spacing: 12) {
-                ForEach(viewModel.stats, id: \.icon) { stat in
-                    HStack(spacing: 15) {
-                        // 아이콘
-                        Image(systemName: stat.icon)
-                            .foregroundColor(stat.color)
-                            .frame(width: 30)
-                        
-                        // 상태 바
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                // 배경 바 (전체 너비)
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(height: 12)
-                                    .foregroundColor(Color.gray.opacity(0.1))
-                                
-                                // 진행 바
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(width: geometry.size.width * stat.value, height: 12)
-                                    .foregroundColor(stat.color)
-                                // TODO: TODO 0 애니메이션
-                            }
+        VStack(spacing: 12) {
+            ForEach(viewModel.stats, id: \.icon) { stat in
+                HStack(spacing: 15) {
+                    // 아이콘
+                    Image(systemName: stat.icon)
+                        .foregroundColor(stat.color)
+                        .frame(width: 30)
+                    
+                    // 상태 바
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // 배경 바 (전체 너비)
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(height: 12)
+                                .foregroundColor(Color.gray.opacity(0.1))
+                            
+                            // 진행 바
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(width: UIScreen.main.bounds.width * 0.5 * stat.value, height: 12)
+                                .foregroundColor(viewModel.colorForValue(stat.value))
+                            // TODO: TODO 0 애니메이션
                         }
-                        .frame(height: 12)
                     }
+                    .frame(height: 12)
                 }
             }
-            .padding(.vertical)
         }
+        .padding(.vertical)
+    }
     
     // 액션 버튼 그리드
     private var actionButtonsGrid: some View {
@@ -284,7 +284,7 @@ struct HomeView: View {
                         } else {
                             VStack(spacing: 5) {
                                 // 자고 있을 때 재우기 버튼의 아이콘 변경
-
+                                
                                 Image(systemName: action.icon)
                                     .font(.system(size: 24))
                                     .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
@@ -297,22 +297,22 @@ struct HomeView: View {
                     }
                 }
                 .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))
-/*
-                                let iconName = (index == 3 && viewModel.isSleeping) ? "bed.double.fill" : action.icon
-                                Image(systemName: iconName)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
-                                
-                                // 자고 있을 때 재우기 버튼의 텍스트 변경
-                                let actionName = (index == 3 && viewModel.isSleeping) ? "깨우기" : action.name
-                                Text(actionName)
-                                    .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
-                            }
-                        }
-                    }
-                }
-                .disabled(!action.unlocked || (viewModel.isSleeping && index != 3))*/
+                /*
+                 let iconName = (index == 3 && viewModel.isSleeping) ? "bed.double.fill" : action.icon
+                 Image(systemName: iconName)
+                 .font(.system(size: 24))
+                 .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
+                 
+                 // 자고 있을 때 재우기 버튼의 텍스트 변경
+                 let actionName = (index == 3 && viewModel.isSleeping) ? "깨우기" : action.name
+                 Text(actionName)
+                 .font(.caption2)
+                 .foregroundColor(viewModel.isSleeping && index != 3 ? .gray : .primary)
+                 }
+                 }
+                 }
+                 }
+                 .disabled(!action.unlocked || (viewModel.isSleeping && index != 3))*/
             }
         }
     }
@@ -330,7 +330,7 @@ struct HomeView: View {
                 handleSideButtonAction(systemName: systemName)
             }) {
                 buttonContent(systemName: systemName, name: name, unlocked: unlocked)
-
+                
             }
             .disabled(!unlocked || viewModel.isSleeping)
         }
@@ -386,12 +386,12 @@ struct HomeView: View {
     private func performAction(at index: Int) {
         switch index {
             /*
-        case 0: // 밥주기
-            viewModel.feedPet()
-        case 1: // 놀아주기
-            viewModel.playWithPet()
-        case 2: // 씻기기
-            viewModel.washPet()*/
+             case 0: // 밥주기
+             viewModel.feedPet()
+             case 1: // 놀아주기
+             viewModel.playWithPet()
+             case 2: // 씻기기
+             viewModel.washPet()*/
         case 3: // 재우기/깨우기
             viewModel.putPetToSleep()
         default:
