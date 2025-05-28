@@ -659,7 +659,7 @@ class HomeViewModel: ObservableObject {
     // 레벨업 처리
     private func levelUp() {
         level += 1
-        expValue -= expMaxValue
+        expValue = 0 // 초과분 이월 없이 0으로 초기화
         
         // 새로운 성장 단계 결정
         let oldPhase = character?.status.phase
@@ -669,12 +669,12 @@ class HomeViewModel: ObservableObject {
         updateExpRequirement()
         
         // 퍼센트 업데이트
-        expPercent = CGFloat(expValue) / CGFloat(expMaxValue)
+        expPercent = 0.0 // 0으로 초기화
         
         // 레벨업 보너스 지급
         applyLevelUpBonus()
         
-        // 성장 단계가 변경 되었으면 기능 해금
+        // 성장 단계가 변경되었으면 기능 해금
         if oldPhase != character?.status.phase {
             unlockFeaturesByPhase(character?.status.phase ?? .egg)
             // 액션 버튼 갱신
@@ -690,6 +690,10 @@ class HomeViewModel: ObservableObject {
         } else {
             statusMessage = "레벨 업! 이제 레벨 \(level)입니다!"
         }
+        
+#if DEBUG
+        print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
+#endif
     }
     
     
@@ -731,13 +735,47 @@ class HomeViewModel: ObservableObject {
     
     // 레벨업 시 보너스 적용
     private func applyLevelUpBonus() {
-        // 레벨 업 시 모든 스텟 20% 회복
-        satietyValue = min(100, satietyValue + 20)
-        staminaValue = min(100, staminaValue + 20)
-        activityValue = min(100, activityValue + 20)
+        // 레벨 업 시 모든 보이는 스탯 20% 회복
+        let bonusAmount = isDebugMode ? (20 * debugSpeedMultiplier) : 20
+        
+        satietyValue = min(100, satietyValue + bonusAmount)
+        staminaValue = min(100, staminaValue + bonusAmount)
+        activityValue = min(100, activityValue + bonusAmount)
+        
+        // 히든 스탯도 약간 회복
+        let hiddenBonusAmount = isDebugMode ? (10 * debugSpeedMultiplier) : 10
+        healthyValue = min(100, healthyValue + hiddenBonusAmount)
+        cleanValue = min(100, cleanValue + hiddenBonusAmount)
         
         // 업데이트
         updateAllPercents()
+        
+#if DEBUG
+        print("🎁 레벨업 보너스: 보이는 스탯 +\(bonusAmount), 히든 스탯 +\(hiddenBonusAmount)")
+#endif
+    }
+    
+    // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
+    private func updateCharacterStatus() {
+        guard var character = character else { return }
+        
+        // 캐릭터 상태 업데이트
+        character.status.satiety = satietyValue
+        character.status.stamina = staminaValue
+        character.status.activity = activityValue
+        character.status.affection = affectionValue
+        character.status.affectionCycle = weeklyAffectionValue
+        character.status.healthy = healthyValue
+        character.status.clean = cleanValue
+        character.status.exp = expValue
+        character.status.expToNextLevel = expMaxValue
+        character.status.level = level
+        
+        // 캐릭터 업데이트
+        self.character = character
+        
+        // TODO: Firestore에 저장
+        // saveCharacterToFirestore()
     }
     
     // MARK: - 액션 메서드
@@ -807,25 +845,7 @@ class HomeViewModel: ObservableObject {
         updateCharacterStatus()
     }
     
-    // 캐릭터 모델 업데이트
-    private func updateCharacterStatus() {
-        guard var character = character else { return }
-        
-        // 캐릭터 상태 업데이트
-        character.status.satiety = satietyValue
-        character.status.stamina = staminaValue
-        character.status.affection = happinessValue
-        character.status.clean = cleanValue
-        character.status.exp = expValue
-        character.status.expToNextLevel = expMaxValue
-        character.status.level = level
-        
-        // 캐릭터 업데이트
-        self.character = character
-        
-        // 실제 앱에서는 여기서 Firestore에 저장
-        // saveCharacterToFirestore()
-    }
+    
     
     // MARK: - 통합 액션 처리 메서드
     
