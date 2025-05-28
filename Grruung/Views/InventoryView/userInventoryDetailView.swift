@@ -64,7 +64,7 @@ struct userInventoryDetailView: View {
                         .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
                 }
                 Text(item.userItemDescription)
-                //                    .lineLimit(1)
+                    .lineLimit(1)
                 Text("보유: \(item.userItemQuantity)")
             }
         }

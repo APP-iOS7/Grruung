@@ -14,24 +14,28 @@ struct AlertView: View {
     @EnvironmentObject var authService: AuthService
     @State private var isProcessing = false
     @State var realUserId = ""
-    @State private var showNotEnoughMoneyAlert = false
+    @State private var remainGold: Int = 0
     let product: GRShopItem
     var quantity: Int
+    
+    @State private var showNotEnoughMoneyAlert = false
     @Binding var isPresented: Bool // 팝업 제어용
     
     var body: some View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
-
+            
             VStack(spacing: 20) {
                 // 아이콘
                 Circle()
                     .fill(Color.cyan)
                     .frame(width: 75, height: 75)
                     .overlay(
-                        Image(systemName: "ticket.fill")
-                            .font(.system(size: 40))
+                        Image(product.itemImage)
+                            .resizable()
+                            .frame(width: 70, height: 70)
+                            .aspectRatio(contentMode: .fit)
                             .foregroundColor(.white)
                     )
                 
@@ -39,7 +43,7 @@ struct AlertView: View {
                 Text("가격: \(product.itemPrice * quantity)")
                     .font(.headline)
                     .foregroundColor(.black)
-
+                
                 // 설명
                 Text("구매할까요?")
                     .font(.subheadline)
@@ -89,8 +93,10 @@ struct AlertView: View {
             .padding(.horizontal, 30)
             .frame(maxWidth: 300)
         }
-        .alert("잔액이 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
-            Button("확인", role: .cancel) { }
+        .alert("\(remainGold) 골드가 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
+            Button("확인", role: .cancel) {
+                isPresented = false
+            }
         }
     }
     
@@ -112,7 +118,7 @@ struct AlertView: View {
             isProcessing = false
             return
         }
-
+        
         let totalPrice = product.itemPrice * quantity
         
         // 상품이 골드인지 다이아인지
@@ -125,10 +131,10 @@ struct AlertView: View {
         }
         
         guard hasEnoughCurrency else {
+            remainGold = abs(user.gold - totalPrice)
             print("❌ 잔액 부족: 구매 금액 \(totalPrice), 보유 금액 \(product.itemCurrencyType == .gold ? user.gold : user.diamond)")
             
             await MainActor.run {
-                isPresented = false
                 showNotEnoughMoneyAlert = true
             }
             
@@ -141,7 +147,7 @@ struct AlertView: View {
         
         // 재빌드시 아이템 넘버가 바뀌면서(UUID) 이전 구매 아이템과 아이템 넘버가 달라서 계속 새로 구매되는 오류 발생!
         // 반드시 아이템의 이름들이 고유해야함! -> 같으면 또 다시 에러남...
-        let beforeItemNumber = userInventoryViewModel.inventories.first(where: { $0.userItemName == product.itemName })?.userItemNumber ?? UUID().uuidString
+        let beforeItemNumber = userInventoryViewModel.inventories.first(where: { $0.userItemName == product.itemName })?.userItemNumber ?? product.itemNumber
         
         do {
             let buyItem = GRUserInventory(
@@ -162,7 +168,7 @@ struct AlertView: View {
                 print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
                 let newQuantity = existingItem.userItemQuantity + quantity
                 print("[수량업데이트] 새로운 수량: \(newQuantity)")
-                                
+                
                 // 수량 업데이트 (await로 즉시 처리)
                 await userInventoryViewModel.updateItemQuantity(
                     userId: realUserId,
@@ -182,15 +188,18 @@ struct AlertView: View {
             userViewModel.updateCurrency(userId: realUserId, gold: updatedGold, diamond: updatedDiamond)
             print("🛒 [구매완료] 처리 완료!")
             
-            // 성공 시 창 닫기
+            // 상품 구매시 구매 중 progressView를 보여주기 위해서
+            // 일부러 delay 1초를 줌.
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            
+            isProcessing = false
+            
             await MainActor.run {
                 isPresented = false
             }
-            
         } catch {
             print("❌ 구매 처리 중 오류: \(error)")
         }
-        
         isProcessing = false
     }
 }
