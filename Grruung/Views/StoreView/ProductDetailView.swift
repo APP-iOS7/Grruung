@@ -18,6 +18,8 @@ struct ProductDetailView: View {
     let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
+    @State private var isRotating = false
+    @State private var isBouncing = false
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var authService: AuthService
     
@@ -40,10 +42,21 @@ struct ProductDetailView: View {
                     // 제품 이미지
                     Image(product.itemImage)
                         .resizable()
+                        .renderingMode(.original)
                         .scaledToFit()
-                        .frame(height: 200)
+                        .frame(width: 180, height: 180)
+                        .rotationEffect(.degrees(isRotating ? 3 : -3))
+                        .offset(y: isBouncing ? -2 : 2)
                         .frame(maxWidth: .infinity)
                         .padding()
+                        .onAppear {
+                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                isRotating = true
+                            }
+                            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                isBouncing = true
+                            }
+                        }
                     
                     // 설명
                     Text(product.itemDescription)
