@@ -127,8 +127,6 @@ struct StoreView: View {
                 } catch {
                     print("[상점진입] 인벤토리 로드 실패: \(error.localizedDescription)")
                 }
-                
-                
             }
         }
         .environmentObject(userInventoryViewModel)

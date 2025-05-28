@@ -23,7 +23,7 @@ struct AlertView: View {
         ZStack {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 20) {
                 // 아이콘
                 Circle()
@@ -39,7 +39,7 @@ struct AlertView: View {
                 Text("가격: \(product.itemPrice * quantity)")
                     .font(.headline)
                     .foregroundColor(.black)
-                
+
                 // 설명
                 Text("구매할까요?")
                     .font(.subheadline)
@@ -139,9 +139,13 @@ struct AlertView: View {
         let updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
         let updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
         
+        // 재빌드시 아이템 넘버가 바뀌면서(UUID) 이전 구매 아이템과 아이템 넘버가 달라서 계속 새로 구매되는 오류 발생!
+        // 반드시 아이템의 이름들이 고유해야함! -> 같으면 또 다시 에러남...
+        let beforeItemNumber = userInventoryViewModel.inventories.first(where: { $0.userItemName == product.itemName })?.userItemNumber ?? UUID().uuidString
+        
         do {
             let buyItem = GRUserInventory(
-                userItemNumber: product.itemNumber,
+                userItemNumber: beforeItemNumber,
                 userItemName: product.itemName,
                 userItemType: product.itemType,
                 userItemImage: product.itemImage,
