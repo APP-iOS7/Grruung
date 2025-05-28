@@ -18,6 +18,112 @@ class ActionManager {
         setupActions()
     }
     
+    // 현재 성장 단계에서 사용 가능한 액션 목록 가져오기
+    /// - Parameters:
+    ///   - phase: 현재 캐릭터의 성장 단계
+    ///   - isSleeping: 캐릭터가 잠자고 있는 상태인지 여부
+    /// - Returns: 사용 가능한 액션 배열
+    func getAvailableActions(phase: CharacterPhase, isSleeping: Bool) -> [PetAction] {
+        // 자는 상태에서는 깨우기(재우기) 액션만 사용 가능
+        if isSleeping {
+            return allActions.filter { $0.id == "sleep" }
+        }
+        
+        // 현재 성장 단계에서 사용 가능한 액션만 필터링
+        return allActions.filter { action in
+            if action.phaseExclusive {
+                // 단계 전용 액션인 경우: 정확히 해당 단계에서만 사용 가능
+                return action.unlockPhase == phase
+            } else {
+                // 일반 액션인 경우: 해당 단계 이상에서 사용 가능
+                return phase.isAtLeast(action.unlockPhase)
+            }
+        }
+    }
+    
+    // 시간대에 맞는 액션 목록 가져오기
+    /// - Parameters:
+    ///   - actions: 필터링할 액션 배열
+    ///   - hour: 현재 시간 (0-23)
+    /// - Returns: 시간 제한을 통과한 액션 배열
+    func getTimeFilteredActions(actions: [PetAction], hour: Int) -> [PetAction] {
+        return actions.filter { action in
+            // 시간 제한이 없으면 항상 표시
+            guard let restriction = action.timeRestriction else { return true }
+            return restriction.isTimeAllowed(hour: hour)
+        }
+    }
+    
+    // 현재 시간, 성장 단계에 맞는 액션 버튼 목록 가져오기
+    /// - Parameters:
+    ///   - phase: 현재 캐릭터의 성장 단계
+    ///   - isSleeping: 캐릭터가 잠자고 있는 상태인지 여부
+    ///   - count: 반환할 액션 버튼의 개수 (기본값: 4)
+    /// - Returns: 화면에 표시할 액션 버튼 배열
+    func getActionsButtons(phase: CharacterPhase, isSleeping: Bool, count: Int = 4) -> [ActionButton] {
+        // 현재 시간
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        // 1단계: 성장 단계에 맞는 액션 필터링
+        var availableActions = getAvailableActions(phase: phase, isSleeping: false)
+        
+        // 2단계: 시간 필터링 (자는 상태가 아닐 때만)
+        if !isSleeping {
+            availableActions = getTimeFilteredActions(actions: availableActions, hour: hour)
+        }
+        
+        // 3단계: 결과 액션 목록 구성
+        var result: [PetAction] = []
+        
+        // 재우기/깨우기 액션 처리 (항상 표시)
+        if let sleepAction = allActions.first(where: { $0.id == "sleep" }) {
+            // 자고 있는 경우 깨우기 액션으로 변경
+            let modifiedSleepAction = isSleeping ? sleepAction.withUpdatedName("깨우기") : sleepAction
+            result.append(modifiedSleepAction)
+        }
+        
+        // 4단계: 나머지 액션 랜덤하게 추가
+        if !isSleeping {
+            let otherActions = availableActions.filter { $0.id != "sleep" }
+            
+            // 운석 단계에서는 운석 전용 액션만 표시
+            let finalActions: [PetAction]
+            if phase == .egg {
+                finalActions = otherActions.filter { $0.phaseExclusive && $0.unlockPhase == .egg }
+            } else {
+                finalActions = otherActions
+            }
+            
+            // 랜덤하게 선택하되, 남은 슬롯 수만큼만 선택
+            let remainingSlots = count - result.count
+            let randomActions = finalActions.shuffled().prefix(remainingSlots)
+            result.append(contentsOf: randomActions)
+            
+#if DEBUG
+            print("🎯 액션 필터링 결과:")
+            print("   - 현재 단계: \(phase.rawValue)")
+            print("   - 전체 가능한 액션: \(availableActions.count)개")
+            print("   - 최종 선택된 액션: \(result.map { $0.name }.joined(separator: ", "))")
+#endif
+        }
+        
+        // ActionButton으로 변환
+        return result.map { action in
+            ActionButton(
+                icon: action.icon,
+                name: action.name,
+                unlocked: true,
+                actionId: action.id
+            )
+        }
+    }
+    
+    // ID로 액션 찾기
+    func getAction(id: String) -> PetAction? {
+        return allActions.first { $0.id == id }
+    }
+    
+    
     // 기본 액션 설정
     private func setupActions() {
         allActions = [
@@ -336,84 +442,5 @@ class ActionManager {
             // ..
             // ..
         ]
-    }
-    
-    // 현재 성장 단계에서 사용 가능한 액션 목록 가져오기
-    func getAvailableActions(phase: CharacterPhase, isSleeping: Bool) -> [PetAction] {
-        // 현재 성장 단계에서 사용 가능한 액션만 필터링
-        return allActions.filter { action in
-            // 단계 조건 확인
-            let phaseCondition: Bool
-            
-            if action.phaseExclusive {
-                // 단계 전용 액션인 경우 해당 단계에서만 사용 가능
-                phaseCondition = action.unlockPhase == phase
-            } else {
-                // 일반 액션인 경우 해당 단계 이상에서 사용 가능
-                phaseCondition = action.unlockPhase.rawValue <= phase.rawValue
-            }
-            
-            // 자는 상태에서는 깨우기 액션만 사용 가능
-            if isSleeping {
-                return phaseCondition && action.id == "sleep"
-            }
-            
-            return phaseCondition
-        }
-    }
-    
-    // 시간대에 맞는 액션 목록 가져오기
-    func getTimeFilteredActions(actions: [PetAction], hour: Int) -> [PetAction] {
-        return actions.filter { action in
-            // 시간 제한이 없으면 항상 표시
-            guard let restriction = action.timeRestriction else { return true }
-            return restriction.isTimeAllowed(hour: hour)
-        }
-    }
-    
-    // 현재 시간, 성장 단계에 맞는 액션 버튼 목록 가져오기
-    func getActionsButtons(phase: CharacterPhase, isSleeping: Bool, count: Int = 4) -> [ActionButton] {
-        // 현재 시간
-        let hour = Calendar.current.component(.hour, from: Date())
-        
-        // 사용 가능한 액션 목록
-        var availableActions = getAvailableActions(phase: phase, isSleeping: false)
-        
-        // 시간 필터링 (자는 상태가 아닐 때만)
-        if !isSleeping {
-            availableActions = getTimeFilteredActions(actions: availableActions, hour: hour)
-        }
-        
-        // 결과 액션 목록
-        var result: [PetAction] = []
-        
-        // 재우기/깨우기 액션 처리
-        if let sleepAction = allActions.first(where: { $0.id == "sleep" }) {
-            // 자고 있는 경우 깨우기 액션으로 변경
-            let modifiedSleepAction = isSleeping ? sleepAction.withUpdatedName("깨우기") : sleepAction
-            result.append(modifiedSleepAction)
-        }
-        
-        // 나머지 액션 랜덤하게 추가
-        if !isSleeping {
-            let otherActions = availableActions.filter { $0.id != "sleep" }
-            let randomActions = otherActions.shuffled().prefix(count - result.count)
-            result.append(contentsOf: randomActions)
-        }
-        
-        // ActionButton으로 변환
-        return result.map { action in
-            ActionButton(
-                icon: action.icon,
-                name: action.name,
-                unlocked: true,
-                actionId: action.id
-            )
-        }
-    }
-    
-    // ID로 액션 찾기
-    func getAction(id: String) -> PetAction? {
-        return allActions.first { $0.id == id }
     }
 }
