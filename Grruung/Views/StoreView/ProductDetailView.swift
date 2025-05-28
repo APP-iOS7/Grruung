@@ -18,6 +18,7 @@ struct ProductDetailView: View {
     let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
+    @State private var isOutOfLimitedQuantity: Bool = false
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
@@ -80,10 +81,19 @@ struct ProductDetailView: View {
                     .padding(.horizontal, 16)
                 
                 Button {
-                    quantity += 1
+                    if quantity < product.limitedQuantity {
+                        quantity += 1
+                    } else {
+                        showAlert = true
+                    }
                 } label: {
                     Image(systemName: "plus.circle")
                         .font(.title2)
+                }
+                .alert("한정 수량 초과", isPresented: $showAlert) {
+                    Button("확인", role: .cancel) { }
+                } message: {
+                    Text("더 이상 구매하실 수 없습니다.")
                 }
                 
                 Spacer()
