@@ -13,6 +13,7 @@ struct AnimationTestView: View {
     
     // 현재 선택된 설정
     @State private var selectedCharacterType = "egg"
+    @State private var selectedPhase: CharacterPhase = .egg
     @State private var selectedAnimationType = "eggBasic"
     
     // 애니메이션 설정
@@ -36,6 +37,13 @@ struct AnimationTestView: View {
         "egg": ["eggBasic", "eggbreak", "egghatch"],
         "quokka": ["normal", "sleep", "play"],
         "lion": ["normal", "angry", "happy"]
+    ]
+    
+    // 각 캐릭터 타입별 사용 가능한 단계 (실제 데이터에 맞게 조정 필요)
+    let availablePhases: [String: [CharacterPhase]] = [
+        "egg": [.egg],
+        "quokka": [.egg, .infant, .child, .adolescent, .adult, .elder],
+        "lion": [.egg, .infant, .child, .adolescent, .adult, .elder]
     ]
     
     // 배경 이미지 위치 조절을 위한 상태 변수
@@ -76,6 +84,22 @@ struct AnimationTestView: View {
                             selectedAnimationType = firstType
                         }
                         // 애니메이션 정지 및 초기화
+                        stopAnimation()
+                        loadSelectedAnimation()
+                    }
+                    
+                    // 성장 단계 선택
+                    Picker("성장 단계", selection: $selectedPhase) {
+                        if let phases = availablePhases[selectedCharacterType] {
+                            ForEach(phases, id: \.self) { phase in
+                                Text(phase.rawValue).tag(phase)
+                            }
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                    .onChange(of: selectedPhase) { _, _ in
+                        // 성장 단계 변경 시 애니메이션 정지 및 초기화
                         stopAnimation()
                         loadSelectedAnimation()
                     }
@@ -379,6 +403,7 @@ struct AnimationTestView: View {
                         Button(action: {
                             animationTestViewModel.downloadSingleFrame(
                                 characterType: selectedCharacterType,
+                                phase: selectedPhase,
                                 animationType: selectedAnimationType
                             )
                         }) {
@@ -391,6 +416,7 @@ struct AnimationTestView: View {
                         Button(action: {
                             animationTestViewModel.checkFileExistence(
                                 characterType: selectedCharacterType,
+                                phase: selectedPhase,
                                 animationType: selectedAnimationType
                             )
                         }) {
@@ -418,6 +444,7 @@ struct AnimationTestView: View {
                     if !animationFrames.isEmpty {
                         let totalSize = animationTestViewModel.getTotalSize(
                             characterType: selectedCharacterType,
+                            phase: selectedPhase, 
                             animationType: selectedAnimationType
                         )
                         
@@ -475,6 +502,7 @@ struct AnimationTestView: View {
         stopAnimation()
         animationTestViewModel.downloadAnimation(
             characterType: selectedCharacterType,
+            phase: selectedPhase,
             animationType: selectedAnimationType
         )
     }
@@ -487,6 +515,7 @@ struct AnimationTestView: View {
         // 모든 프레임 로드
         animationFrames = animationTestViewModel.loadAllAnimationFrames(
             characterType: selectedCharacterType,
+            phase: selectedPhase,
             animationType: selectedAnimationType
         )
         
@@ -499,6 +528,7 @@ struct AnimationTestView: View {
         stopAnimation()
         animationTestViewModel.clearCache(
             characterType: selectedCharacterType,
+            phase: selectedPhase,
             animationType: selectedAnimationType
         )
         animationFrames = []

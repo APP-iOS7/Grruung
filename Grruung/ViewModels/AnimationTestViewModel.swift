@@ -68,9 +68,102 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     // MARK: - Firebase에서 애니메이션 다운로드
+    // 캐릭터 타입과 단계에 따른 경로 관리를 위한 로직 추가
+    private func getAnimationPath(characterType: String, phase: CharacterPhase, animationType: String) -> String {
+        // 특별한 경우: egg 단계는 모든 캐릭터에 공통으로 사용
+        if phase == .egg {
+            return "animations/egg/\(animationType)"
+        }
+        
+        // 다른 단계는 캐릭터별로 다른 경로 사용
+        let storageAnimationType = getStorageAnimationType(characterType: characterType, phase: phase, uiAnimationType: animationType)
+        
+        return "animations/\(characterType)/\(phase.rawValue)/\(storageAnimationType)"
+    }
+    
+    // 성장 단계와 캐릭터 타입별 애니메이션 매핑
+    private let animationMapping: [CharacterPhase: [String: [String: String]]] = [
+        .egg: [
+            "egg": [:], // egg는 모든 캐릭터에 공통
+        ],
+        .infant: [
+            "quokka": [
+                "normal": "idle",
+                "sleep": "sleep",
+                "play": "play"
+            ],
+            "lion": [
+                "normal": "idle",
+                "angry": "angry",
+                "happy": "happy"
+            ]
+        ],
+        .child: [
+            "quokka": [
+                "normal": "idle",
+                "sleep": "sleep",
+                "play": "play"
+            ],
+            "lion": [
+                "normal": "idle",
+                "angry": "angry",
+                "happy": "happy"
+            ]
+        ],
+        .adolescent: [
+            "quokka": [
+                "normal": "idle",
+                "sleep": "sleep",
+                "play": "play"
+            ],
+            "lion": [
+                "normal": "idle",
+                "angry": "angry",
+                "happy": "happy"
+            ]
+        ],
+        .adult: [
+            "quokka": [
+                "normal": "idle",
+                "sleep": "sleep",
+                "play": "play"
+            ],
+            "lion": [
+                "normal": "idle",
+                "angry": "angry",
+                "happy": "happy"
+            ]
+        ],
+        .elder: [
+            "quokka": [
+                "normal": "idle",
+                "sleep": "sleep",
+                "play": "play"
+            ],
+            "lion": [
+                "normal": "idle",
+                "angry": "angry",
+                "happy": "happy"
+            ]
+        ]
+    ]
+    
+    // UI 애니메이션 타입을 스토리지 애니메이션 타입으로 변환하는 메서드
+    private func getStorageAnimationType(characterType: String, phase: CharacterPhase, uiAnimationType: String) -> String {
+        // 특정 단계와 캐릭터에 대한 매핑 확인
+        if let phaseMapping = animationMapping[phase],
+           let characterMapping = phaseMapping[characterType],
+           let storageType = characterMapping[uiAnimationType] {
+            return storageType
+        }
+        
+        // 매핑이 없으면 원래 이름 그대로 사용
+        return uiAnimationType
+    }
+    
     
     /// 특정 캐릭터의 애니메이션 타입 다운로드
-    func downloadAnimation(characterType: String, animationType: String) {
+    func downloadAnimation(characterType: String, phase: CharacterPhase, animationType: String) {
         guard let modelContext = modelContext else {
             errorMessage = "데이터 컨텍스트 초기화 실패"
             return
@@ -82,7 +175,7 @@ class AnimationTestViewModel: ObservableObject {
         errorMessage = nil
         
         // 다운로드할 폴더 경로
-        let animationPath = "animations/\(characterType)/\(animationType)"
+        let animationPath = getAnimationPath(characterType: characterType, phase: phase, animationType: animationType)
         print("요청 경로: \(animationPath)")
         let folderRef = storage.child(animationPath)
         print("요청 folderRef 경로: \(folderRef)")
@@ -130,6 +223,7 @@ class AnimationTestViewModel: ObservableObject {
             // 캐릭터 애니메이션 타입 폴더 경로
             let animationDirectory = self.cacheDirectoryURL
                 .appendingPathComponent(characterType, isDirectory: true)
+                .appendingPathComponent(phase.rawValue, isDirectory: true)
                 .appendingPathComponent(animationType, isDirectory: true)
             
             // 폴더 생성
@@ -153,6 +247,7 @@ class AnimationTestViewModel: ObservableObject {
                     // 이미 존재하는 파일 메타데이터 업데이트
                     self.updateMetadata(
                         characterType: characterType,
+                        phase: phase, 
                         animationType: animationType,
                         frameIndex: frameIndex,
                         filePath: localURL.path
@@ -200,6 +295,7 @@ class AnimationTestViewModel: ObservableObject {
                         // 메타데이터 저장
                         self.saveMetadata(
                             characterType: characterType,
+                            phase: phase,
                             animationType: animationType,
                             frameIndex: frameIndex,
                             filePath: localURL.path,
@@ -209,7 +305,7 @@ class AnimationTestViewModel: ObservableObject {
                         // 선택적으로 메모리 캐시에 추가
                         if let image = UIImage(contentsOfFile: localURL.path) {
                             let cacheKey = self.getCacheKey(
-                                characterType: characterType,
+                                characterType: characterType, phase: phase,
                                 animationType: animationType,
                                 frameIndex: frameIndex
                             )
@@ -263,7 +359,7 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 테스트용으로 첫 번째 프레임만 다운로드
-    func downloadSingleFrame(characterType: String, animationType: String) {
+    func downloadSingleFrame(characterType: String, phase: CharacterPhase, animationType: String) {
         guard let modelContext = modelContext else {
             errorMessage = "데이터 컨텍스트 초기화 실패"
             return
@@ -274,31 +370,17 @@ class AnimationTestViewModel: ObservableObject {
         message = "테스트 다운로드 준비 중..."
         errorMessage = nil
         
-        // 경로 포맷팅
-        let formattedCharType = characterType.prefix(1).capitalized + characterType.dropFirst() // egg -> Egg
-        
-        // 애니메이션 타입 포맷팅 (eggbasic -> eggBasic)
-        let formattedAnimType: String
-        switch animationType.lowercased() {
-        case "eggbasic":
-            formattedAnimType = "eggBasic"
-        case "eggbreak":
-            formattedAnimType = "eggBreak"
-        // 다른 애니메이션 타입들도 필요에 따라 추가
-        default:
-            formattedAnimType = animationType
-        }
+        // 경로 구성 시 getAnimationPath 함수 사용
+        let animationPath = getAnimationPath(characterType: characterType, phase: phase, animationType: animationType)
         
         // 단일 프레임 경로 구성 (첫 번째 프레임)
         let frameNumber = 1
-        let frameNumbers = [1, 2, 3]
-        var downloadedFrames = 0
         
         
         let filePath = "animations/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
         // "CharacterImageSet/\(formattedCharType)/\(formattedAnimType)/\(formattedAnimType)\(frameNumber).png"
         
-        print("테스트 파일 경로: \(filePath)")
+        print("테스트 파일 경로: \(filePath) (UI 애니메이션 타입: \(animationType))")
         
         let fileRef = storage.child(filePath)
         print("테스트 파일 전체 경로: \(fileRef)")
@@ -345,6 +427,7 @@ class AnimationTestViewModel: ObservableObject {
                 // 메타데이터 저장
                 self.saveMetadata(
                     characterType: characterType,
+                    phase: phase,
                     animationType: animationType,
                     frameIndex: frameNumber,
                     filePath: localURL.path,
@@ -356,6 +439,7 @@ class AnimationTestViewModel: ObservableObject {
                     // 메모리 캐시에 추가
                     let cacheKey = self.getCacheKey(
                         characterType: characterType,
+                        phase: phase,
                         animationType: animationType,
                         frameIndex: frameNumber
                     )
@@ -433,24 +517,13 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 특정 파일이 Firebase Storage에 존재하는지 확인
-    func checkFileExistence(characterType: String, animationType: String, frameNumber: Int = 1) {
-        // 경로 포맷팅
-//        let formattedCharType = characterType.prefix(1).capitalized + characterType.dropFirst()
-        
-//        // 애니메이션 타입 포맷팅
-//        let formattedAnimType: String
-//        switch animationType.lowercased() {
-//        case "eggbasic":
-//            formattedAnimType = "eggBasic"
-//        case "eggbreak":
-//            formattedAnimType = "eggBreak"
-//        default:
-//            formattedAnimType = animationType
-//        }
+    func checkFileExistence(characterType: String, phase: CharacterPhase, animationType: String, frameNumber: Int = 1) {
+        // 경로 구성 시 getAnimationPath 함수 사용
+        let animationPath = getAnimationPath(characterType: characterType, phase: phase, animationType: animationType)
         
         // 파일 경로 구성
-        let filePath = "animations/\(characterType)/\(animationType)/\(animationType)\(frameNumber).png"
-        print("확인 중인 파일: \(filePath)")
+        let filePath = "\(animationPath)/\(animationType)\(frameNumber).png"
+        print("확인 중인 파일: \(filePath) (UI 애니메이션 타입: \(animationType))")
         
         let fileRef = storage.child(filePath)
         
@@ -487,9 +560,9 @@ class AnimationTestViewModel: ObservableObject {
     // MARK: - 이미지 로드 메서드
     
     /// 특정 애니메이션 프레임 이미지 로드
-    func loadAnimationFrame(characterType: String, animationType: String, frameIndex: Int) -> UIImage? {
+    func loadAnimationFrame(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int) -> UIImage? {
         // 1. 메모리 캐시 확인
-        let cacheKey = getCacheKey(characterType: characterType, animationType: animationType, frameIndex: frameIndex)
+        let cacheKey = getCacheKey(characterType: characterType, phase: phase, animationType: animationType, frameIndex: frameIndex)
         if let cachedImage = imageCache.object(forKey: cacheKey as NSString) {
             // 메타데이터 접근 시간 업데이트
             updateLastAccessedTime(characterType: characterType, animationType: animationType, frameIndex: frameIndex)
@@ -497,7 +570,7 @@ class AnimationTestViewModel: ObservableObject {
         }
         
         // 2. 파일 시스템에서 로드
-        guard let filePath = getFilePath(characterType: characterType, animationType: animationType, frameIndex: frameIndex),
+        guard let filePath = getFilePath(characterType: characterType, phase: phase, animationType: animationType, frameIndex: frameIndex),
               let image = UIImage(contentsOfFile: filePath) else {
             return nil
         }
@@ -512,14 +585,16 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 애니메이션의 모든 프레임 로드 (특정 캐릭터와 애니메이션 타입의)
-    func loadAllAnimationFrames(characterType: String, animationType: String) -> [UIImage] {
+    func loadAllAnimationFrames(characterType: String, phase: CharacterPhase, animationType: String) -> [UIImage] {
         guard let modelContext = modelContext else { return [] }
         
         do {
             // 특정 캐릭터와 애니메이션 타입의 모든 메타데이터 쿼리
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
-                    $0.characterType == characterType && $0.animationType == animationType
+                    $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
+                    $0.animationType == animationType
                 },
                 sortBy: [SortDescriptor(\.frameIndex)]
             )
@@ -535,6 +610,7 @@ class AnimationTestViewModel: ObservableObject {
                     // 메모리 캐시에 추가
                     let cacheKey = getCacheKey(
                         characterType: metadata.characterType,
+                        phase: CharacterPhase(rawValue: metadata.phase) ?? .egg,
                         animationType: metadata.animationType,
                         frameIndex: metadata.frameIndex
                     )
@@ -558,12 +634,12 @@ class AnimationTestViewModel: ObservableObject {
     // MARK: - 유틸리티 메서드
     
     /// 캐시 키 생성
-    private func getCacheKey(characterType: String, animationType: String, frameIndex: Int) -> String {
+    private func getCacheKey(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int) -> String {
         return "\(characterType)_\(animationType)_\(frameIndex)"
     }
     
     /// 파일 경로 가져오기
-    private func getFilePath(characterType: String, animationType: String, frameIndex: Int) -> String? {
+    private func getFilePath(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int) -> String? {
         guard let modelContext = modelContext else { return nil }
         
         do {
@@ -571,6 +647,7 @@ class AnimationTestViewModel: ObservableObject {
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
                     $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
                     $0.animationType == animationType &&
                     $0.frameIndex == frameIndex
                 }
@@ -585,7 +662,7 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 메타데이터 저장
-    private func saveMetadata(characterType: String, animationType: String, frameIndex: Int, filePath: String, fileSize: Int) {
+    private func saveMetadata(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int, filePath: String, fileSize: Int) {
         guard let modelContext = modelContext else { return }
         
         // 기존 메타데이터 확인
@@ -593,6 +670,7 @@ class AnimationTestViewModel: ObservableObject {
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
                     $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
                     $0.animationType == animationType &&
                     $0.frameIndex == frameIndex
                 }
@@ -628,13 +706,14 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 메타데이터 업데이트
-    private func updateMetadata(characterType: String, animationType: String, frameIndex: Int, filePath: String) {
+    private func updateMetadata(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int, filePath: String) {
         guard let modelContext = modelContext else { return }
         
         do {
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
                     $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
                     $0.animationType == animationType &&
                     $0.frameIndex == frameIndex
                 }
@@ -651,6 +730,7 @@ class AnimationTestViewModel: ObservableObject {
                 // 새 메타데이터 생성 (파일 크기는 나중에 업데이트)
                 let metadata = GRAnimationMetadata(
                     characterType: characterType,
+                    phase: phase,
                     animationType: animationType,
                     frameIndex: frameIndex,
                     filePath: filePath
@@ -693,14 +773,16 @@ class AnimationTestViewModel: ObservableObject {
     // MARK: - 캐시 관리 메서드
     
     /// 특정 애니메이션 관련 캐시 삭제
-    func clearCache(characterType: String, animationType: String) {
+    func clearCache(characterType: String, phase: CharacterPhase, animationType: String) {
         guard let modelContext = modelContext else { return }
         
         do {
             // 메타데이터 쿼리
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
-                    $0.characterType == characterType && $0.animationType == animationType
+                    $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
+                    $0.animationType == animationType
                 }
             )
             
@@ -714,6 +796,7 @@ class AnimationTestViewModel: ObservableObject {
                 // 메모리 캐시에서 삭제
                 let cacheKey = getCacheKey(
                     characterType: metadata.characterType,
+                    phase: CharacterPhase(rawValue: metadata.phase) ?? .egg,
                     animationType: metadata.animationType,
                     frameIndex: metadata.frameIndex
                 )
@@ -786,6 +869,7 @@ class AnimationTestViewModel: ObservableObject {
                 // 메모리 캐시에서 삭제
                 let cacheKey = getCacheKey(
                     characterType: metadata.characterType,
+                    phase: CharacterPhase(rawValue: metadata.phase) ?? .egg,
                     animationType: metadata.animationType,
                     frameIndex: metadata.frameIndex
                 )
@@ -807,14 +891,16 @@ class AnimationTestViewModel: ObservableObject {
     // MARK: - 정보 제공 메서드
     
     /// 특정 애니메이션 프레임 개수 가져오기
-    func getFrameCount(characterType: String, animationType: String) -> Int {
+    func getFrameCount(characterType: String, phase: CharacterPhase, animationType: String) -> Int {
         guard let modelContext = modelContext else { return 0 }
         
         do {
             // 메타데이터 쿼리
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
-                    $0.characterType == characterType && $0.animationType == animationType
+                    $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
+                    $0.animationType == animationType
                 },
                 sortBy: [SortDescriptor(\.frameIndex)]
             )
@@ -828,14 +914,16 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 특정 애니메이션 총 크기 가져오기
-    func getTotalSize(characterType: String, animationType: String) -> Int {
+    func getTotalSize(characterType: String, phase: CharacterPhase, animationType: String) -> Int {
         guard let modelContext = modelContext else { return 0 }
         
         do {
             // 메타데이터 쿼리
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
-                    $0.characterType == characterType && $0.animationType == animationType
+                    $0.characterType == characterType &&
+                    $0.phase == phase.rawValue &&
+                    $0.animationType == animationType
                 }
             )
             
@@ -849,7 +937,7 @@ class AnimationTestViewModel: ObservableObject {
     }
     
     /// 모든 애니메이션 목록 가져오기
-    func getAllAnimations() -> [(characterType: String, animationType: String, frameCount: Int)] {
+    func getAllAnimations() -> [(characterType: String, phase: CharacterPhase, animationType: String, frameCount: Int)] {
         guard let modelContext = modelContext else { return [] }
         
         do {
@@ -859,21 +947,25 @@ class AnimationTestViewModel: ObservableObject {
             
             // 고유한 캐릭터-애니메이션 조합 추출
             var uniqueCombinations: Set<String> = []
-            var result: [(characterType: String, animationType: String, frameCount: Int)] = []
+            var result: [(characterType: String, phase: CharacterPhase, animationType: String, frameCount: Int)] = []
             
             for metadata in allMetadata {
-                let key = "\(metadata.characterType)|\(metadata.animationType)"
+                let key = "\(metadata.characterType)|\(metadata.phase)|\(metadata.animationType)"
                 if !uniqueCombinations.contains(key) {
                     uniqueCombinations.insert(key)
+                    
+                    let phase = CharacterPhase(rawValue: metadata.phase) ?? .egg
                     
                     // 해당 조합의 프레임 개수 계산
                     let count = getFrameCount(
                         characterType: metadata.characterType,
+                        phase: phase,
                         animationType: metadata.animationType
                     )
                     
                     result.append((
                         characterType: metadata.characterType,
+                        phase: phase,
                         animationType: metadata.animationType,
                         frameCount: count
                     ))
