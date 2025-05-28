@@ -17,99 +17,11 @@
 // 유아기 부터 : 상태바 전부 Max(100), 건강,청결도 100으로 시작. 애정도만 0으로 시작. 사이드 버튼 다 열리고, 활동 버튼 전부 사용 가능.
 // 레벨업으로 인해 시기가 바뀐다고 각 현재 상태바들을 다시 MAX로 만들어주지않고 현재 스텟 그대로에서 최대스텟만 일정 상승 (건강,청결은 무조건 100이 최대치)
 // 추후 파이어베이스 연결할 곳들은 //TODO: Firestore에서 ~~ 구현 으로 주석처리로 적어두기.
-//
-/*
- 식사 관련 액션
- 1. 밥주기
- * 포만감 +15
- * 에너지 +5
- * 체력 -3
- 2. 간식주기
- * 포만감 +8
- * 행복도 +10
- * 건강 -3
- 3. 영양제 주기 (추가 가능)
- * 건강 +10
- * 포만감 +3
- * 경험치 +2
- 놀이/교감 관련 액션
- 1. 놀아주기
- * 애정도 +12
- * 행복도 +10
- * 에너지 -8
- * 포만감 -5
- 2. 쓰다듬기
- * 애정도 +8
- * 행복도 +5
- * 에너지 소모 없음
- 3. 장난감 가지고 놀기 (추가 가능)
- * 행복도 +15
- * 경험치 +5
- * 에너지 -10
- * 포만감 -6
- 건강/위생 관련 액션
- 1. 씻기기
- * 청결도 +15
- * 건강 +5
- * 에너지 -3
- 2. 산책하기
- * 건강 +12
- * 에너지 -10
- * 행복도 +8
- * 포만감 -8
- 3. 털 빗어주기 (추가 가능)
- * 청결도 +10
- * 애정도 +5
- * 에너지 -2
- 교육/성장 관련 액션
- 1. 훈련하기
- * 훈련도/경험치 +15
- * 건강 +8
- * 에너지 -12
- * 포만감 -10
- 2. 책 읽어주기 (추가 가능)
- * 경험치 +10
- * 애정도 +5
- * 에너지 -4
- 휴식 관련 액션
- 1. 재우기
- * 에너지 +20
- * 체력 +10
- * 시간 경과
- 2. 낮잠 재우기 (추가 가능)
- * 에너지 +10
- * 체력 +5
- * 시간 약간 경과
- 특별 액션 (성장 단계 또는 이벤트에 따라 해금)
- 1. 특별 훈련
- * 훈련도/경험치 +20
- * 에너지 -15
- * 체력 +5
- * 포만감 -12
- 2. 파티 열어주기
- * 행복도 +20
- * 사회성 +10
- * 에너지 -15
- * 포만감 -10
- 3. 온천 데려가기
- * 건강 +15
- * 행복도 +10
- * 청결도 +15
- * 에너지 +5*/
-//
-//
 // 0~8 작업 완료 후 → 테스트 시에는 모든 수치 증가 5~10배 적용(스텟들 수치 까지는것, 버튼 누르면 차는것 다 포함) + (디버그 모드에서만 작동)
 // TODO: 9. 0~8번 테스트 완료 및 작업 완료되면 Firebase Firestore 연동
 // TODO: 10. 만들어 놓은거 전부 연결
-//
-// 활동 액션들은 추후 추가 및 구현하기 편하게 //TODO: 추후 활동 액션 및 이벤트 액션 추가 이런식으로 주석처리로 해두기.
-// 현재 추후 업데이트들을 위해 항상 재사용 하기 쉽게, 활동액션이 총 50개 넘어가도 관리하기 쉽도록 PetAction.swift랑 ActionManager.swift 파일을 구현해뒀으니 확인해서 맞춰서 소스 코드 작업하기.
-//
-// 골드 (인게임 재화)
 // 활동 액션 별로 골드 획득 / 수면시 일정 골드 획득 / 레벨업 할때 일정 골드 획득
-//
-// HomeView의 UI 구조는 안바꿨으면 좋겠어. 단 기능을 추가할 때 마다 HomeView를 수정해야하니 각 기능 수정에 맞게 HomeView도 바로바로 맞춰서 수정하기.
-//
+
 
 import SwiftUI
 
@@ -138,6 +50,7 @@ struct HomeView: View {
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .padding(.vertical, 5)
+                    .foregroundColor(getMessageColor())
                 
                 Spacer()
                 
@@ -145,7 +58,7 @@ struct HomeView: View {
                 actionButtonsGrid
             }
             .padding()
-            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
+            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")") // 추후 삭제
             .onAppear {
                 viewModel.loadCharacter()
             }
@@ -155,28 +68,59 @@ struct HomeView: View {
     // MARK: - UI Components
     
     // 레벨 프로그레스 바
+    // FIXME: - 일단 한번 변경해보고 마음에 안들면 다시 이전 코드로 롤백 예정
     private var levelProgressBar: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("레벨 \(viewModel.level)")
                     .font(.caption)
-                    .fontWeight(.semibold)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
-                ZStack(alignment: .leading) {
-                    // 배경 바 (전체 너비)
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 30)
-                    
-                    // 진행 바
-                    GeometryReader { geometry in
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color(hex: "6159A0"))
-                            .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
-                            .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
-
-                    }
+                Spacer()
+                
+                // 현재 성장 단계 표시
+                if let character = viewModel.character {
+                    Text(character.status.phase.rawValue)
+                        .font(.caption2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.2))
+                        .cornerRadius(8)
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            // 경험치 프로그레스 바
+            ZStack(alignment: .leading) {
+                // 배경 바
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(Color.gray.opacity(0.2))
                     .frame(height: 30)
+                
+                // 진행 바
+                GeometryReader { geometry in
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: "6159A0"), Color(hex: "8B7ED8")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
+                        .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
+                }
+                .frame(height: 30)
+                
+                // 경험치 텍스트
+                HStack {
+                    Spacer()
+                    Text("\(viewModel.expValue) / \(viewModel.expMaxValue)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                    Spacer()
                 }
             }
         }
