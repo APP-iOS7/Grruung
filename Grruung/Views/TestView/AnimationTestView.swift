@@ -122,6 +122,7 @@ struct AnimationTestView: View {
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                                 .clipped() // 이미지가 영역을 벗어나지 않도록 클리핑
                         }
+                        .allowsHitTesting(false) // 제스처 이벤트를 통과시킴
                         .cornerRadius(16)
                         
                         //                        Color(.systemGray6)
