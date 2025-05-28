@@ -142,26 +142,58 @@ struct HomeView: View {
             
             // 캐릭터 이미지
             ZStack {
+                // 캐릭터 배경 원
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.blue.opacity(0.1),
+                                Color.blue.opacity(0.05)
+                            ],
+                            center: .center,
+                            startRadius: 50,
+                            endRadius: 120
+                        )
+                    )
+                    .frame(width: 220, height: 220)
+                
+                // 캐릭터 이미지
                 Image(viewModel.character?.imageName ?? "CatLion")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 200)
+                    .frame(height: 180)
                     .scaleEffect(viewModel.isSleeping ? 0.95 : 1.0)
-                // TODO: TODO 0 애니메이션 및 디플리케이티드 수정
+                    .opacity(viewModel.isSleeping ? 0.8 : 1.0)
                     .animation(
                         viewModel.isSleeping ?
-                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-                                .default,
+                        Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true) :
+                                .easeInOut(duration: 0.3),
                         value: viewModel.isSleeping
                     )
                 
-                
-                // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
+                // 수면 상태 표시 개선
                 if viewModel.isSleeping {
                     VStack {
-                        Text("💤")
-                            .font(.largeTitle)
-                            .offset(x: 50, y: -50)
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 5) {
+                                Text("💤")
+                                    .font(.title)
+                                    .opacity(0.8)
+                                Text("💤")
+                                    .font(.title2)
+                                    .opacity(0.6)
+                                Text("💤")
+                                    .font(.body)
+                                    .opacity(0.4)
+                            }
+                            .offset(x: -20, y: -60)
+                            .animation(
+                                Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: false),
+                                value: viewModel.isSleeping
+                            )
+                        }
+                        Spacer()
                     }
                 }
             }
@@ -178,37 +210,107 @@ struct HomeView: View {
         }
     }
     
-    // 상태 바 섹션
+    // 상태 바 섹션(3개의 보이는 스탯만 표시)
     private var statsSection: some View {
+        VStack(spacing: 15) {
+            // 스탯 제목
+            HStack {
+                Text("펫 상태")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                Spacer()
+            }
+            
+            // 3개의 보이는 스탯만 표시
             VStack(spacing: 12) {
                 ForEach(viewModel.stats, id: \.icon) { stat in
                     HStack(spacing: 15) {
                         // 아이콘
                         Image(systemName: stat.icon)
                             .foregroundColor(stat.iconColor)
-                            .frame(width: 30)
+                            .frame(width: 25)
+                        
+                        // 스탯 이름
+                        Text(getStatName(for: stat.icon))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .frame(width: 60, alignment: .leading)
                         
                         // 상태 바
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
-                                // 배경 바 (전체 너비)
-                                RoundedRectangle(cornerRadius: 10)
+                                // 배경 바
+                                RoundedRectangle(cornerRadius: 6)
                                     .frame(height: 12)
-                                    .foregroundColor(Color.gray.opacity(0.1))
+                                    .foregroundColor(Color.gray.opacity(0.2))
                                 
                                 // 진행 바
-                                RoundedRectangle(cornerRadius: 10)
+                                RoundedRectangle(cornerRadius: 6)
                                     .frame(width: geometry.size.width * stat.value, height: 12)
                                     .foregroundColor(stat.color)
                                     .animation(.easeInOut(duration: 0.6), value: stat.value)
                             }
                         }
                         .frame(height: 12)
+                        
+                        // 수치 표시
+                        Text(getStatValue(for: stat.icon))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.secondary)
+                            .frame(width: 40, alignment: .trailing)
                     }
                 }
             }
-            .padding(.vertical)
         }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 5)
+    }
+    
+    // 상태 메시지에 따른 색상을 반환
+    private func getMessageColor() -> Color {
+        let message = viewModel.statusMessage.lowercased()
+        
+        if message.contains("배고파") || message.contains("아파") || message.contains("지쳐") {
+            return .red
+        } else if message.contains("피곤") || message.contains("더러워") || message.contains("외로워") {
+            return .orange
+        } else if message.contains("행복") || message.contains("좋은") || message.contains("감사") {
+            return .green
+        } else if message.contains("잠을") {
+            return .blue
+        } else {
+            return .primary
+        }
+    }
+    
+    // 스탯 아이콘에 따른 한글 이름을 반환
+    private func getStatName(for icon: String) -> String {
+        switch icon {
+        case "fork.knife":
+            return "포만감"
+        case "figure.run":
+            return "운동량"
+        case "bolt.fill":
+            return "활동량"
+        default:
+            return "알 수 없음"
+        }
+    }
+    
+    // 스탯 아이콘에 따른 현재 수치를 반환
+    private func getStatValue(for icon: String) -> String {
+        switch icon {
+        case "fork.knife":
+            return "\(viewModel.satietyValue)"
+        case "figure.run":
+            return "\(viewModel.staminaValue)"
+        case "bolt.fill":
+            return "\(viewModel.activityValue)"
+        default:
+            return "0"
+        }
+    }
     
     // 액션 버튼 그리드
     private var actionButtonsGrid: some View {
