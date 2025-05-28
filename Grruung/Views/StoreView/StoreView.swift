@@ -22,10 +22,8 @@ struct StoreView: View {
         NavigationView {
             VStack(spacing: 0) {
                 HStack {
-                    Spacer()
-                    
-                    HStack(spacing: 200) {
-                        //현금
+                    HStack {
+                        // 다이아
                         HStack(spacing: 8) {
                             Image(systemName: "diamond.fill")
                                 .resizable()
@@ -34,18 +32,21 @@ struct StoreView: View {
                             Text("\(diamond)")
                                 .font(.title3)
                         }
+                        .padding(.leading, 50)
                         
-                        //코인
+                        Spacer()
+                        
+                        // 골드
                         HStack(spacing: 8) {
                             Image(systemName: "circle.fill")
                                 .resizable()
                                 .frame(width: 25, height: 25)
                                 .foregroundColor(.yellow)
                             Text("\(gold)")
-                                .font(.title2)
+                                .font(.title3)
                         }
+                        .padding(.trailing, 50)
                     }
-                    .padding(.trailing, 20)
                 }
                 .padding(.top, 8)
                 // 상단 탭
