@@ -778,63 +778,23 @@ class HomeViewModel: ObservableObject {
         // saveCharacterToFirestore()
     }
     
-    // MARK: - 액션 메서드
-    /*
-     // 1. 밥주기
-     func feedPet() {
-     guard !isSleeping else { return }
-     
-     satietyValue = min(100, satietyValue + 15)
-     energyValue = min(100, energyValue + 5)
-     happinessValue = min(100, happinessValue + 3)
-     
-     addExp(3)
-     updateAllPercents()
-     
-     // 캐릭터 모델 업데이트
-     updateCharacterStatus()
-     }
-     
-     // 2. 놀아주기
-     func playWithPet() {
-     guard !isSleeping else { return }
-     
-     happinessValue = min(100, happinessValue + 12)
-     energyValue = max(0, energyValue - 8)
-     satietyValue = max(0, satietyValue - 5)
-     
-     addExp(5)
-     updateAllPercents()
-     
-     // 캐릭터 모델 업데이트
-     updateCharacterStatus()
-     }
-     
-     // 3. 씻기기
-     func washPet() {
-     guard !isSleeping else { return }
-     
-     cleanValue = min(100, cleanValue + 15)
-     happinessValue = min(100, happinessValue + 5)
-     energyValue = max(0, energyValue - 3)
-     
-     addExp(4)
-     updateAllPercents()
-     
-     // 캐릭터 모델 업데이트
-     updateCharacterStatus()
-     }
-     */
-    // 4. 재우기/깨우기
+    // MARK: - 통합 액션 처리 메서드
+    
+    // 재우기/깨우기 액션 처리
     func putPetToSleep() {
         if isSleeping {
             // 이미 자고 있으면 깨우기
             isSleeping = false
-            updateStatusMessage()
+            statusMessage = "일어났어요! 이제 활동할 수 있어요!"
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
-            staminaValue = min(100, staminaValue + 20)
+            // 수면 시 즉시 회복 효과
+            let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
+//            staminaValue = min(100, staminaValue + sleepBonus)
+            activityValue = min(100, activityValue + sleepBonus)
+            
+            statusMessage = "쿨쿨... 잠을 자고 있어요."
             updateAllPercents()
         }
         
@@ -843,11 +803,14 @@ class HomeViewModel: ObservableObject {
         
         // 캐릭터 모델 업데이트
         updateCharacterStatus()
+        
+        // 활동 날짜 업데이트
+        updateLastActivityDate()
+        
+#if DEBUG
+        print("😴 " + (isSleeping ? "펫을 재웠습니다" : "펫을 깨웠습니다"))
+#endif
     }
-    
-    
-    
-    // MARK: - 통합 액션 처리 메서드
     
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
@@ -874,27 +837,13 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-            /*
-             case "fork.knife":
-             feedPet()
-             print("🍽️ 펫에게 밥을 줬습니다")
-             
-             case "gamecontroller.fill":
-             playWithPet()
-             print("🎮 펫과 놀아줬습니다")
-             
-             case "shower.fill":
-             washPet()
-             print("🚿 펫을 씻겨줬습니다")
-             */
         case "bed.double":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
             
         default:
             // ActionManager에서 가져온 액션 처리
-            if let actionManager = actionButtons.first(where: { $0.icon == action.icon }),
-               let actionId = getActionId(for: action.icon) {
+            if let actionId = getActionId(for: action.icon) {
                 executeActionManagerAction(actionId: actionId)
             } else {
                 print("❓ 알 수 없는 액션: \(action.name), 아이콘: \(action.icon)")
@@ -903,6 +852,74 @@ class HomeViewModel: ObservableObject {
         
         // 액션 실행 후 액션 버튼 갱신
         refreshActionButtons()
+    }
+    
+    // ActionManager를 통해 액션을 실행합니다.
+    /// - Parameter actionId: 실행할 액션 ID
+    private func executeActionManagerAction(actionId: String) {
+        guard let character = character,
+              let action = actionManager.getAction(id: actionId) else {
+            print("❌ 액션을 찾을 수 없습니다: \(actionId)")
+            return
+        }
+        
+        // 활동량 확인 (활동량이 부족하면 실행 불가)
+        if activityValue < action.activityCost {
+            print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
+            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
+            return
+        }
+        
+        // 활동량 소모
+        activityValue = max(0, activityValue - action.activityCost)
+        
+        // 액션 효과 적용
+        for (statName, value) in action.effects {
+            let adjustedValue = isDebugMode ? (value * debugSpeedMultiplier) : value
+            
+            switch statName {
+            case "satiety":
+                satietyValue = max(0, min(100, satietyValue + adjustedValue))
+            case "stamina":
+                staminaValue = max(0, min(100, staminaValue + adjustedValue))
+            case "happiness", "affection":
+                // 주간 애정도에 추가 (즉시 누적 애정도에 반영하지 않음)
+                weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(adjustedValue)))
+            case "clean":
+                cleanValue = max(0, min(100, cleanValue + adjustedValue))
+            case "healthy":
+                healthyValue = max(0, min(100, healthyValue + adjustedValue))
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
+        if action.expGain > 0 {
+            let oldExp = expValue
+            addExp(action.expGain)
+            
+#if DEBUG
+            print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
+#endif
+        }
+        
+        // 성공 메시지 표시
+        if !action.successMessage.isEmpty {
+            statusMessage = action.successMessage
+        }
+        
+        // UI 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+        updateLastActivityDate()
+        
+        print("✅ '\(action.name)' 액션을 실행했습니다")
+        
+#if DEBUG
+        print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
+        print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
+#endif
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -972,66 +989,6 @@ class HomeViewModel: ObservableObject {
         default:
             return nil
         }
-    }
-    
-    // ActionManager를 통해 액션을 실행합니다.
-    /// - Parameter actionId: 실행할 액션 ID
-    private func executeActionManagerAction(actionId: String) {
-        guard let character = character,
-              let action = actionManager.getAction(id: actionId) else {
-            print("❌ 액션을 찾을 수 없습니다: \(actionId)")
-            return
-        }
-        
-        // 활동량 확인 (활동량이 부족하면 실행 불가)
-        if activityValue < action.activityCost {
-            print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
-            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
-            return
-        }
-        
-        // 활동량 소모
-        activityValue = max(0, activityValue - action.activityCost)
-        
-        // 액션 효과 적용
-        for (statName, value) in action.effects {
-            switch statName {
-            case "satiety":
-                satietyValue = max(0, min(100, satietyValue + value))
-            case "energy":
-                staminaValue = max(0, min(100, staminaValue + value))
-            case "happiness":
-                happinessValue = max(0, min(100, happinessValue + value))
-            case "clean":
-                cleanValue = max(0, min(100, cleanValue + value))
-            case "healthy":
-                healthyValue = max(0, min(100, healthyValue + value))
-            default:
-                break
-            }
-        }
-        
-        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
-        if action.expGain > 0 {
-            let oldExp = expValue
-            addExp(action.expGain) // 여기서 디버그 모드 배수가 자동 적용됨
-            
-#if DEBUG
-            print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-#endif
-        }
-        
-        // 성공 메시지 표시
-        if !action.successMessage.isEmpty {
-            statusMessage = action.successMessage
-        }
-        
-        // UI 업데이트
-        updateAllPercents()
-        updateCharacterStatus()
-        updateLastActivityDate()
-        
-        print("✅ '\(action.name)' 액션을 실행했습니다")
     }
 }
 
