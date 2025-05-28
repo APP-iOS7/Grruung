@@ -9,18 +9,14 @@ import SwiftUI
 
 struct StoreGridView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(products) { product in
                         NavigationLink(destination: ProductDetailView(product: product)) {
-                            ProductItemView(
-                                iconName: product.itemImage,
-                                name: product.itemName,
-                                price: product.itemPrice,
-                            )
+                            ProductItemView(product: product)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -32,28 +28,36 @@ struct StoreGridView: View {
 }
 
 struct ProductItemView: View {
-    let iconName: String
-    let name: String
-    let price: Int
-
+    let product: GRShopItem
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
-                Image(iconName)
+                Image(product.itemImage)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
                     .foregroundColor(.black)
             }
-
-            Text(name)
+            
+            Text(product.itemName)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(.black)
-
-            Text("\(price) 코인")
-                .font(.caption)
-                .foregroundColor(.gray)
+            
+            HStack(spacing: 8) {
+                if product.itemCurrencyType.rawValue == "다이아" {
+                    Image(systemName: "diamond.fill")
+                        .foregroundColor(.cyan)
+                } else {
+                    Image(systemName: "circle.fill")
+                        .foregroundColor(.yellow)
+                }
+                
+                Text("\(product.itemPrice)")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
         }
         .padding(8)
     }

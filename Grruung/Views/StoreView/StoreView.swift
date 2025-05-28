@@ -177,11 +177,7 @@ struct SectionView: View {
                         .environmentObject(userInventoryViewModel)
                         .environmentObject(userViewModel))
                     {
-                        ProductItemView(
-                            iconName: product.itemImage,
-                            name: product.itemName,
-                            price: product.itemPrice,
-                        )
+                        ProductItemView(product: product)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }

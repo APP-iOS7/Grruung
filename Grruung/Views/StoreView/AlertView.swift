@@ -93,7 +93,7 @@ struct AlertView: View {
             .padding(.horizontal, 30)
             .frame(maxWidth: 300)
         }
-        .alert("\(remainGold) 골드가 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
+        .alert("\(remainGold) \(product.itemCurrencyType.rawValue)가 부족합니다", isPresented: $showNotEnoughMoneyAlert) {
             Button("확인", role: .cancel) {
                 isPresented = false
             }

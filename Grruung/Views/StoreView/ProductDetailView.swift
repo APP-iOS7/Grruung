@@ -32,10 +32,17 @@ struct ProductDetailView: View {
                             .font(.largeTitle)
                             .bold()
                         HStack(spacing: 8) {
-                            Image(systemName: "circle.fill")
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.yellow)
+                            if product.itemCurrencyType.rawValue == "다이아" {
+                                Image(systemName: "diamond.fill")
+                                    .resizable()
+                                    .frame(width: 20, height: 25)
+                                    .foregroundColor(.cyan)
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .resizable()
+                                    .frame(width: 25, height: 25)
+                                    .foregroundColor(.yellow)
+                            }
                             Text("\(product.itemPrice)")
                                 .font(.title)
                                 .bold()

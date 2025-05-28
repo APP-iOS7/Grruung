@@ -136,36 +136,37 @@ struct userInventoryDetailView: View {
             if let remainItemCount {
                 // MARK: 아이템 수량 관련 UI
                 VStack {
-                    HStack {
-                        Text("수량: ")
-                        TextField("입력", text: $typeItemCount)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: 50)
-                            .onSubmit {
-                                if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
-                                    useItemCount = Double(typeItemCount) ?? useItemCount
-                                } else {
-                                    showingItemCountAlert = true
-                                    typeItemCount = Int(useItemCount).description
-                                }
-                            }
-                            .focused($isFocused)
-                            .toolbar {
-                                ToolbarItemGroup(placement: .keyboard) {
-                                    Spacer()
-                                    Button("확인") {
-                                        isFocused = false
-                                        if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
-                                            useItemCount = Double(typeItemCount) ?? useItemCount
-                                        } else {
-                                            showingItemCountAlert = true
-                                            typeItemCount = Int(useItemCount).description
-                                        }
-                                    }
-                                }
-                            }
-                    }
+                    // TODO: - 수량 키보드 입력할 때 확인버튼이 안 뜸(공사중...)
+//                    HStack {
+//                        Text("수량: ")
+//                        TextField("입력", text: $typeItemCount)
+//                            .keyboardType(.numberPad)
+//                            .textFieldStyle(.roundedBorder)
+//                            .frame(maxWidth: 50)
+//                            .onSubmit {
+//                                if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+//                                    useItemCount = Double(typeItemCount) ?? useItemCount
+//                                } else {
+//                                    showingItemCountAlert = true
+//                                    typeItemCount = Int(useItemCount).description
+//                                }
+//                            }
+//                            .focused($isFocused)
+//                            .toolbar {
+//                                ToolbarItemGroup(placement: .keyboard) {
+//                                    Spacer()
+//                                    Button("확인") {
+//                                        isFocused = false
+//                                        if Double(typeItemCount) ?? useItemCount >= 0 && Double(typeItemCount) ?? useItemCount <= remainItemCount {
+//                                            useItemCount = Double(typeItemCount) ?? useItemCount
+//                                        } else {
+//                                            showingItemCountAlert = true
+//                                            typeItemCount = Int(useItemCount).description
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                    }
                     
                     HStack {
                         Button(action: {
