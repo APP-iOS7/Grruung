@@ -135,14 +135,48 @@ struct GRCharacterStatus {
     }
 }
 
-// 펫 성장 단계
-enum CharacterPhase: String, Codable {
+// FIXME: - Start CharacterPhase enum Comparable 구현
+// 펫 성장 단계 - Comparable 프로토콜 추가로 단계별 비교 가능하게 수정
+enum CharacterPhase: String, Codable, Comparable, CaseIterable {
     case egg = "운석"
     case infant = "유아기"
     case child = "소아기"
     case adolescent = "청년기"
     case adult = "성년기"
     case elder = "노년기"
+    
+    // 성장 단계의 순서를 나타내는 수치 값
+    // 이 값을 통해 단계별 비교가 가능합니다
+    private var orderValue: Int {
+        switch self {
+        case .egg: return 0
+        case .infant: return 1
+        case .child: return 2
+        case .adolescent: return 3
+        case .adult: return 4
+        case .elder: return 5
+        }
+    }
+    
+    // Comparable 프로토콜 구현
+    // 성장 단계를 순서대로 비교할 수 있게 해줍니다
+    static func < (lhs: CharacterPhase, rhs: CharacterPhase) -> Bool {
+        return lhs.orderValue < rhs.orderValue
+    }
+    
+    // 두 단계 사이의 차이를 계산합니다
+    /// - Parameter other: 비교할 다른 단계
+    /// - Returns: 단계 차이 (음수면 이전 단계, 양수면 이후 단계)
+    func distanceTo(_ other: CharacterPhase) -> Int {
+        return other.orderValue - self.orderValue
+    }
+    
+    // 현재 단계가 특정 단계 이상인지 확인합니다
+    /// - Parameter phase: 비교할 기준 단계
+    /// - Returns: 기준 단계 이상이면 true
+    func isAtLeast(_ phase: CharacterPhase) -> Bool {
+        return self >= phase
+    }
 }
 
 // 캐릭터 거주지 종류
