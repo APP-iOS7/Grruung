@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import FirebaseFirestore
 
 class HomeViewModel: ObservableObject {
     // MARK: - Published 속성
@@ -51,50 +52,18 @@ class HomeViewModel: ObservableObject {
     private var weeklyAffectionTimer: Timer?    // 주간 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
     
-    // 디버그 모드 설정 추가
-    /*
-     #if DEBUG
-     private let isDebugMode = true
-     private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
-     #else
-     private let isDebugMode = false
-     private let debugSpeedMultiplier = 1
-     #endif
-     
-     private var energyTimerInterval: TimeInterval {
-     #if DEBUG
-     return 10.0 // 디버그: 10초마다
-     #else
-     return 360.0 // 릴리즈: 6분마다
-     #endif
-     }
-     
-     private var statDecreaseInterval: TimeInterval {
-     #if DEBUG
-     return 20.0 // 디버그: 20초마다
-     #else
-     return 600.0 // 릴리즈: 10분마다
-     #endif
-     }
-     
-     private var hiddenStatDecreaseInterval: TimeInterval {
-     #if DEBUG
-     return 60.0 // 디버그: 1분마다
-     #else
-     return 1800.0 // 릴리즈: 30분마다
-     #endif
-     }
-     
-     private var dailyAffectionInterval: TimeInterval {
-     #if DEBUG
-     return 120.0 // 디버그: 2분마다
-     #else
-     return 3600.0 // 릴리즈: 1시간마다
-     #endif
-     }
-     
-     */ // 초기 밸런스 세팅
+    // Firebase 연동 상태
+    @Published var isFirebaseConnected: Bool = false
+    @Published var isLoadingFromFirebase: Bool = false
+    @Published var firebaseError: String?
+    private let firebaseService = FirebaseService.shared
+    private var characterListener: ListenerRegistration?
     
+    // 무한 루프 방지를 위한 플래그
+    private var isUpdatingFromFirebase: Bool = false
+    private var saveDebounceTimer: Timer?
+    
+    // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
     private let debugSpeedMultiplier = 5 // 디버그 시 5배 빠르게/많이
@@ -180,7 +149,6 @@ class HomeViewModel: ObservableObject {
     // 액션 관리자
     private let actionManager = ActionManager.shared
     
-    // MARK: TODO.2 - 성장 단계에 따른 경험치 요구량을 업데이트
     // 성장 단계별 경험치 요구량
     private let phaseExpRequirements: [CharacterPhase: Int] = [
         .egg: 50,
@@ -193,11 +161,11 @@ class HomeViewModel: ObservableObject {
     
     // MARK: - 초기화
     init() {
-        loadCharacter()
-        updateAllPercents()
+        setupFirebaseIntegration()
         setupAppStateObservers()
         startStatDecreaseTimers()
 #if DEBUG
+        print("🚀 HomeViewModel 초기화 완료")
         print("🚀 디버그 모드 활성화!")
         print("   - 타이머 속도: \(debugSpeedMultiplier)배 빠르게")
         print("   - 스탯 변화: \(debugSpeedMultiplier)배")
@@ -208,33 +176,76 @@ class HomeViewModel: ObservableObject {
     }
     
     deinit {
-        cancellables.removeAll()
-        statDecreaseTimer?.invalidate()
-        hiddenStatDecreaseTimer?.invalidate()
-        weeklyAffectionTimer?.invalidate()
+        cleanupResources()
         
         print("⏰ 모든 타이머 정리됨")
     }
     
-    // MARK: - 데이터 로드
-    func loadCharacter() {
-        // 실제로는 Firestore나 Firebase에서 캐릭터 정보를 로드
-        // Start 캐릭터 로드 시 수정된 스탯 초기값 적용
+    // Firebase 연동을 초기화합니다
+    private func setupFirebaseIntegration() {
+        isLoadingFromFirebase = true
+        firebaseError = nil
+        
+        print("🔥 Firebase 연동 초기화 시작")
+        
+        // 메인 캐릭터 로드
+        loadMainCharacterFromFirebase()
+    }
+    
+    // Firestore에서 메인 캐릭터를 로드
+    private func loadMainCharacterFromFirebase() {
+        firebaseService.loadMainCharacter { [weak self] character, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                self.isLoadingFromFirebase = false
+                
+                if let error = error {
+                    self.firebaseError = "캐릭터 로드 실패: \(error.localizedDescription)"
+                    print("❌ Firebase 캐릭터 로드 실패: \(error.localizedDescription)")
+                    
+                    // 오류 시 기본 캐릭터 생성
+                    self.createAndSaveDefaultCharacter()
+                    return
+                }
+                
+                if let character = character {
+                    // Firebase에서 로드한 캐릭터 설정
+                    self.setupCharacterFromFirebase(character)
+                    self.setupRealtimeListener(characterID: character.id)
+                    
+                    // 오프라인 보상 처리
+                    self.processOfflineTime()
+                    
+                    print("✅ Firebase에서 캐릭터 로드 완료: \(character.name)")
+                } else {
+                    // 캐릭터가 없으면 새로 생성
+                    print("📝 메인 캐릭터가 없습니다. 새로 생성합니다.")
+                    self.createAndSaveDefaultCharacter()
+                }
+            }
+        }
+    }
+    
+    // 기본 캐릭터를 생성하고 Firebase에 저장
+    private func createAndSaveDefaultCharacter() {
+        print("🆕 기본 캐릭터 생성 중...")
+        
         let status = GRCharacterStatus(
             level: 0,
             exp: 0,
-            expToNextLevel: 50, // 운석 단계 경험치 요구량
+            expToNextLevel: 50,
             phase: .egg,
-            satiety: 100,     // 시작값 100
-            stamina: 100,     // 시작값 100
-            activity: 100,    // 시작값 100
-            affection: 0,     // 시작값 0
-            affectionCycle: 0, // 시작값 0
-            healthy: 50,      // 시작값 50
-            clean: 50         // 시작값 50
+            satiety: 100,
+            stamina: 100,
+            activity: 100,
+            affection: 0,
+            affectionCycle: 0,
+            healthy: 50,
+            clean: 50
         )
         
-        character = GRCharacter(
+        let newCharacter = GRCharacter(
             species: .CatLion,
             name: "냥냥이",
             imageName: "CatLion",
@@ -243,7 +254,165 @@ class HomeViewModel: ObservableObject {
             status: status
         )
         
-        if let character = character {
+        // 로컬에 먼저 설정
+        self.character = newCharacter
+        self.setupCharacterFromFirebase(newCharacter)
+        
+        // Firebase에 캐릭터 생성 및 메인으로 설정
+        firebaseService.createAndSetMainCharacter(character: newCharacter) { [weak self] characterID, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.firebaseError = "캐릭터 생성 실패: \(error.localizedDescription)"
+                    print("❌ 기본 캐릭터 생성 실패: \(error.localizedDescription)")
+                    // 오류가 있어도 로컬에서는 사용 가능
+                    return
+                }
+                
+                if let characterID = characterID {
+                    print("✅ 기본 캐릭터 생성 완료: \(characterID)")
+                    self.setupRealtimeListener(characterID: characterID)
+                    self.isFirebaseConnected = true
+                }
+            }
+        }
+    }
+    
+    // 기본 캐릭터를 생성하고 Firebase에 저장
+    private func createDefaultCharacter() {
+        print("🆕 기본 캐릭터 생성 중...")
+        
+        let status = GRCharacterStatus(
+            level: 0,
+            exp: 0,
+            expToNextLevel: 50,
+            phase: .egg,
+            satiety: 100,
+            stamina: 100,
+            activity: 100,
+            affection: 0,
+            affectionCycle: 0,
+            healthy: 50,
+            clean: 50
+        )
+        
+        let newCharacter = GRCharacter(
+            species: .CatLion,
+            name: "냥냥이",
+            imageName: "CatLion",
+            birthDate: Date(),
+            status: status
+        )
+        
+        // Firebase에 캐릭터 생성 및 메인으로 설정
+        firebaseService.createAndSetMainCharacter(character: newCharacter) { [weak self] characterID, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.firebaseError = "캐릭터 생성 실패: \(error.localizedDescription)"
+                    print("❌ 기본 캐릭터 생성 실패: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let characterID = characterID {
+                    print("✅ 기본 캐릭터 생성 완료: \(characterID)")
+                    
+                    // 생성된 캐릭터로 설정
+                    self.setupCharacterFromFirebase(newCharacter)
+                    self.setupRealtimeListener(characterID: characterID)
+                }
+            }
+        }
+    }
+    
+    // 실시간 캐릭터 동기화 리스너를 설정
+    private func setupRealtimeListener(characterID: String) {
+        // 기존 리스너 해제
+        
+        characterListener?.remove()
+        
+        // 새 리스너 설정
+        characterListener = firebaseService.setupCharacterListener(characterID: characterID) { [weak self] character, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.firebaseError = "실시간 동기화 오류: \(error.localizedDescription)"
+                    print("❌ 실시간 동기화 오류: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let character = character {
+                    // 실시간 업데이트 (무한 루프 방지)
+                    self.syncCharacterFromFirebase(character)
+                }
+            }
+        }
+        
+        print("🔄 실시간 동기화 리스너 설정 완료")
+    }
+    
+    // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
+    private func setupCharacterFromFirebase(_ character: GRCharacter) {
+        self.isUpdatingFromFirebase = true
+        
+        self.character = character
+        
+        // 캐릭터 스탯을 ViewModel에 동기화
+        level = character.status.level
+        expValue = character.status.exp
+        expMaxValue = character.status.expToNextLevel
+        
+        satietyValue = character.status.satiety
+        staminaValue = character.status.stamina
+        activityValue = character.status.activity
+        
+        affectionValue = character.status.affection
+        weeklyAffectionValue = character.status.affectionCycle
+        healthyValue = character.status.healthy
+        cleanValue = character.status.clean
+        
+        // UI 업데이트
+        updateAllPercents()
+        unlockFeaturesByPhase(character.status.phase)
+        refreshActionButtons()
+        
+        isFirebaseConnected = true
+        self.isUpdatingFromFirebase = false
+        
+#if DEBUG
+        print("📊 Firebase 캐릭터 동기화 완료")
+        print("   - 레벨: \(level), 경험치: \(expValue)/\(expMaxValue)")
+        print("   - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
+        print("   - 건강: \(healthyValue), 청결: \(cleanValue), 애정: \(affectionValue)")
+#endif
+    }
+    
+    // Firebase에서 받은 캐릭터 데이터를 로컬과 동기화
+    private func syncCharacterFromFirebase(_ character: GRCharacter) {
+        // 무한 루프 방지: Firebase에서 업데이트 중이거나 로컬에서 저장 중일 때는 스킵
+        guard !isUpdatingFromFirebase && !animationInProgress else {
+            return
+        }
+        
+        // 변경사항이 있는지 확인
+        let hasChanges = level != character.status.level ||
+        expValue != character.status.exp ||
+        satietyValue != character.status.satiety ||
+        staminaValue != character.status.stamina ||
+        activityValue != character.status.activity ||
+        healthyValue != character.status.healthy ||
+        cleanValue != character.status.clean ||
+        affectionValue != character.status.affection
+        
+        if hasChanges {
+            self.isUpdatingFromFirebase = true
+            
+            // 캐릭터 정보 업데이트
+            self.character = character
+            
             level = character.status.level
             expValue = character.status.exp
             expMaxValue = character.status.expToNextLevel
@@ -252,20 +421,168 @@ class HomeViewModel: ObservableObject {
             staminaValue = character.status.stamina
             activityValue = character.status.activity
             
-            // 히든 스탯 로드 수정
             affectionValue = character.status.affection
             weeklyAffectionValue = character.status.affectionCycle
             healthyValue = character.status.healthy
             cleanValue = character.status.clean
             
-            // 성장 단계에 맞는 기능 해금
-            unlockFeaturesByPhase(character.status.phase)
+            updateAllPercents()
+            
+            self.isUpdatingFromFirebase = false
+            
+#if DEBUG
+            print("🔄 Firebase에서 캐릭터 동기화됨 (외부 변경사항)")
+#endif
+        }
+    }
+    
+    
+    // MARK: - 데이터 저장
+    
+    // 현재 캐릭터 상태를 Firestore에 저장
+    private func saveCharacterToFirebase() {
+        // Firebase에서 업데이트 중이면 저장하지 않음 (무한 루프 방지)
+        guard !isUpdatingFromFirebase else { return }
+        
+        // 기존 타이머 취소
+        saveDebounceTimer?.invalidate()
+        
+        // 0.5초 후에 저장 (디바운싱)
+        saveDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            self?.performSaveToFirebase()
+        }
+    }
+    
+    // 실제 Firebase 저장을 수행
+    private func performSaveToFirebase() {
+        guard let character = character, isFirebaseConnected else { return }
+        
+        firebaseService.saveCharacter(character) { [weak self] error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.firebaseError = "저장 실패: \(error.localizedDescription)"
+                    print("❌ Firebase 저장 실패: \(error.localizedDescription)")
+                } else {
+                    self.firebaseError = nil
+#if DEBUG
+                    print("💾 Firebase에 캐릭터 저장 완료")
+#endif
+                }
+            }
+        }
+    }
+    
+    // 스탯 변화를 기록하고 Firebase에 저장
+    /// - Parameters:
+    ///   - changes: 변화된 스탯 [스탯명: 변화량]
+    ///   - reason: 변화 원인
+    private func recordAndSaveStatChanges(_ changes: [String: Int], reason: String) {
+        guard let character = character, isFirebaseConnected else { return }
+        
+        // 스탯 변화 기록
+        firebaseService.recordStatChanges(
+            characterID: character.id,
+            changes: changes,
+            reason: reason
+        ) { error in
+            if let error = error {
+                print("❌ 스탯 변화 기록 실패: \(error.localizedDescription)")
+            }
         }
         
-        updateAllPercents()
+        // 캐릭터 저장
+        saveCharacterToFirebase()
+    }
+    
+    // MARK: - 오프라인 데이터 처리
+    
+    // 앱 재시작 시 오프라인 시간 계산 및 보상 적용
+    private func processOfflineTime() {
+        guard let character = character else { return }
         
-        // 캐릭터 로드 후 액션 버튼 갱신
-        refreshActionButtons()
+        firebaseService.getCharacterLastActiveTime(characterID: character.id) { [weak self] lastActiveTime, error in
+            guard let self = self, let lastActiveTime = lastActiveTime else { return }
+            
+            let now = Date()
+            let elapsedTime = now.timeIntervalSince(lastActiveTime)
+            
+            // 1분 이상 차이가 날 때만 오프라인 보상 적용
+            guard elapsedTime > 60 else { return }
+            
+            DispatchQueue.main.async {
+                self.applyOfflineReward(elapsedTime: elapsedTime)
+                
+                // 마지막 활동 시간 업데이트
+                self.firebaseService.updateCharacterLastActiveTime(characterID: character.id) { _ in }
+            }
+        }
+    }
+    
+    // 오프라인 보상을 적용합니다.
+    private func applyOfflineReward(elapsedTime: TimeInterval) {
+        let hours = Int(elapsedTime / 3600)
+        let minutes = Int((elapsedTime.truncatingRemainder(dividingBy: 3600)) / 60)
+        
+        print("⏰ 오프라인 시간: \(hours)시간 \(minutes)분")
+        
+        // 최대 12시간까지만 보상
+        let maxOfflineHours = 12
+        let effectiveHours = min(hours, maxOfflineHours)
+        
+        // 기본 회복량 계산 (15분마다 활동량 10 회복)
+        let recoveryIntervals = Int(elapsedTime / (isDebugMode ? 30.0 : 900.0))
+        let baseRecovery = min(recoveryIntervals * (isDebugMode ? (10 * debugSpeedMultiplier) : 10), 50)
+        
+        // 스탯 감소 계산 (20분마다 포만감/운동량 2씩 감소)
+        let decreaseIntervals = Int(elapsedTime / (isDebugMode ? 40.0 : 1200.0))
+        let baseDecrease = min(decreaseIntervals * (isDebugMode ? (2 * debugSpeedMultiplier) : 2), 30)
+        
+        // 변화량 기록용
+        var statChanges: [String: Int] = [:]
+        
+        // 활동량 회복 적용
+        if baseRecovery > 0 && activityValue < 100 {
+            let oldActivity = activityValue
+            activityValue = min(100, activityValue + baseRecovery)
+            statChanges["activity"] = activityValue - oldActivity
+        }
+        
+        // 스탯 감소 적용
+        if baseDecrease > 0 {
+            if satietyValue > 0 {
+                let oldSatiety = satietyValue
+                satietyValue = max(0, satietyValue - baseDecrease)
+                statChanges["satiety"] = satietyValue - oldSatiety
+            }
+            
+            if staminaValue > 0 {
+                let oldStamina = staminaValue
+                staminaValue = max(0, staminaValue - baseDecrease)
+                statChanges["stamina"] = staminaValue - oldStamina
+            }
+        }
+        
+        // UI 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+        
+        // 변화사항 기록 및 저장
+        if !statChanges.isEmpty {
+            recordAndSaveStatChanges(statChanges, reason: "offline_reward_\(effectiveHours)h")
+        }
+        
+        // 사용자에게 알림
+        if effectiveHours > 0 {
+            statusMessage = "오랜만이에요! \(effectiveHours)시간 동안 쉬면서 회복했어요."
+        } else if minutes > 0 {
+            statusMessage = "잠깐 자리를 비우셨네요! 조금 회복했어요."
+        }
+        
+#if DEBUG
+        print("🎁 오프라인 보상 적용: \(statChanges)")
+#endif
     }
     
     // MARK: - 타이머 관련 메서드
@@ -325,75 +642,84 @@ class HomeViewModel: ObservableObject {
         let finalSatietyDecrease = isDebugMode ? (satietyDecrease * debugSpeedMultiplier) : satietyDecrease
         let finalStaminaDecrease = isDebugMode ? (staminaDecrease * debugSpeedMultiplier) : staminaDecrease
         
+        var statChanges: [String: Int] = [:]
+        
         // 포만감 감소
         if satietyValue > 0 {
+            let oldValue = satietyValue
             satietyValue = max(0, satietyValue - finalSatietyDecrease)
+            statChanges["satiety"] = satietyValue - oldValue
         }
         
-        // 운동량 감소 (잠자는 중에도 천천히 감소)
+        // 운동량 감소
         if staminaValue > 0 {
+            let oldValue = staminaValue
             staminaValue = max(0, staminaValue - finalStaminaDecrease)
+            statChanges["stamina"] = staminaValue - oldValue
         }
         
         updateAllPercents()
         updateCharacterStatus()
         
+        // Firebase에 기록
+        if !statChanges.isEmpty {
+            recordAndSaveStatChanges(statChanges, reason: "timer_decrease")
+        }
+        
 #if DEBUG
-        print("📉 디버그 모드 보이는 스탯 감소: 포만감 -\(finalSatietyDecrease), 운동량 -\(finalStaminaDecrease)" + (isSleeping ? " (수면 중)" : ""))
-#else
-        print("📉 보이는 스탯 감소 - 포만감: -\(finalSatietyDecrease), 운동량: -\(finalStaminaDecrease)" + (isSleeping ? " (수면 중)" : ""))
+        print("📉 디버그 모드 보이는 스탯 감소: \(statChanges)" + (isSleeping ? " (수면 중)" : ""))
 #endif
     }
     
     // 히든 스탯 감소 (건강, 청결)
     private func decreaseHiddenStats() {
-        // 디버그 모드에서는 배수로 감소
         let healthDecrease = isDebugMode ? debugSpeedMultiplier : 1
         let cleanDecrease = isDebugMode ? (2 * debugSpeedMultiplier) : 2
         
-        // 건강도 서서히 감소
+        var statChanges: [String: Int] = [:]
+        
+        // 건강도 감소
         if healthyValue > 0 {
+            let oldValue = healthyValue
             healthyValue = max(0, healthyValue - healthDecrease)
+            statChanges["healthy"] = healthyValue - oldValue
         }
         
-        // 청결도 서서히 감소
+        // 청결도 감소
         if cleanValue > 0 {
+            let oldValue = cleanValue
             cleanValue = max(0, cleanValue - cleanDecrease)
+            statChanges["clean"] = cleanValue - oldValue
         }
         
         updateAllPercents()
         updateCharacterStatus()
         
-#if DEBUG
-        print("🔍 디버그 모드 히든 스탯 감소: 건강 -\(healthDecrease), 청결 -\(cleanDecrease)")
-#else
-        print("🔍 히든 스탯 감소 - 건강: -\(healthDecrease), 청결: -\(cleanDecrease)")
-#endif
-        
-        // 상태가 너무 나빠지면 경고 메시지
-        if healthyValue < 30 || cleanValue < 30 {
-            statusMessage = "건강이나 청결 상태가 좋지 않아요..."
+        // Firebase에 기록
+        if !statChanges.isEmpty {
+            recordAndSaveStatChanges(statChanges, reason: "timer_hidden_decrease")
         }
+        
+#if DEBUG
+        print("🔍 디버그 모드 히든 스탯 감소: \(statChanges)")
+#endif
     }
     
     // 주간 애정도 체크 - 매주 월요일 00시에 주간 애정도를 누적 애정도에 추가
     private func checkWeeklyAffection() {
         let currentDate = Date()
         let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: currentDate) // 1=일요일, 2=월요일
+        let weekday = calendar.component(.weekday, from: currentDate)
         let hour = calendar.component(.hour, from: currentDate)
         
-        // 디버그 모드에서는 시간 체크 없이 바로 실행, 아니면 월요일 00시에만 실행
         let shouldProcessWeeklyAffection = isDebugMode ? true : (weekday == 2 && hour == 0)
         
         if shouldProcessWeeklyAffection && weeklyAffectionValue > 0 {
-            // 주간 애정도를 누적 애정도에 추가
             let bonusMultiplier = isDebugMode ? debugSpeedMultiplier : 1
             let affectionToAdd = weeklyAffectionValue * bonusMultiplier
             
+            let oldAffection = affectionValue
             affectionValue = min(1000, affectionValue + affectionToAdd)
-            
-            // 주간 애정도 초기화
             weeklyAffectionValue = 0
             
             updateAllPercents()
@@ -401,14 +727,15 @@ class HomeViewModel: ObservableObject {
             
             statusMessage = "한 주 동안의 사랑이 쌓였어요! 애정도가 증가했습니다."
             
+            // Firebase에 기록
+            let affectionChanges = ["affection": affectionValue - oldAffection]
+            recordAndSaveStatChanges(affectionChanges, reason: "weekly_affection")
+            
 #if DEBUG
-            print("💖 디버그 모드 주간 애정도 처리: +\(affectionToAdd) (누적 애정도: \(affectionValue))")
-#else
-            print("💖 주간 애정도 처리: +\(affectionToAdd) (누적 애정도: \(affectionValue))")
+            print("💖 디버그 모드 주간 애정도 처리: +\(affectionToAdd)")
 #endif
         }
         
-        // 활동이 없으면 누적 애정도 감소 체크
         checkAffectionDecrease()
     }
     
@@ -418,7 +745,6 @@ class HomeViewModel: ObservableObject {
         let calendar = Calendar.current
         let daysSinceLastActivity = calendar.dateComponents([.day], from: lastActivityDate, to: currentDate).day ?? 0
         
-        // 디버그 모드에서는 1일 이상, 일반 모드에서는 3일 이상 활동 없으면 애정도 감소
         let daysThreshold = isDebugMode ? 1 : 3
         
         if daysSinceLastActivity >= daysThreshold {
@@ -426,16 +752,19 @@ class HomeViewModel: ObservableObject {
             let finalDecrease = isDebugMode ? (baseDecrease * debugSpeedMultiplier) : baseDecrease
             
             if affectionValue > 0 {
+                let oldValue = affectionValue
                 affectionValue = max(0, affectionValue - finalDecrease)
                 updateAllPercents()
                 updateCharacterStatus()
                 
                 statusMessage = "오랫동안 관심을 받지 못해서 외로워해요..."
                 
+                // Firebase에 기록
+                let affectionChanges = ["affection": affectionValue - oldValue]
+                recordAndSaveStatChanges(affectionChanges, reason: "affection_decrease")
+                
 #if DEBUG
-                print("💔 디버그 모드 애정도 감소: -\(finalDecrease) (\(daysSinceLastActivity)일간 활동 없음)")
-#else
-                print("💔 애정도 감소: -\(finalDecrease) (\(daysSinceLastActivity)일간 활동 없음)")
+                print("💔 디버그 모드 애정도 감소: -\(finalDecrease)")
 #endif
             }
         }
@@ -449,24 +778,24 @@ class HomeViewModel: ObservableObject {
     
     // 활동량(피로도) 회복 처리 - 15분마다 실행
     private func recoverActivity() {
-        // 캐릭터가 자는 중이면 더 빠른 회복
         let baseRecoveryAmount = isSleeping ? 15 : 10
         let finalRecoveryAmount = isDebugMode ? (baseRecoveryAmount * debugSpeedMultiplier) : baseRecoveryAmount
         
-        // 활동량 회복 (최대 100)
         if activityValue < 100 {
+            let oldValue = activityValue
             activityValue = min(100, activityValue + finalRecoveryAmount)
-        }
-        
-        // 상태 업데이트
-        updateAllPercents()
-        updateCharacterStatus()
-        
+            
+            updateAllPercents()
+            updateCharacterStatus()
+            
+            // Firebase에 기록
+            let recoveryChanges = ["activity": activityValue - oldValue]
+            recordAndSaveStatChanges(recoveryChanges, reason: "timer_recovery")
+            
 #if DEBUG
-        print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 중 보너스)" : ""))
-#else
-        print("⚡ 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 중)" : ""))
+            print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 보너스)" : ""))
 #endif
+        }
     }
     
     private func performSleepRecovery() {
@@ -507,40 +836,19 @@ class HomeViewModel: ObservableObject {
         lastUpdateTime = Date()
         stopAllTimers()
         
+        // Firebase에 현재 상태 저장
+        saveCharacterToFirebase()
 #if DEBUG
         print("📱 앱이 백그라운드로 이동 - 모든 타이머 정지")
 #endif
     }
     
+    // handleAppDidBecomeActive에 오프라인 보상 추가
     private func handleAppDidBecomeActive() {
-        // 앱이 다시 켜졌을 때 지난 시간 계산하여 오프라인 보상 적용
-        let now = Date()
-        let elapsedTime = now.timeIntervalSince(lastUpdateTime)
+        print("📱 앱이 포그라운드로 복귀")
         
-        // 오프라인 보상 계산 (15분마다 활동량 회복 기준)
-        let offlineRecoveryIntervals = Int(elapsedTime / (isDebugMode ? 30.0 : 900.0))
-        
-        if offlineRecoveryIntervals > 0 {
-            let totalRecovery = offlineRecoveryIntervals * (isDebugMode ? (10 * debugSpeedMultiplier) : 10)
-            activityValue = min(100, activityValue + totalRecovery)
-            
-            // 오프라인 중 스탯 감소도 적용
-            let offlineDecreaseIntervals = Int(elapsedTime / (isDebugMode ? 40.0 : 1200.0))
-            if offlineDecreaseIntervals > 0 {
-                let totalDecrease = offlineDecreaseIntervals * (isDebugMode ? (2 * debugSpeedMultiplier) : 2)
-                satietyValue = max(0, satietyValue - totalDecrease)
-                staminaValue = max(0, staminaValue - totalDecrease)
-                
-#if DEBUG
-                print("📱 오프라인 보상: 활동량 +\(totalRecovery), 포만감/운동량 -\(offlineDecreaseIntervals > 0 ? totalDecrease : 0)")
-#endif
-            }
-            
-            updateAllPercents()
-            updateCharacterStatus()
-            
-            statusMessage = "오랜만이에요! 그동안 조금씩 회복했어요."
-        }
+        // Firebase 오프라인 보상 처리
+        processOfflineTime()
         
         // 모든 타이머 다시 시작
         startStatDecreaseTimers()
@@ -552,7 +860,7 @@ class HomeViewModel: ObservableObject {
     
     
     
-    // MARK: TODO.8 - 성장 단계별 기능 해금
+    // 성장 단계별 기능 해금
     private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
         switch phase {
         case .egg:
@@ -769,7 +1077,7 @@ class HomeViewModel: ObservableObject {
         self.character = character
     }
     
-    // MARK: TODO.2 - 성장 단계에 따른 경험치 요구량을 업데이트
+    // 성장 단계에 따른 경험치 요구량을 업데이트
     private func updateExpRequirement() {
         guard let character = character else { return }
         
@@ -823,8 +1131,8 @@ class HomeViewModel: ObservableObject {
         // 캐릭터 업데이트
         self.character = character
         
-        // TODO: Firestore에 저장
-        // saveCharacterToFirestore()
+        // Firestore에 저장
+        saveCharacterToFirebase()
     }
     
     // MARK: - 통합 액션 처리 메서드
@@ -840,7 +1148,6 @@ class HomeViewModel: ObservableObject {
             isSleeping = true
             // 수면 시 즉시 회복 효과
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
-            //            staminaValue = min(100, staminaValue + sleepBonus)
             activityValue = min(100, activityValue + sleepBonus)
             
             statusMessage = "쿨쿨... 잠을 자고 있어요."
@@ -855,6 +1162,10 @@ class HomeViewModel: ObservableObject {
         
         // 활동 날짜 업데이트
         updateLastActivityDate()
+        
+        // Firebase에 수면 상태 변화 기록
+        let sleepChanges = ["sleep_state": isSleeping ? 1 : 0]
+        recordAndSaveStatChanges(sleepChanges, reason: isSleeping ? "sleep_start" : "sleep_end")
         
 #if DEBUG
         print("😴 " + (isSleeping ? "펫을 재웠습니다" : "펫을 깨웠습니다"))
@@ -919,8 +1230,13 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // 변화량 기록용
+        var statChanges: [String: Int] = [:]
+        
         // 활동량 소모
+        let oldActivity = activityValue
         activityValue = max(0, activityValue - action.activityCost)
+        statChanges["activity"] = activityValue - oldActivity
         
         // 액션 효과 적용
         for (statName, value) in action.effects {
@@ -928,16 +1244,25 @@ class HomeViewModel: ObservableObject {
             
             switch statName {
             case "satiety":
+                let oldValue = satietyValue
                 satietyValue = max(0, min(100, satietyValue + adjustedValue))
+                statChanges["satiety"] = satietyValue - oldValue
             case "stamina":
+                let oldValue = staminaValue
                 staminaValue = max(0, min(100, staminaValue + adjustedValue))
+                statChanges["stamina"] = staminaValue - oldValue
             case "happiness", "affection":
-                // 주간 애정도에 추가 (즉시 누적 애정도에 반영하지 않음)
+                let oldValue = weeklyAffectionValue
                 weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(adjustedValue)))
+                statChanges["affection"] = weeklyAffectionValue - oldValue
             case "clean":
+                let oldValue = cleanValue
                 cleanValue = max(0, min(100, cleanValue + adjustedValue))
+                statChanges["clean"] = cleanValue - oldValue
             case "healthy":
+                let oldValue = healthyValue
                 healthyValue = max(0, min(100, healthyValue + adjustedValue))
+                statChanges["healthy"] = healthyValue - oldValue
             default:
                 break
             }
@@ -962,6 +1287,9 @@ class HomeViewModel: ObservableObject {
         updateAllPercents()
         updateCharacterStatus()
         updateLastActivityDate()
+        
+        // Firebase에 스탯 변화 기록
+        recordAndSaveStatChanges(statChanges, reason: "action_\(actionId)")
         
         print("✅ '\(action.name)' 액션을 실행했습니다")
         
@@ -1043,5 +1371,38 @@ class HomeViewModel: ObservableObject {
             return nil
         }
     }
+    
+    // MARK: - 리소스 정리
+    
+    // 모든 리소스를 정리
+    private func cleanupResources() {
+        // 타이머 정리
+        cancellables.removeAll()
+        statDecreaseTimer?.invalidate()
+        hiddenStatDecreaseTimer?.invalidate()
+        weeklyAffectionTimer?.invalidate()
+        energyTimer?.invalidate()
+        
+        // Firebase 리스너 정리
+        characterListener?.remove()
+        characterListener = nil
+        saveDebounceTimer?.invalidate()
+        saveDebounceTimer = nil
+        
+        print("🧹 모든 리소스 정리 완료")
+    }
+    
+    // loadCharacter 메서드 수정
+    func loadCharacter() {
+        // Firebase에서 로드하도록 변경
+        if firebaseService.getCurrentUserID() != nil {
+            loadMainCharacterFromFirebase()
+        } else {
+            print("⚠️ 사용자가 로그인되지 않았습니다")
+            // 로그인되지 않은 경우 로컬 캐릭터만 생성
+            createAndSaveDefaultCharacter()
+        }
+    }
+    
 }
 

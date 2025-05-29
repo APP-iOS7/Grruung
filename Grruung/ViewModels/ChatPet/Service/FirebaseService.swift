@@ -666,6 +666,7 @@ class FirebaseService {
             .collection("data").document()
     }
     
+    // MARK: Start - HomeViewModel Character 연결을 위한 메서드 정의
     // MARK: - 메인 캐릭터 관리
     
     /// 사용자의 메인 캐릭터를 설정합니다.
@@ -1031,4 +1032,6 @@ class FirebaseService {
             }
         }
     }
+    // MARK: End - HomeViewModel Character 연결을 위한 메서드 정의
+
 }
