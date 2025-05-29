@@ -37,7 +37,7 @@ struct GRCharacterStatus {
     var appearance: [String: String] // 외모 (성장 이후 바뀔 수 있음)
     
     // MARK: - 초기값
-    init(level: Int = 1,
+    init(level: Int = 0,
          exp: Int = 0,
          expToNextLevel: Int = 100,
          phase: CharacterPhase = .egg,

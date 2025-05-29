@@ -26,7 +26,7 @@ struct GRCharacter: Identifiable {
          name: String,
          imageName: String,
          birthDate: Date,
-         createdAt: Date,
+         createdAt: Date = Date(),
          status: GRCharacterStatus = GRCharacterStatus()) {
         self.id = id
         self.species = species

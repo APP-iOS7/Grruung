@@ -109,6 +109,7 @@ class FirebaseService {
             }
     }
     
+    // 캐릭터 정보를 딕셔너리로 변환하는 부분에 createdAt 추가
     func saveCharacter(_ character: GRCharacter, completion: @escaping (Error?) -> Void) {
         guard let userID = getCurrentUserID() else {
             completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
@@ -125,6 +126,7 @@ class FirebaseService {
             "stamina": character.status.stamina,
             "activity": character.status.activity,
             "affection": character.status.affection,
+            "affectionCycle": character.status.affectionCycle, // 주간 애정도 추가
             "healthy": character.status.healthy,
             "clean": character.status.clean,
             "address": character.status.address,
@@ -138,6 +140,7 @@ class FirebaseService {
             "name": character.name,
             "image": character.imageName,
             "status": statusData,
+            "createdAt": Timestamp(date: character.createdAt), // createdAt 추가
             "updatedAt": Timestamp(date: Date()),
         ]
         
@@ -764,7 +767,7 @@ class FirebaseService {
     
     // MARK: - 실시간 캐릭터 동기화
     
-    /// 메인 캐릭터의 실시간 리스너를 설정합니다.
+    // 메인 캐릭터의 실시간 리스너를 설정합니다.
     /// - Parameter onChange: 캐릭터 변경 시 호출될 콜백
     /// - Returns: 리스너 해제용 Listener 객체
     func setupMainCharacterListener(onChange: @escaping (GRCharacter?, Error?) -> Void) -> ListenerRegistration? {
@@ -773,46 +776,47 @@ class FirebaseService {
             return nil
         }
         
-        // 먼저 메인 캐릭터 ID를 가져온다
-        getMainCharacterID { [weak self] characterID, error in
-            guard let self = self else { return }
-            
-            if let error = error {
-                onChange(nil, error)
-                return
-            }
-            
-            guard let characterID = characterID else {
-                onChange(nil, nil)
-                return
-            }
-            
-            // 캐릭터 문서에 실시간 리스너 설정
-            let listener = self.db.collection("users").document(userID)
-                .collection("characters").document(characterID)
-                .addSnapshotListener { (snapshot, error) in
-                    
-                    if let error = error {
-                        onChange(nil, error)
-                        return
-                    }
-                    
-                    guard let document = snapshot, document.exists,
-                          let data = document.data() else {
-                        onChange(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
-                        return
-                    }
-                    
-                    // 캐릭터 데이터 파싱 후 콜백 호출
-                    let character = self.parseCharacterFromData(characterID: characterID, data: data)
-                    onChange(character, nil)
+        // 사용자 문서의 chosenCharacterUUID 필드를 실시간으로 감시
+        return db.collection("users").document(userID)
+            .addSnapshotListener { [weak self] (userSnapshot, error) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    onChange(nil, error)
+                    return
                 }
-        }
-        
-        return nil // 임시로 nil 반환 (실제로는 위의 리스너를 반환해야 함)
+                
+                guard let userData = userSnapshot?.data(),
+                      let characterID = userData["chosenCharacterUUID"] as? String,
+                      !characterID.isEmpty else {
+                    onChange(nil, nil)
+                    return
+                }
+                
+                // 캐릭터 문서에 실시간 리스너 설정
+                self.db.collection("users").document(userID)
+                    .collection("characters").document(characterID)
+                    .addSnapshotListener { (characterSnapshot, error) in
+                        
+                        if let error = error {
+                            onChange(nil, error)
+                            return
+                        }
+                        
+                        guard let document = characterSnapshot, document.exists,
+                              let data = document.data() else {
+                            onChange(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
+                            return
+                        }
+                        
+                        // 캐릭터 데이터 파싱 후 콜백 호출
+                        let character = self.parseCharacterFromData(characterID: characterID, data: data)
+                        onChange(character, nil)
+                    }
+            }
     }
     
-    /// 캐릭터의 실시간 리스너를 설정합니다.
+    // 캐릭터의 실시간 리스너를 설정합니다.
     /// - Parameters:
     ///   - characterID: 리스너를 설정할 캐릭터 ID
     ///   - onChange: 캐릭터 변경 시 호출될 콜백
