@@ -11,6 +11,8 @@ struct AnimationSecondTestView: View {
     // MARK: - 상태 변수들
     @State private var selectedCharacter: PetSpecies = .quokka // 기본값: 쿼카
     @State private var selectedPhase: CharacterPhase = .egg    // 기본값: 운석
+    @State private var currentCharacterImage: UIImage? // 현재 표시할 이미지
+    @State private var isLoadingImage = false // 이미지 로딩 상태
     
     // 홈뷰와 비슷한 상태바 더미 데이터
     let stats: [(icon: String, color: Color, value: CGFloat)] = [
@@ -25,6 +27,9 @@ struct AnimationSecondTestView: View {
                 // 레벨 프로그레스 바 (홈뷰에서 가져온 것)
                 levelProgressBar
                 
+                // 캐릭터 이미지 표시 영역
+                characterImageSection
+                
                 // 상태 바 섹션 (홈뷰에서 가져온 것)
                 statsSection
                 
@@ -38,6 +43,9 @@ struct AnimationSecondTestView: View {
             }
             .padding()
             .navigationTitle("애니메이션 테스트 2")
+            .onAppear {
+                loadCharacterImage() // 뷰가 나타날 때 기본 이미지 로드
+            }
         }
     }
     
@@ -65,6 +73,49 @@ struct AnimationSecondTestView: View {
             }
         }
         .padding(.top, 10)
+    }
+    
+    // 캐릭터 이미지 표시 섹션
+    private var characterImageSection: some View {
+        VStack(spacing: 10) {
+            Text("현재 선택: \(selectedCharacter.rawValue) - \(selectedPhase.rawValue)")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
+            ZStack {
+                // 배경
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.gray.opacity(0.1))
+                    .frame(height: 200)
+                
+                if isLoadingImage {
+                    // 로딩 중 표시
+                    ProgressView("이미지 로딩 중...")
+                        .foregroundColor(.secondary)
+                } else if let image = currentCharacterImage {
+                    // 이미지 표시
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 180)
+                        .padding()
+                } else {
+                    // 이미지가 없을 때
+                    VStack {
+                        Image(systemName: "photo")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
+                        Text("이미지를 찾을 수 없습니다")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(radius: 2)
     }
     
     // 상태 바 섹션 (홈뷰에서 가져옴)
@@ -106,6 +157,7 @@ struct AnimationSecondTestView: View {
                     Button(action: {
                         selectedCharacter = character
                         print("선택된 캐릭터: \(character.rawValue)")
+                        loadCharacterImage() // 이미지 다시 로드
                     }) {
                         Text(character.rawValue)
                             .padding(.horizontal, 16)
@@ -159,11 +211,14 @@ struct AnimationSecondTestView: View {
         .cornerRadius(15)
     }
     
+    // MARK: - 헬퍼 함수
+    
     // 개별 단계 버튼 헬퍼 함수
     private func phaseButton(_ phase: CharacterPhase) -> some View {
         Button(action: {
             selectedPhase = phase
             print("선택된 단계: \(phase.rawValue)")
+            loadCharacterImage() // 이미지 다시 로드
         }) {
             Text(phase.rawValue)
                 .font(.caption)
@@ -180,6 +235,29 @@ struct AnimationSecondTestView: View {
                     : .primary
                 )
                 .cornerRadius(15)
+        }
+    }
+    
+    // 이미지 로드 함수
+    private func loadCharacterImage() {
+        isLoadingImage = true
+        currentCharacterImage = nil
+        
+        // 비동기로 이미지 로드 (UI 블록킹 방지)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let characterTypeString = BundleAnimationLoader.characterTypeToString(selectedCharacter)
+            
+            let image = BundleAnimationLoader.loadFirstFrame(
+                characterType: characterTypeString,
+                phase: selectedPhase,
+                animationType: "normal"
+            )
+            
+            // 메인 스레드에서 UI 업데이트
+            DispatchQueue.main.async {
+                self.currentCharacterImage = image
+                self.isLoadingImage = false
+            }
         }
     }
 }

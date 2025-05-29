@@ -17,7 +17,8 @@ class BundleAnimationLoader: ObservableObject {
     ) -> UIImage? {
         
         // 파일 경로 구성 (예: "quokka_egg_normal_001")
-        let fileName = "\(characterType)_\(phase.rawValue)_\(animationType)_001"
+        let phaseString = phaseToString(phase)
+        let fileName = "\(characterType)_\(phaseString)_\(animationType)_001"
         
         // Bundle에서 이미지 찾기 (png 우선, 없으면 jpg)
         if let image = UIImage(named: fileName) {
