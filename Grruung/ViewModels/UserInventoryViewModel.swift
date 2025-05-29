@@ -113,7 +113,8 @@ class UserInventoryViewModel: ObservableObject {
             }
             
             await MainActor.run {
-                self.inventories = fetchedInventories
+                // 나중에 구매한게 맨 위로 오게
+                self.inventories = fetchedInventories.sorted { $0.purchasedAt > $1.purchasedAt }
             }
             print("[조회완료] 총 \(fetchedInventories.count)개 아이템 로드 완료")
         } catch {

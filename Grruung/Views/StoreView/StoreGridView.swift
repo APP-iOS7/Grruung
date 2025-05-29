@@ -46,13 +46,8 @@ struct ProductItemView: View {
                 .foregroundColor(.black)
             
             HStack(spacing: 8) {
-                if product.itemCurrencyType.rawValue == "다이아" {
-                    Image(systemName: "diamond.fill")
-                        .foregroundColor(.cyan)
-                } else {
-                    Image(systemName: "circle.fill")
-                        .foregroundColor(.yellow)
-                }
+                Image(systemName: product.itemCurrencyType.rawValue == "다이아" ? "diamond.fill" : "circle.fill")
+                    .foregroundColor(product.itemCurrencyType.rawValue == "다이아" ? .cyan : .yellow)
                 
                 Text("\(product.itemPrice)")
                     .font(.caption)

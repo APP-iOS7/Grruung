@@ -86,6 +86,20 @@ enum ItemCurrencyType: String, CaseIterable {
 }
 
 let products = [
+    GRShopItem(itemName: "다이아 → 골드",
+               itemType: .consumable,
+               itemImage: "DiamondToGold",
+               itemQuantity: 1,
+               limitedQuantity: 10,
+               purchasedQuantity: 0,
+               itemPrice: 10,
+               itemCurrencyType: .diamond,
+               itemDescription: "10 다이아를 1000 골드로 교환할 수 있는 아이템입니다.",
+               itemEffectDescription: "사용 시 1000 골드를 획득합니다.",
+               itemTag: .normal,
+               itemCategory: .etc, // 새 범주 추가 가능
+               bgColor: .yellow.opacity(0.4)),
+    
     GRShopItem(itemName: "주사 치료",
                itemType: .consumable,
                itemImage: "Injection",

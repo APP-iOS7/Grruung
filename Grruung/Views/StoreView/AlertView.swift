@@ -17,7 +17,7 @@ struct AlertView: View {
     @State private var notEnoughCurrencyAmount: Int = 0
     let product: GRShopItem
     var quantity: Int
-    
+    private let diamondToGold: Int = 1000
     @State private var showNotEnoughMoneyAlert = false
     @Binding var isPresented: Bool // 팝업 제어용
     
@@ -40,17 +40,34 @@ struct AlertView: View {
                     )
                 
                 // 제목
-                Text("가격: \(product.itemPrice * quantity)")
-                    .font(.headline)
-                    .foregroundColor(.black)
+                HStack(spacing: 8) {
+                    Text("가격: ")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                    
+                    Image(systemName: product.itemCurrencyType.rawValue == "다이아" ? "diamond.fill" : "circle.fill")
+                        .foregroundColor(product.itemCurrencyType.rawValue == "다이아" ? .cyan : .yellow)
+                    
+                    Text("\(product.itemPrice * quantity)")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                }
                 
                 // 설명
-                Text("\(product.itemName) \(quantity)개를 구매합니다.")
-                    .font(.subheadline)
-                    .foregroundColor(.black.opacity(0.9))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
+                if product.itemName == "다이아 → 골드" {
+                    Text("\(product.itemPrice * quantity) 다이아로 \(quantity * diamondToGold) 골드를 구매합니다.")
+                        .font(.subheadline)
+                        .foregroundColor(.black.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                } else {
+                    Text("\(product.itemName) \(quantity)개를 구매합니다.")
+                        .font(.subheadline)
+                        .foregroundColor(.black.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+
                 // 처리 중 표시
                 if isProcessing {
                     HStack {
@@ -142,8 +159,8 @@ struct AlertView: View {
             return
         }
         
-        let updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
-        let updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
+        var updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
+        var updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
         
         // 재빌드시 아이템 넘버가 바뀌면서(UUID) 이전 구매 아이템과 아이템 넘버가 달라서 계속 새로 구매되는 오류 발생!
         // 반드시 아이템의 이름들이 고유해야함! -> 같으면 또 다시 에러남...
@@ -158,31 +175,36 @@ struct AlertView: View {
                 userIteamQuantity: quantity,
                 userItemDescription: product.itemDescription,
                 userItemEffectDescription: product.itemEffectDescription,
-                userItemCategory: product.itemCategory
+                userItemCategory: product.itemCategory,
             )
             
-            // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
-            if let existingItem = userInventoryViewModel.inventories.first(where: {
-                $0.userItemNumber == buyItem.userItemNumber
-            }) {
-                print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
-                let newQuantity = existingItem.userItemQuantity + quantity
-                print("[수량업데이트] 새로운 수량: \(newQuantity)")
-                
-                // 수량 업데이트 (await로 즉시 처리)
-                await userInventoryViewModel.updateItemQuantity(
-                    userId: realUserId,
-                    item: existingItem,
-                    newQuantity: newQuantity
-                )
+            // 다이아에서 골드로 바꾸는 경우에는 파이어베이스에 저장하지 않고 재화만 업데이트함.
+            if buyItem.userItemName == "다이아 → 골드" {
+                updatedGold += totalPrice * (diamondToGold / 10)
             } else {
-                print("[신규아이템] 새로운 아이템 추가")
-                
-                // 새 아이템 저장 (await로 즉시 처리)
-                await userInventoryViewModel.saveInventory(
-                    userId: realUserId,
-                    inventory: buyItem
-                )
+                // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
+                if let existingItem = userInventoryViewModel.inventories.first(where: {
+                    $0.userItemNumber == buyItem.userItemNumber
+                }) {
+                    print("[기존아이템] 발견 - 현재수량: \(existingItem.userItemQuantity)")
+                    let newQuantity = existingItem.userItemQuantity + quantity
+                    print("[수량업데이트] 새로운 수량: \(newQuantity)")
+                    
+                    // 수량 업데이트 (await로 즉시 처리)
+                    await userInventoryViewModel.updateItemQuantity(
+                        userId: realUserId,
+                        item: existingItem,
+                        newQuantity: newQuantity
+                    )
+                } else {
+                    print("[신규아이템] 새로운 아이템 추가")
+                    
+                    // 새 아이템 저장 (await로 즉시 처리)
+                    await userInventoryViewModel.saveInventory(
+                        userId: realUserId,
+                        inventory: buyItem
+                    )
+                }
             }
             
             userViewModel.updateCurrency(userId: realUserId, gold: updatedGold, diamond: updatedDiamond)
