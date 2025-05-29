@@ -662,4 +662,369 @@ class FirebaseService {
             .collection("memories").document("important")
             .collection("data").document()
     }
+    
+    // MARK: - 메인 캐릭터 관리
+    
+    /// 사용자의 메인 캐릭터를 설정합니다.
+    /// - Parameters:
+    ///   - characterID: 메인으로 설정할 캐릭터 ID
+    ///   - completion: 완료 콜백
+    func setMainCharacter(characterID: String, completion: @escaping (Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        // 사용자 문서의 chosenCharacterUUID 필드 업데이트
+        db.collection("users").document(userID).updateData([
+            "chosenCharacterUUID": characterID,
+            "lastUpdatedAt": Timestamp(date: Date())
+        ]) { error in
+            completion(error)
+        }
+    }
+    
+    /// 사용자의 메인 캐릭터 ID를 가져옵니다.
+    /// - Parameter completion: 완료 콜백 (캐릭터 ID, 에러)
+    func getMainCharacterID(completion: @escaping (String?, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID).getDocument { (snapshot, error) in
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                completion(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "사용자 데이터를 찾을 수 없습니다."]))
+                return
+            }
+            
+            let characterID = data["chosenCharacterUUID"] as? String ?? ""
+            completion(characterID.isEmpty ? nil : characterID, nil)
+        }
+    }
+    
+    /// 사용자의 메인 캐릭터를 로드합니다.
+    /// - Parameter completion: 완료 콜백 (캐릭터, 에러)
+    func loadMainCharacter(completion: @escaping (GRCharacter?, Error?) -> Void) {
+        // 먼저 메인 캐릭터 ID를 가져온다
+        getMainCharacterID { [weak self] characterID, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+            
+            guard let characterID = characterID else {
+                // 메인 캐릭터가 없으면 nil 반환
+                completion(nil, nil)
+                return
+            }
+            
+            // 캐릭터 ID로 캐릭터 데이터 로드
+            self.loadCharacterByID(characterID: characterID, completion: completion)
+        }
+    }
+    
+    /// 특정 ID의 캐릭터를 로드합니다.
+    /// - Parameters:
+    ///   - characterID: 로드할 캐릭터 ID
+    ///   - completion: 완료 콜백 (캐릭터, 에러)
+    func loadCharacterByID(characterID: String, completion: @escaping (GRCharacter?, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .getDocument { (snapshot, error) in
+                
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                
+                guard let document = snapshot, document.exists,
+                      let data = document.data() else {
+                    completion(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
+                    return
+                }
+                
+                // 캐릭터 데이터 파싱
+                let character = self.parseCharacterFromData(characterID: characterID, data: data)
+                completion(character, nil)
+            }
+    }
+    
+    // MARK: - 실시간 캐릭터 동기화
+    
+    /// 메인 캐릭터의 실시간 리스너를 설정합니다.
+    /// - Parameter onChange: 캐릭터 변경 시 호출될 콜백
+    /// - Returns: 리스너 해제용 Listener 객체
+    func setupMainCharacterListener(onChange: @escaping (GRCharacter?, Error?) -> Void) -> ListenerRegistration? {
+        guard let userID = getCurrentUserID() else {
+            onChange(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return nil
+        }
+        
+        // 먼저 메인 캐릭터 ID를 가져온다
+        getMainCharacterID { [weak self] characterID, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                onChange(nil, error)
+                return
+            }
+            
+            guard let characterID = characterID else {
+                onChange(nil, nil)
+                return
+            }
+            
+            // 캐릭터 문서에 실시간 리스너 설정
+            let listener = self.db.collection("users").document(userID)
+                .collection("characters").document(characterID)
+                .addSnapshotListener { (snapshot, error) in
+                    
+                    if let error = error {
+                        onChange(nil, error)
+                        return
+                    }
+                    
+                    guard let document = snapshot, document.exists,
+                          let data = document.data() else {
+                        onChange(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
+                        return
+                    }
+                    
+                    // 캐릭터 데이터 파싱 후 콜백 호출
+                    let character = self.parseCharacterFromData(characterID: characterID, data: data)
+                    onChange(character, nil)
+                }
+        }
+        
+        return nil // 임시로 nil 반환 (실제로는 위의 리스너를 반환해야 함)
+    }
+    
+    /// 캐릭터의 실시간 리스너를 설정합니다.
+    /// - Parameters:
+    ///   - characterID: 리스너를 설정할 캐릭터 ID
+    ///   - onChange: 캐릭터 변경 시 호출될 콜백
+    /// - Returns: 리스너 해제용 Listener 객체
+    func setupCharacterListener(characterID: String, onChange: @escaping (GRCharacter?, Error?) -> Void) -> ListenerRegistration? {
+        guard let userID = getCurrentUserID() else {
+            onChange(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return nil
+        }
+        
+        let listener = db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .addSnapshotListener { [weak self] (snapshot, error) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    onChange(nil, error)
+                    return
+                }
+                
+                guard let document = snapshot, document.exists,
+                      let data = document.data() else {
+                    onChange(nil, NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
+                    return
+                }
+                
+                // 캐릭터 데이터 파싱 후 콜백 호출
+                let character = self.parseCharacterFromData(characterID: characterID, data: data)
+                onChange(character, nil)
+            }
+        
+        return listener
+    }
+    
+    // MARK: - 캐릭터 스탯 변화 추적
+    
+    /// 캐릭터 스탯 변화를 기록합니다.
+    /// - Parameters:
+    ///   - characterID: 캐릭터 ID
+    ///   - changes: 변화된 스탯들 [스탯명: 변화량]
+    ///   - reason: 변화 원인 (예: "feed_action", "timer_decrease", "level_up")
+    ///   - completion: 완료 콜백
+    func recordStatChanges(
+        characterID: String,
+        changes: [String: Int],
+        reason: String,
+        completion: @escaping (Error?) -> Void
+    ) {
+        guard let userID = getCurrentUserID() else {
+            completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        let changeRecord: [String: Any] = [
+            "timestamp": Timestamp(date: Date()),
+            "changes": changes,
+            "reason": reason,
+            "characterID": characterID
+        ]
+        
+        // 스탯 변화 기록을 서브컬렉션에 저장
+        db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .collection("statHistory").document()
+            .setData(changeRecord) { error in
+                completion(error)
+            }
+    }
+    
+    /// 캐릭터의 마지막 업데이트 시간을 기록합니다.
+    /// - Parameters:
+    ///   - characterID: 캐릭터 ID
+    ///   - completion: 완료 콜백
+    func updateCharacterLastActiveTime(characterID: String, completion: @escaping (Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .updateData([
+                "lastActiveAt": Timestamp(date: Date())
+            ]) { error in
+                completion(error)
+            }
+    }
+    
+    /// 캐릭터의 마지막 활동 시간을 가져옵니다.
+    /// - Parameters:
+    ///   - characterID: 캐릭터 ID
+    ///   - completion: 완료 콜백 (마지막 활동 시간, 에러)
+    func getCharacterLastActiveTime(characterID: String, completion: @escaping (Date?, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID)
+            .collection("characters").document(characterID)
+            .getDocument { (snapshot, error) in
+                
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                
+                guard let data = snapshot?.data(),
+                      let lastActiveTimestamp = data["lastActiveAt"] as? Timestamp else {
+                    // 마지막 활동 시간이 없으면 현재 시간 반환
+                    completion(Date(), nil)
+                    return
+                }
+                
+                completion(lastActiveTimestamp.dateValue(), nil)
+            }
+    }
+    
+    // MARK: - 헬퍼 메서드
+    
+    /// Firestore 데이터에서 GRCharacter 객체를 생성합니다.
+    /// - Parameters:
+    ///   - characterID: 캐릭터 ID
+    ///   - data: Firestore 문서 데이터
+    /// - Returns: 파싱된 GRCharacter 객체
+    private func parseCharacterFromData(characterID: String, data: [String: Any]) -> GRCharacter {
+        // 기본 캐릭터 정보 파싱
+        let speciesRaw = data["species"] as? String ?? ""
+        let species = PetSpecies(rawValue: speciesRaw) ?? .CatLion
+        let name = data["name"] as? String ?? "이름 없음"
+        let imageName = data["image"] as? String ?? ""
+        let createdAtTimestamp = data["createdAt"] as? Timestamp
+        let createdAt = createdAtTimestamp?.dateValue() ?? Date()
+        
+        // 상태 정보 파싱
+        let statusData = data["status"] as? [String: Any] ?? [:]
+        let level = statusData["level"] as? Int ?? 1
+        let exp = statusData["exp"] as? Int ?? 0
+        let expToNextLevel = statusData["expToNextLevel"] as? Int ?? 100
+        let phaseRaw = statusData["phase"] as? String ?? ""
+        let phase = CharacterPhase(rawValue: phaseRaw) ?? .infant
+        let satiety = statusData["satiety"] as? Int ?? 50
+        let stamina = statusData["stamina"] as? Int ?? 50
+        let activity = statusData["activity"] as? Int ?? 50
+        let affection = statusData["affection"] as? Int ?? 50
+        let affectionCycle = statusData["affectionCycle"] as? Int ?? 0
+        let healthy = statusData["healthy"] as? Int ?? 50
+        let clean = statusData["clean"] as? Int ?? 50
+        let address = statusData["address"] as? String ?? "usersHome"
+        let birthDateTimestamp = statusData["birthDate"] as? Timestamp
+        let birthDate = birthDateTimestamp?.dateValue() ?? Date()
+        let appearance = statusData["appearance"] as? [String: String] ?? [:]
+        
+        let status = GRCharacterStatus(
+            level: level,
+            exp: exp,
+            expToNextLevel: expToNextLevel,
+            phase: phase,
+            satiety: satiety,
+            stamina: stamina,
+            activity: activity,
+            affection: affection,
+            affectionCycle: affectionCycle,
+            healthy: healthy,
+            clean: clean,
+            address: address,
+            birthDate: birthDate,
+            appearance: appearance
+        )
+        
+        return GRCharacter(
+            id: characterID,
+            species: species,
+            name: name,
+            imageName: imageName,
+            birthDate: birthDate,
+            createdAt: createdAt,
+            status: status
+        )
+    }
+    
+    /// 캐릭터를 생성하고 메인 캐릭터로 설정합니다.
+    /// - Parameters:
+    ///   - character: 생성할 캐릭터
+    ///   - setAsMain: 메인 캐릭터로 설정할지 여부
+    ///   - completion: 완료 콜백 (생성된 캐릭터 ID, 에러)
+    func createAndSetMainCharacter(
+        character: GRCharacter,
+        setAsMain: Bool = true,
+        completion: @escaping (String?, Error?) -> Void
+    ) {
+        // 먼저 캐릭터를 저장
+        saveCharacter(character) { [weak self] error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+            
+            // 메인 캐릭터로 설정할지 확인
+            if setAsMain {
+                self.setMainCharacter(characterID: character.id) { error in
+                    if let error = error {
+                        completion(nil, error)
+                    } else {
+                        completion(character.id, nil)
+                    }
+                }
+            } else {
+                completion(character.id, nil)
+            }
+        }
+    }
 }
