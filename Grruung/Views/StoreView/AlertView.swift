@@ -45,7 +45,7 @@ struct AlertView: View {
                     .foregroundColor(.black)
                 
                 // 설명
-                Text("구매할까요?")
+                Text("\(product.itemName) \(quantity)개를 구매합니다.")
                     .font(.subheadline)
                     .foregroundColor(.black.opacity(0.9))
                     .multilineTextAlignment(.center)

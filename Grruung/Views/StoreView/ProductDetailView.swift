@@ -84,16 +84,14 @@ struct ProductDetailView: View {
                     if quantity < product.limitedQuantity {
                         quantity += 1
                     } else {
-                        showAlert = true
+                        isOutOfLimitedQuantity = true
                     }
                 } label: {
                     Image(systemName: "plus.circle")
                         .font(.title2)
                 }
-                .alert("한정 수량 초과", isPresented: $showAlert) {
+                .alert("한정 수량 이상을 구매하실 수 없습니다.", isPresented: $isOutOfLimitedQuantity) {
                     Button("확인", role: .cancel) { }
-                } message: {
-                    Text("더 이상 구매하실 수 없습니다.")
                 }
                 
                 Spacer()
