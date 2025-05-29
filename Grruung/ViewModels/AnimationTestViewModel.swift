@@ -60,6 +60,9 @@ class AnimationTestViewModel: ObservableObject {
     // MARK: - Firebase에서 애니메이션 다운로드
     // 캐릭터 타입과 단계에 따른 경로 관리를 위한 로직 추가
     private func getAnimationPath(characterType: String, phase: CharacterPhase, animationType: String) -> String {
+        // phase를 영어 키워드로 변환
+        let englishPhase = getEnglishPhase(phase)
+        
         // 특별한 경우: egg 단계는 모든 캐릭터에 공통으로 사용
         if phase == .egg {
             return "animations/egg/\(animationType)"
@@ -68,7 +71,20 @@ class AnimationTestViewModel: ObservableObject {
         // 다른 단계는 캐릭터별로 다른 경로 사용
         let storageAnimationType = getStorageAnimationType(characterType: characterType, phase: phase, uiAnimationType: animationType)
         
-        return "animations/\(characterType)/\(phase.rawValue)/\(storageAnimationType)"
+        return "animations/\(characterType)/\(englishPhase)/\(storageAnimationType)"
+    }
+    
+    
+    // phase를 영어로 변환하는 함수 추가
+    private func getEnglishPhase(_ phase: CharacterPhase) -> String {
+        switch phase {
+        case .egg: return "egg"
+        case .infant: return "infant"
+        case .child: return "child"
+        case .adolescent: return "adolescent"
+        case .adult: return "adult"
+        case .elder: return "elder"
+        }
     }
     
     // 성장 단계와 캐릭터 타입별 애니메이션 매핑
@@ -581,9 +597,13 @@ class AnimationTestViewModel: ObservableObject {
             return []
         }
         
+        // phase를 영어로 변환
+        let englishPhase = getEnglishPhase(phase)
+        
         print("애니메이션 프레임 로드 시도:")
         print("  - characterType: \(characterType)")
         print("  - phase: \(phase.rawValue)")
+        print("  - phase (영어, 검색용): \(englishPhase)")
         print("  - animationType: \(animationType)")
         
         do {
@@ -591,7 +611,7 @@ class AnimationTestViewModel: ObservableObject {
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
                     $0.characterType == characterType &&
-                    $0.phase == phase.rawValue &&
+                    $0.phase == englishPhase &&
                     $0.animationType == animationType
                 },
                 sortBy: [SortDescriptor(\.frameIndex)]
@@ -680,9 +700,13 @@ class AnimationTestViewModel: ObservableObject {
             return
         }
         
+        // phase를 영어로 변환
+        let englishPhase = getEnglishPhase(phase)
+        
         print("메타데이터 저장 시도:")
         print("  - characterType: \(characterType)")
         print("  - phase: \(phase.rawValue)")
+        print("  - phase (영어, 저장용): \(englishPhase)")
         print("  - animationType: \(animationType)")
         print("  - frameIndex: \(frameIndex)")
         print("  - filePath: \(filePath)")
@@ -692,7 +716,7 @@ class AnimationTestViewModel: ObservableObject {
             let descriptor = FetchDescriptor<GRAnimationMetadata>(
                 predicate: #Predicate {
                     $0.characterType == characterType &&
-                    $0.phase == phase.rawValue &&
+                    $0.phase == englishPhase &&
                     $0.animationType == animationType &&
                     $0.frameIndex == frameIndex
                 }
@@ -719,6 +743,8 @@ class AnimationTestViewModel: ObservableObject {
                     filePath: filePath,
                     fileSize: fileSize
                 )
+                // 실제 저장되는 문자열은 영어로 설정
+                metadata.phase = englishPhase
                 
                 modelContext.insert(metadata)
             }
