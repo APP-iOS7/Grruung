@@ -10,6 +10,7 @@ import SwiftData
 
 struct AnimationTestView: View {
     @StateObject private var animationTestViewModel = AnimationTestViewModel()
+    @Environment(\.modelContext) private var modelContext
     
     // 현재 선택된 설정
     @State private var selectedCharacterType = "egg"
@@ -484,8 +485,8 @@ struct AnimationTestView: View {
                 }
             }
             .onAppear {
-                // 뷰가 나타날 때 애니메이션 로드
-                loadSelectedAnimation()
+                animationTestViewModel.setModelContext(modelContext)
+                loadSelectedAnimation() // 뷰가 나타날 때 애니메이션 로드
             }
             .onDisappear {
                 // 뷰가 사라질 때 타이머와 리소스 정리

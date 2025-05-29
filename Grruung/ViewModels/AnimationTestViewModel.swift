@@ -50,21 +50,11 @@ class AnimationTestViewModel: ObservableObject {
                 .appendingPathComponent("animations", isDirectory: true)
         }
         
-        // SwiftData 초기화
-        setupSwiftData()
     }
     
-    // SwiftData 설정
-    private func setupSwiftData() {
-        do {
-            let schema = Schema([GRAnimationMetadata.self])
-            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            modelContext = ModelContext(container)
-        } catch {
-            errorMessage = "SwiftData 초기화 실패: \(error.localizedDescription)"
-            print("SwiftData 초기화 실패: \(error.localizedDescription)")
-        }
+    // ModelContext를 설정하는 메서드 추가
+    func setModelContext(_ context: ModelContext) {
+        self.modelContext = context
     }
     
     // MARK: - Firebase에서 애니메이션 다운로드
