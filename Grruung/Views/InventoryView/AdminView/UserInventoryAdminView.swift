@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct userInventoryAdminView: View {
+struct UserInventoryAdminView: View {
     private let garaUserId = "23456"
     
     @State private var itemNumber: String = UUID().uuidString
@@ -94,5 +94,5 @@ struct userInventoryAdminView: View {
 
 
 #Preview {
-    userInventoryAdminView()
+    UserInventoryAdminView()
 }

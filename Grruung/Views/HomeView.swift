@@ -184,7 +184,7 @@ struct HomeView: View {
                 }
             }
         } else if systemName == "backpack.fill" {
-            NavigationLink(destination: userInventoryView()
+            NavigationLink(destination: UserInventoryView()
                 .environmentObject(AuthService())) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)

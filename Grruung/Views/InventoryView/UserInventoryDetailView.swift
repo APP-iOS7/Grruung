@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct userInventoryDetailView: View {
+struct UserInventoryDetailView: View {
     @State var item: GRUserInventory
     // 전체 아이템 갯수
     @State private var remainItemCount: Double?
