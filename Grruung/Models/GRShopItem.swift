@@ -91,14 +91,14 @@ let products = [
                itemCategory: .drug,
                bgColor: .blue.opacity(0.4)),
     
-    GRShopItem(itemName: "밴드 치료",
+    GRShopItem(itemName: "진단 치료",
                itemType: .consumable,
-               itemImage: "bandage",
+               itemImage: "stethoscope",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
                itemPrice: 159,
-               itemDescription: "상처엔 역시 부드러운 밴드! 간편한 응급 처치.",
+               itemDescription: "의사에게 정확한 진단으로 더 빨리 나아요!",
                itemEffectDescription: "작은 상처가 치료됩니다.",
                itemTag: .normal,
                itemCategory: .drug,
@@ -106,7 +106,7 @@ let products = [
     
     GRShopItem(itemName: "약물 치료",
                itemType: .consumable,
-               itemImage: "pill",
+               itemImage: "medicineBottles",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -119,7 +119,7 @@ let products = [
     
     GRShopItem(itemName: "캐치볼 놀이",
                itemType: .permanent,
-               itemImage: "tennisball",
+               itemImage: "volleyball",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -132,7 +132,7 @@ let products = [
     
     GRShopItem(itemName: "힐링하기",
                itemType: .consumable,
-               itemImage: "bird",
+               itemImage: "healing",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -145,7 +145,7 @@ let products = [
     
     GRShopItem(itemName: "랜덤박스선물",
                itemType: .consumable,
-               itemImage: "shippingbox",
+               itemImage: "randomBoxGift",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -254,7 +254,7 @@ let playProducts = [
 
         GRShopItem(itemName: "산책하기",
                    itemType: .consumable,
-                   itemImage: "leaf",
+                   itemImage: "walking",
                    itemQuantity: 1,
                    limitedQuantity: 0,
                    purchasedQuantity: 0,
@@ -268,9 +268,9 @@ let playProducts = [
 
 // 회복
 let recoveryProducts: [GRShopItem] = [
-    GRShopItem(itemName: "힐링하기",
+    GRShopItem(itemName: "아이스크림",
                itemType: .consumable,
-               itemImage: "bird",
+               itemImage: "icecream",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -283,7 +283,7 @@ let recoveryProducts: [GRShopItem] = [
 
     GRShopItem(itemName: "산책하기",
                itemType: .consumable,
-               itemImage: "leaf",
+               itemImage: "walking",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -377,7 +377,7 @@ let recoveryProducts: [GRShopItem] = [
 let limitedProducts = [
     GRShopItem(itemName: "스페셜 스파클",
                itemType: .consumable,
-                   itemImage: "sparkles",
+                   itemImage: "star",
                    itemQuantity: 1,
                    limitedQuantity: 100, // 예시 수량
                    purchasedQuantity: 0,
@@ -403,7 +403,7 @@ let limitedProducts = [
 
         GRShopItem(itemName: "킹덤 VIP 티켓",
                    itemType: .consumable,
-                   itemImage: "crown.fill",
+                   itemImage: "circleCrown",
                    itemQuantity: 1,
                    limitedQuantity: 50,
                    purchasedQuantity: 0,
@@ -445,7 +445,7 @@ let ticketProducts = [
 
         GRShopItem(itemName: "30일 패스",
                    itemType: .consumable,
-                   itemImage: "ticket.fill",
+                   itemImage: "circleCrown",
                    itemQuantity: 1,
                    limitedQuantity: 0,
                    purchasedQuantity: 0,

@@ -151,7 +151,7 @@ struct SectionView: View {
             
             Divider()
                 .frame(height: 1)
-                .background(Color.black.opacity(0.7))
+                .background(Color.black.opacity(0.7 ))
                 .padding(.vertical, 8)
 
             
