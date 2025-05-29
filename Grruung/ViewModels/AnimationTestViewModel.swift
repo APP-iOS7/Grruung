@@ -576,7 +576,15 @@ class AnimationTestViewModel: ObservableObject {
     
     /// 애니메이션의 모든 프레임 로드 (특정 캐릭터와 애니메이션 타입의)
     func loadAllAnimationFrames(characterType: String, phase: CharacterPhase, animationType: String) -> [UIImage] {
-        guard let modelContext = modelContext else { return [] }
+        guard let modelContext = modelContext else {
+            print("X ModelContext가 없어서 로드 불가")
+            return []
+        }
+        
+        print("애니메이션 프레임 로드 시도:")
+        print("  - characterType: \(characterType)")
+        print("  - phase: \(phase.rawValue)")
+        print("  - animationType: \(animationType)")
         
         do {
             // 특정 캐릭터와 애니메이션 타입의 모든 메타데이터 쿼리
@@ -590,10 +598,18 @@ class AnimationTestViewModel: ObservableObject {
             )
             
             let metadataItems = try modelContext.fetch(descriptor)
+            print("발견된 메타데이터 개수: \(metadataItems.count)")
+            
+            // 메타데이터 상세 정보 출력(디버깅용)
+            for (index, metadata) in metadataItems.enumerated() {
+                print("  [\(index)] 프레임 \(metadata.frameIndex): \(metadata.filePath)")
+            }
             
             // 각 프레임 로드
             var frames: [UIImage] = []
             for metadata in metadataItems {
+                print("이미지 로드 시도: \(metadata.filePath)")
+                
                 if let image = UIImage(contentsOfFile: metadata.filePath) {
                     frames.append(image)
                     
@@ -608,12 +624,18 @@ class AnimationTestViewModel: ObservableObject {
                     
                     // 마지막 접근 시간 업데이트
                     metadata.lastAccessed = Date()
+                } else {
+                    print("이미지 로드 실패: \(metadata.filePath)")
+                    // 파일이 실제로 존재하는지 확인
+                    let fileExists = FileManager.default.fileExists(atPath: metadata.filePath)
+                    print("   파일 존재 여부: \(fileExists)")
                 }
             }
             
             // 변경사항 저장
             try modelContext.save()
             
+            print("최종 로드된 프레임 수: \(frames.count)")
             return frames
         } catch {
             print("애니메이션 프레임 로드 실패: \(error.localizedDescription)")
@@ -653,7 +675,17 @@ class AnimationTestViewModel: ObservableObject {
     
     /// 메타데이터 저장
     private func saveMetadata(characterType: String, phase: CharacterPhase, animationType: String, frameIndex: Int, filePath: String, fileSize: Int) {
-        guard let modelContext = modelContext else { return }
+        guard let modelContext = modelContext else {
+            print("❌ ModelContext가 없습니다")
+            return
+        }
+        
+        print("메타데이터 저장 시도:")
+        print("  - characterType: \(characterType)")
+        print("  - phase: \(phase.rawValue)")
+        print("  - animationType: \(animationType)")
+        print("  - frameIndex: \(frameIndex)")
+        print("  - filePath: \(filePath)")
         
         // 기존 메타데이터 확인
         do {
@@ -670,6 +702,7 @@ class AnimationTestViewModel: ObservableObject {
             
             if let existingMetadata = existingItems.first {
                 // 기존 메타데이터 업데이트
+                print("기존 메타데이터 업데이트")
                 existingMetadata.filePath = filePath
                 existingMetadata.fileSize = fileSize
                 existingMetadata.downloadDate = Date()
@@ -677,8 +710,10 @@ class AnimationTestViewModel: ObservableObject {
                 existingMetadata.isDownloaded = true
             } else {
                 // 새 메타데이터 생성
+                print("새 메타데이터 생성")
                 let metadata = GRAnimationMetadata(
                     characterType: characterType,
+                    phase: phase,
                     animationType: animationType,
                     frameIndex: frameIndex,
                     filePath: filePath,
@@ -690,6 +725,7 @@ class AnimationTestViewModel: ObservableObject {
             
             // 변경사항 저장
             try modelContext.save()
+            print("메타데이터 저장 성공")
         } catch {
             print("메타데이터 저장 실패: \(error.localizedDescription)")
         }
