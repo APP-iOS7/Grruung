@@ -76,7 +76,7 @@ struct MainTabView: View {
             
             // 마이페이지 탭
             Tab("마이페이지", systemImage: "person.circle.fill", value: 4) {
-                SettingView()
+                CheonTestView()
             }
         }
     }
