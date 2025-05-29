@@ -40,23 +40,32 @@ struct ProductDetailView: View {
                     .padding(.horizontal)
                     
                     // 제품 이미지
-                    Image(product.itemImage)
-                        .resizable()
-                        .renderingMode(.original)
-                        .scaledToFit()
-                        .frame(width: 180, height: 180)
-                        .rotationEffect(.degrees(isRotating ? 3 : -3))
-                        .offset(y: isBouncing ? -2 : 2)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .onAppear {
-                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                                isRotating = true
+                    ZStack {
+                        // 바닥 그림자처럼 보이는 배경 타원형
+                        Ellipse()
+                            .fill(Color.black.opacity(0.1))
+                            .frame(width: 140, height: 20)
+                            .offset(y: 90)
+
+                        // 메인 이미지
+                        Image(product.itemImage)
+                            .resizable()
+                            .renderingMode(.original)
+                            .scaledToFit()
+                            .frame(width: 180, height: 180)
+                            .rotationEffect(.degrees(isRotating ? 3 : -3))
+                            .offset(y: isBouncing ? -2 : 2)
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                    isRotating = true
+                                }
+                                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                    isBouncing = true
+                                }
                             }
-                            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                                isBouncing = true
-                            }
-                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
                     
                     // 설명
                     Text(product.itemDescription)
