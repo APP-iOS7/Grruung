@@ -54,7 +54,7 @@ struct ProfileSection: View {
     }
 }
 
-// MARK: - 추천 섹션
+// MARK: - 서비스 섹션
 
 struct RecommendedItem: Identifiable {
     let id = UUID()
@@ -75,8 +75,8 @@ struct RecommendedGrid: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("추천")
-                .font(.title2)
+            Text("서비스")
+                .font(.headline)
                 .bold()
                 .padding(.horizontal)
             
@@ -104,7 +104,6 @@ struct RecommendedGrid: View {
             .background(
                 RoundedRectangle(cornerRadius: 15)
                     .stroke(Color.gray.opacity(0.4), lineWidth: 1))
-            
         }
     }
 }
@@ -133,16 +132,16 @@ struct SettingsItem: Identifiable {
 struct SettingsSection: View {
     let settings: [SettingsItem] = [
         .init(title: "알림", iconName: "bell"),
-        .init(title: "인증 관리", iconName: "checkmark.shield"),
-        .init(title: "질문&피드백", iconName: "questionmark.message"),
+        .init(title: "공지사항", iconName: "megaphone"),
+        .init(title: "고객센터", iconName: "headset"),
         .init(title: "평가 및 리뷰", iconName: "hand.thumbsup"),
-        .init(title: "정보", iconName: "info.circle")
+        .init(title: "약관 및 정책", iconName: "info.circle")
     ]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("설정")
-                .font(.title2)
+                .font(.headline)
                 .bold()
                 .padding(.horizontal)
                 .padding(.top)
@@ -195,7 +194,6 @@ private func settingsDestination(for item: SettingsItem) -> some View {
 }
 
 // MARK: - Preview
-
 #Preview {
     CheonTestView()
 }
