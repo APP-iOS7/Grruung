@@ -20,6 +20,10 @@ struct NoTestView: View {
             NavigationLink(destination: WriteStoryView(currentMode: .create, characterUUID: charUUID, userID: userID)) {
                 Text("Go to WriteStory Create")
             }
+            
+            NavigationLink(destination: WriteStoryStartView(characterUUID: charUUID, userId: userID)) {
+                Text("Go to WriteStory Start")
+            }
         }
     }
 }
