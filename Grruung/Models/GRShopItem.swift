@@ -281,9 +281,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
 
-    GRShopItem(itemName: "산책하기",
+    GRShopItem(itemName: "햄버거",
                itemType: .consumable,
-               itemImage: "walking",
+               itemImage: "burger",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -294,9 +294,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
 
-    GRShopItem(itemName: "힐링하기",
+    GRShopItem(itemName: "팬케이크",
                itemType: .consumable,
-               itemImage: "bird",
+               itemImage: "pancake",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -307,9 +307,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
 
-    GRShopItem(itemName: "산책하기",
+    GRShopItem(itemName: "복숭아 먹기",
                itemType: .consumable,
-               itemImage: "leaf",
+               itemImage: "peach",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -320,9 +320,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
 
-    GRShopItem(itemName: "힐링하기",
+    GRShopItem(itemName: "배 먹기",
                itemType: .consumable,
-               itemImage: "bird",
+               itemImage: "pear",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -332,10 +332,23 @@ let recoveryProducts: [GRShopItem] = [
                itemTag: .normal,
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
-
-    GRShopItem(itemName: "산책하기",
+    
+    GRShopItem(itemName: "수박 먹기",
                itemType: .consumable,
-               itemImage: "leaf",
+               itemImage: "watermelon",
+               itemQuantity: 1,
+               limitedQuantity: 0,
+               purchasedQuantity: 0,
+               itemPrice: 129,
+               itemDescription: "몸과 마음이 모두 리프레시 되는 시간!",
+               itemEffectDescription: "체력 회복과 힐링 효과.",
+               itemTag: .normal,
+               itemCategory: .toy,
+               bgColor: .mint.opacity(0.4)),
+
+    GRShopItem(itemName: "쉐이크",
+               itemType: .consumable,
+               itemImage: "shake",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -346,9 +359,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
 
-    GRShopItem(itemName: "힐링하기",
+    GRShopItem(itemName: "초밥 먹기",
                itemType: .consumable,
-               itemImage: "bird",
+               itemImage: "sushi",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -359,9 +372,9 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
 
-    GRShopItem(itemName: "산책하기",
+    GRShopItem(itemName: "와플 먹기",
                itemType: .consumable,
-               itemImage: "leaf",
+               itemImage: "waffle",
                itemQuantity: 1,
                limitedQuantity: 0,
                purchasedQuantity: 0,
@@ -370,7 +383,8 @@ let recoveryProducts: [GRShopItem] = [
                itemEffectDescription: "체력 회복과 힐링 효과.",
                itemTag: .normal,
                itemCategory: .toy,
-               bgColor: .mint.opacity(0.4))
+               bgColor: .mint.opacity(0.4)),
+
 ]
 
 //한정판
