@@ -23,26 +23,28 @@ struct AnimationSecondTestView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // 레벨 프로그레스 바 (홈뷰에서 가져온 것)
-                levelProgressBar
-                
-                // 캐릭터 이미지 표시 영역
-                characterImageSection
-                
-                // 상태 바 섹션 (홈뷰에서 가져온 것)
-                statsSection
-                
-                // 캐릭터 선택 토글 버튼
-                characterSelectionSection
-                
-                // 캐릭터 단계 선택 토글 버튼
-                phaseSelectionSection
-                
-                Spacer()
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 레벨 프로그레스 바 (홈뷰에서 가져온 것)
+                    levelProgressBar
+                    
+                    // 캐릭터 이미지 표시 영역
+                    characterImageSection
+                    
+                    // 상태 바 섹션 (홈뷰에서 가져온 것)
+                    statsSection
+                    
+                    // 캐릭터 선택 토글 버튼
+                    characterSelectionSection
+                    
+                    // 캐릭터 단계 선택 토글 버튼
+                    phaseSelectionSection
+                    
+                    Spacer(minLength: 20)
+                }
             }
-            .padding()
             .navigationTitle("애니메이션 테스트 2")
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 loadCharacterImage() // 뷰가 나타날 때 기본 이미지 로드
             }
