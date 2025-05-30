@@ -12,7 +12,7 @@ import FirebaseFirestore
 import FirebaseDatabase
 
 // Firebase 관련 작업을 처리하는 서비스 클래스
-class FirebaseService {
+class FirebaseService: ObservableObject {
     static let shared = FirebaseService()
     
     private let db = Firestore.firestore()

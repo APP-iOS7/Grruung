@@ -4,24 +4,9 @@
 //
 //  Created by NoelMacMini on 5/1/25.
 //
-// TODO: 0. 경험치바, 상태바 애니메이션 부드럽게 상승되게 변경
-// TODO: 1. 6분마다 체력(피로도) 1씩 회복됨 + 수면중 누르면 2~5배(밸런스 조정)
-// TODO: 2. 각 시기(운석(알): 50, 유아기: 100, 소아기: 150, 청년기: 200, 성년기: 300, 노년기: 500 별로 레벨업하는 경험치 요구량 고정 - 완
-// TODO: 3. 운석(알)때는 튜토리얼 개념으로 경험치 빨리 획득하게 해서 최대한 빨리 유아기로 갈 수 있게 설정 (기본 획득량이 3이면 운석(알)에서만 5배 빨리 획득 이런식) - 완
-// TODO: 4. 상태바 프로그레스 스텟 80이상 파란색 / 21~79 녹색 / 20이하 빨간색 으로 나오게 하기
-// TODO: 5. 보이는 스텟 (포만감, 운동량)은 일정시간 마다 -1씩 깎이고 / 히든 스텟 (건강, 청결)도 보이는 스텟보다는 긴 일정 시간이후로 -되고 / 애정도는 매일 06시 기준 활동 한번도 안했으면 -(깎이게) 되게
-// TODO: 6. 활동버튼은 액션마다 추가 해놓고 랜덤으로 나오게 하기. / 22:00 ~ 06:00 은 잠자기 무조건 나오게 -> 이건 추후 마이페이지 설정에서 변경하거나 워치 연결 시 수면 시간에 맞춰서 나오게 변경 - 완
-// TODO: 7. 동산 버튼이 누르면 현재 키우던 펫을 캐릭터뷰에 마지막 상태, 스텟, 대화내용, 들어준이야기 내용들 저장 후 홈뷰는 빈상태 -> 펫추가(처음부터 새로 키울 수 있게) 뷰로 변경
-// TODO: 8. 사이드 버튼 중 잠겨 있는 버튼 - 유아기~노년기 각 성장 시기마다 특정 조건을 달성하면 히든 활동(또는 스토리) 등장. → 지용님 확인하고 답변좀 - 사이드 버튼만 완료 / 특수 이벤트 처리 아직 X
-// 운석 상태 활동 : 사이드 버튼 6개 다 잠겨있고, 쓰다듬기, 닦아주기 2개만 나오게 설정. 상태바는 전부 100에서 마이너스, 플러스 없음. 잠겨있는것 처럼 고정. 경험치만 증가함
-// 유아기 부터 : 상태바 전부 Max(100), 건강,청결도 100으로 시작. 애정도만 0으로 시작. 사이드 버튼 다 열리고, 활동 버튼 전부 사용 가능.
-// 레벨업으로 인해 시기가 바뀐다고 각 현재 상태바들을 다시 MAX로 만들어주지않고 현재 스텟 그대로에서 최대스텟만 일정 상승 (건강,청결은 무조건 100이 최대치)
-// 추후 파이어베이스 연결할 곳들은 //TODO: Firestore에서 ~~ 구현 으로 주석처리로 적어두기.
-// 0~8 작업 완료 후 → 테스트 시에는 모든 수치 증가 5~10배 적용(스텟들 수치 까지는것, 버튼 누르면 차는것 다 포함) + (디버그 모드에서만 작동)
-// TODO: 9. 0~8번 테스트 완료 및 작업 완료되면 Firebase Firestore 연동
 // TODO: 10. 만들어 놓은거 전부 연결
 // 활동 액션 별로 골드 획득 / 수면시 일정 골드 획득 / 레벨업 할때 일정 골드 획득
-
+//
 
 import SwiftUI
 
@@ -29,6 +14,12 @@ struct HomeView: View {
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
+    
+    @State private var showInventory = false
+    @State private var showPetGarden = false
+    @State private var isShowingWriteStory = false
+    @State private var isShowingChatPet = false
+    @State private var isShowingSettings = false
     
     // MARK: - Body
     var body: some View {
@@ -51,7 +42,7 @@ struct HomeView: View {
                     .multilineTextAlignment(.center)
                     .padding(.vertical, 5)
                     .foregroundColor(getMessageColor()) // 이것만 추가
-
+                
                 Spacer()
                 
                 // 액션 버튼 그리드
@@ -62,6 +53,37 @@ struct HomeView: View {
             .onAppear {
                 viewModel.loadCharacter()
             }
+        }
+        
+        .sheet(isPresented: $showInventory) {
+            //            InventoryView(character: viewModel.character)
+        }
+        .sheet(isPresented: $showPetGarden) {
+            //            PetGardenView(character: viewModel.character)
+        }
+        .sheet(isPresented: $isShowingWriteStory) {
+            if let character = viewModel.character {
+                NavigationStack {
+                    WriteStoryView(
+                        currentMode: .create,
+                        characterUUID: character.id
+                    )
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingChatPet) {
+            if let character = viewModel.character {
+                let prompt = PetPrompt(
+                    petType: character.species,
+                    phase: character.status.phase,
+                    name: character.name
+                ).generatePrompt(status: character.status)
+                
+                ChatPetView(character: character, prompt: prompt)
+            }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            //            SettingsSheetView()
         }
     }
     
@@ -104,7 +126,7 @@ struct HomeView: View {
                             .fill(Color(hex: "6159A0"))
                             .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
                             .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
-
+                        
                     }
                     .frame(height: 30)
                 }
@@ -166,35 +188,35 @@ struct HomeView: View {
     
     // 상태 바 섹션
     private var statsSection: some View {
-            VStack(spacing: 12) {
-                ForEach(viewModel.stats, id: \.icon) { stat in
-                    HStack(spacing: 15) {
-                        // 아이콘
-                        Image(systemName: stat.icon)
-                            .foregroundColor(stat.iconColor)
-                            .frame(width: 30)
-                        
-                        // 상태 바
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                // 배경 바 (전체 너비)
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(height: 12)
-                                    .foregroundColor(Color.gray.opacity(0.1))
-                                
-                                // 진행 바
-                                RoundedRectangle(cornerRadius: 10)
-                                    .frame(width: geometry.size.width * stat.value, height: 12)
-                                    .foregroundColor(stat.color)
-                                    .animation(.easeInOut(duration: 0.6), value: stat.value)
-                            }
+        VStack(spacing: 12) {
+            ForEach(viewModel.stats, id: \.icon) { stat in
+                HStack(spacing: 15) {
+                    // 아이콘
+                    Image(systemName: stat.icon)
+                        .foregroundColor(stat.iconColor)
+                        .frame(width: 30)
+                    
+                    // 상태 바
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // 배경 바 (전체 너비)
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(height: 12)
+                                .foregroundColor(Color.gray.opacity(0.1))
+                            
+                            // 진행 바
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(width: geometry.size.width * stat.value, height: 12)
+                                .foregroundColor(stat.color)
+                                .animation(.easeInOut(duration: 0.6), value: stat.value)
                         }
-                        .frame(height: 12)
                     }
+                    .frame(height: 12)
                 }
             }
-            .padding(.vertical)
         }
+        .padding(.vertical)
+    }
     
     // 액션 버튼 그리드
     private var actionButtonsGrid: some View {
@@ -215,7 +237,7 @@ struct HomeView: View {
                         } else {
                             VStack(spacing: 5) {
                                 // 자고 있을 때 재우기 버튼의 아이콘 변경
-
+                                
                                 Image(systemName: action.icon)
                                     .font(.system(size: 24))
                                     .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
@@ -235,67 +257,67 @@ struct HomeView: View {
     // 아이콘 버튼
     @ViewBuilder
     func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
-        if systemName == "cart.fill" {
-            NavigationLink(destination: StoreView()) {
-                buttonContent(systemName: systemName, name: name, unlocked: unlocked)
+        if !unlocked {
+            // 잠긴 버튼
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .frame(width: 60, height: 60)
+                    .foregroundColor(Color.gray.opacity(0.05))
+                
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.gray)
             }
-            .disabled(!unlocked)
         } else {
             Button(action: {
                 handleSideButtonAction(systemName: systemName)
             }) {
-                buttonContent(systemName: systemName, name: name, unlocked: unlocked)
-
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.05) : Color.gray.opacity(0.2))
+                    
+                    Image(systemName: systemName)
+                        .font(.system(size: 24))
+                        .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                }
             }
-            .disabled(!unlocked || viewModel.isSleeping)
+            .disabled(viewModel.isSleeping)
         }
     }
     
     // 버튼 내용 (재사용 가능한 부분)
-    @ViewBuilder
-    func buttonContent(systemName: String, name: String, unlocked: Bool) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .frame(width: 60, height: 60)
-                .foregroundColor(unlocked ? Color.gray.opacity(0.2) : Color.gray.opacity(0.05))
-            
-            if unlocked {
-                Image(systemName: systemName)
-                    .font(.system(size: 24))
-                    .foregroundColor(viewModel.isSleeping ? .gray : .primary)
-            } else {
-                Image(systemName: "lock.fill")
-                    .foregroundColor(.gray)
-            }
-        }
-    }
-    
-    // MARK: - 액션 처리 메서드
-    
-    // 사이드 버튼 처리
     private func handleSideButtonAction(systemName: String) {
         switch systemName {
         case "backpack.fill": // 인벤토리
-            print("인벤토리 버튼 클릭")
-            // 인벤토리 화면으로 이동하는 로직 (나중에 추가)
+            showInventory.toggle()
+        case "cart.fill": // 상점
+            // NavigationLink는 이미 처리됨
+            break
         case "mountain.2.fill": // 동산
-            print("동산 버튼 클릭")
-            // 동산 화면으로 이동하는 로직 (나중에 추가)
+            showPetGarden.toggle()
         case "book.fill": // 일기
-            print("일기 버튼 클릭")
-            // 일기 화면으로 이동하는 로직 (나중에 추가)
+            if let character = viewModel.character {
+                // 스토리 작성 시트 표시
+                isShowingWriteStory = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
         case "microphone.fill": // 채팅
-            print("채팅 버튼 클릭")
-            // 채팅 화면으로 이동하는 로직 (나중에 추가)
+            if let character = viewModel.character {
+                // 챗펫 시트 표시
+                isShowingChatPet = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
         case "gearshape.fill": // 설정
-            print("설정 버튼 클릭")
-            // 설정 화면으로 이동하는 로직 (나중에 추가)
+            // 설정 시트 표시
+            isShowingSettings.toggle()
         default:
             break
         }
     }
-    
-    // MARK: - 액션 처리 메서드
     
 }
 
