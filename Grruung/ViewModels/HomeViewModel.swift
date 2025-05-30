@@ -11,7 +11,7 @@ import Combine
 import FirebaseFirestore
 
 class HomeViewModel: ObservableObject {
-    // MARK: - Published 속성
+    // MARK: - Properties
     // 캐릭터 관련
     @Published var character: GRCharacter?
     @Published var statusMessage: String = "안녕하세요!" // 상태 메시지
@@ -131,20 +131,7 @@ class HomeViewModel: ObservableObject {
         ("figure.run", Color.blue, Color.blue, 1.0),     // 운동량
         ("bolt.fill", Color.yellow, Color.yellow, 1.0)   // 활동량
     ]
-    
-    // 스탯 값에 따라 색상을 반환하는 유틸 함수
-    private func colorForValue(_ value: Int) -> Color {
-        switch value {
-        case 0...20:
-            return .red
-        case 21...79:
-            return .green
-        case 80...100:
-            return .blue
-        default:
-            return .gray
-        }
-    }
+
     
     // 액션 관리자
     private let actionManager = ActionManager.shared
@@ -159,7 +146,8 @@ class HomeViewModel: ObservableObject {
         .elder: 500
     ]
     
-    // MARK: - 초기화
+    // MARK: - Initialization
+    
     init() {
         setupFirebaseIntegration()
         setupAppStateObservers()
@@ -175,12 +163,6 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    deinit {
-        cleanupResources()
-        
-        print("⏰ 모든 타이머 정리됨")
-    }
-    
     // Firebase 연동을 초기화합니다
     private func setupFirebaseIntegration() {
         isLoadingFromFirebase = true
@@ -191,7 +173,23 @@ class HomeViewModel: ObservableObject {
         // 메인 캐릭터 로드
         loadMainCharacterFromFirebase()
     }
+    private func setupAppStateObservers() {
+        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppWillResignActive()
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.handleAppDidBecomeActive()
+            }
+            .store(in: &cancellables)
+    }
     
+    
+    // MARK: - Firebase Integration
+
     // Firestore에서 메인 캐릭터를 로드
     private func loadMainCharacterFromFirebase() {
         firebaseService.loadMainCharacter { [weak self] character, error in
@@ -327,33 +325,6 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // 실시간 캐릭터 동기화 리스너를 설정
-    private func setupRealtimeListener(characterID: String) {
-        // 기존 리스너 해제
-        
-        characterListener?.remove()
-        
-        // 새 리스너 설정
-        characterListener = firebaseService.setupCharacterListener(characterID: characterID) { [weak self] character, error in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                if let error = error {
-                    self.firebaseError = "실시간 동기화 오류: \(error.localizedDescription)"
-                    print("❌ 실시간 동기화 오류: \(error.localizedDescription)")
-                    return
-                }
-                
-                if let character = character {
-                    // 실시간 업데이트 (무한 루프 방지)
-                    self.syncCharacterFromFirebase(character)
-                }
-            }
-        }
-        
-        print("🔄 실시간 동기화 리스너 설정 완료")
-    }
-    
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
         self.isUpdatingFromFirebase = true
@@ -436,9 +407,37 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    // 실시간 캐릭터 동기화 리스너를 설정
+    private func setupRealtimeListener(characterID: String) {
+        // 기존 리스너 해제
+        
+        characterListener?.remove()
+        
+        // 새 리스너 설정
+        characterListener = firebaseService.setupCharacterListener(characterID: characterID) { [weak self] character, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.firebaseError = "실시간 동기화 오류: \(error.localizedDescription)"
+                    print("❌ 실시간 동기화 오류: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let character = character {
+                    // 실시간 업데이트 (무한 루프 방지)
+                    self.syncCharacterFromFirebase(character)
+                }
+            }
+        }
+        
+        print("🔄 실시간 동기화 리스너 설정 완료")
+    }
     
-    // MARK: - 데이터 저장
     
+    
+    // MARK: - Data Persistence
+
     // 현재 캐릭터 상태를 Firestore에 저장
     private func saveCharacterToFirebase() {
         // Firebase에서 업데이트 중이면 저장하지 않음 (무한 루프 방지)
@@ -496,8 +495,8 @@ class HomeViewModel: ObservableObject {
         saveCharacterToFirebase()
     }
     
-    // MARK: - 오프라인 데이터 처리
-    
+    // MARK: - Offline Data Processing
+
     // 앱 재시작 시 오프라인 시간 계산 및 보상 적용
     private func processOfflineTime() {
         guard let character = character else { return }
@@ -585,8 +584,9 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    // MARK: - 타이머 관련 메서드
     
+    // MARK: - Timer Management
+
     private func startStatDecreaseTimers() {
         // 활동량(피로도) 회복 타이머 (15분마다)
         energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
@@ -630,6 +630,28 @@ class HomeViewModel: ObservableObject {
         
         weeklyAffectionTimer?.invalidate()
         weeklyAffectionTimer = nil
+    }
+    
+    // 활동량(피로도) 회복 처리 - 15분마다 실행
+    private func recoverActivity() {
+        let baseRecoveryAmount = isSleeping ? 15 : 10
+        let finalRecoveryAmount = isDebugMode ? (baseRecoveryAmount * debugSpeedMultiplier) : baseRecoveryAmount
+        
+        if activityValue < 100 {
+            let oldValue = activityValue
+            activityValue = min(100, activityValue + finalRecoveryAmount)
+            
+            updateAllPercents()
+            updateCharacterStatus()
+            
+            // Firebase에 기록
+            let recoveryChanges = ["activity": activityValue - oldValue]
+            recordAndSaveStatChanges(recoveryChanges, reason: "timer_recovery")
+            
+#if DEBUG
+            print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 보너스)" : ""))
+#endif
+        }
     }
     
     // 보이는 스탯 감소 (포만감, 활동량)
@@ -770,34 +792,6 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // 활동 날짜 업데이트 메서드 추가
-    private func updateLastActivityDate() {
-        lastActivityDate = Date()
-        print("📅 마지막 활동 날짜 업데이트")
-    }
-    
-    // 활동량(피로도) 회복 처리 - 15분마다 실행
-    private func recoverActivity() {
-        let baseRecoveryAmount = isSleeping ? 15 : 10
-        let finalRecoveryAmount = isDebugMode ? (baseRecoveryAmount * debugSpeedMultiplier) : baseRecoveryAmount
-        
-        if activityValue < 100 {
-            let oldValue = activityValue
-            activityValue = min(100, activityValue + finalRecoveryAmount)
-            
-            updateAllPercents()
-            updateCharacterStatus()
-            
-            // Firebase에 기록
-            let recoveryChanges = ["activity": activityValue - oldValue]
-            recordAndSaveStatChanges(recoveryChanges, reason: "timer_recovery")
-            
-#if DEBUG
-            print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 보너스)" : ""))
-#endif
-        }
-    }
-    
     private func performSleepRecovery() {
         let baseRecoveryMultiplier = Int.random(in: 2...5)
         let finalRecoveryMultiplier = isDebugMode ? (baseRecoveryMultiplier * debugSpeedMultiplier) : baseRecoveryMultiplier
@@ -815,21 +809,7 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    // MARK: - 앱 상태 처리
-    
-    private func setupAppStateObservers() {
-        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
-            .sink { [weak self] _ in
-                self?.handleAppWillResignActive()
-            }
-            .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
-            .sink { [weak self] _ in
-                self?.handleAppDidBecomeActive()
-            }
-            .store(in: &cancellables)
-    }
+    // MARK: - App Lifecycle Management
     
     private func handleAppWillResignActive() {
         // 앱이 백그라운드로 나갈 때 시간 기록 및 모든 타이머 정지
@@ -858,39 +838,8 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    
-    
-    // 성장 단계별 기능 해금
-    private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
-        switch phase {
-        case .egg:
-            // 알 단계에서는 제한된 기능만 사용 가능
-            sideButtons[3].unlocked = false // 일기
-            sideButtons[4].unlocked = false // 채팅
-            
-        case .infant:
-            // 유아기에서는 일기 기능 해금
-            sideButtons[3].unlocked = true // 일기
-            sideButtons[4].unlocked = false // 채팅
-            
-        case .child:
-            // 소아기에서는 채팅 기능 해금
-            sideButtons[3].unlocked = true // 일기
-            sideButtons[4].unlocked = true // 채팅
-            
-        case .adolescent, .adult, .elder:
-            // 청년기 이상에서는 모든 기능 해금
-            sideButtons[3].unlocked = true // 일기
-            sideButtons[4].unlocked = true // 채팅
-        }
-        
-#if DEBUG
-        print("🔓 기능 해금 업데이트: \(phase.rawValue) 단계")
-#endif
-    }
-    
-    // MARK: - 내부 메서드
-    
+    // MARK: - Character Status Management
+
     // 모든 스탯의 퍼센트 값을 업데이트
     private func updateAllPercents() {
         // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
@@ -943,42 +892,36 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // MARK: - 액션 관련 관리
-    
-    // 액션 버튼을 현재 상태에 맞게 갱신
-    private func refreshActionButtons() {
-        guard let character = character else {
-            // 캐릭터가 없으면 기본 액션(캐릭터 생성) 등장 설정
-            actionButtons = [
-                ("plus.circle", false, "캐릭터 생성")
-            ]
-            return
-        }
+    // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
+    private func updateCharacterStatus() {
+        guard var character = character else { return }
         
-        // ActionManager를 통해 현재 상황에 맞는 버튼들 가져오기
-        let managerButtons = actionManager.getActionsButtons(
-            phase: character.status.phase,
-            isSleeping: isSleeping,
-            count: 4
-        )
+        // 캐릭터 상태 업데이트
+        character.status.satiety = satietyValue
+        character.status.stamina = staminaValue
+        character.status.activity = activityValue
+        character.status.affection = affectionValue
+        character.status.affectionCycle = weeklyAffectionValue
+        character.status.healthy = healthyValue
+        character.status.clean = cleanValue
+        character.status.exp = expValue
+        character.status.expToNextLevel = expMaxValue
+        character.status.level = level
         
-        // ActionButton을 HomeViewModel의 튜플 형식으로 변환
-        actionButtons = managerButtons.map { button in
-            (icon: button.icon, unlocked: button.unlocked, name: button.name)
-        }
+        // 캐릭터 업데이트
+        self.character = character
         
-#if DEBUG
-        print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계 (레벨 \(character.status.level)), 잠자는 상태: \(isSleeping)")
-        print("📋 현재 액션들: \(actionButtons.map { $0.name }.joined(separator: ", "))")
-        print("📊 레벨별 상세 정보:")
-        print("   - 현재 레벨: \(level)")
-        print("   - 현재 단계: \(character.status.phase.rawValue)")
-        print("   - 잠자는 상태: \(isSleeping)")
-        print("   - 총 액션 수: \(actionButtons.count)")
-#endif
+        // Firestore에 저장
+        saveCharacterToFirebase()
     }
     
-    // MARK: - 경험치 및 레벨업 관리
+    // 활동 날짜 업데이트 메서드 추가
+    private func updateLastActivityDate() {
+        lastActivityDate = Date()
+        print("📅 마지막 활동 날짜 업데이트")
+    }
+    
+    // MARK: - Level & Experience System
     
     // 경험치를 추가하고 레벨업을 체크합니다.
     // - Parameter amount: 추가할 경험치량
@@ -1053,7 +996,6 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    
     // 현재 레벨에 맞는 성장 단계를 업데이트
     private func updateGrowthPhase() {
         guard var character = character else { return }
@@ -1112,30 +1054,40 @@ class HomeViewModel: ObservableObject {
 #endif
     }
     
-    // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
-    private func updateCharacterStatus() {
-        guard var character = character else { return }
-        
-        // 캐릭터 상태 업데이트
-        character.status.satiety = satietyValue
-        character.status.stamina = staminaValue
-        character.status.activity = activityValue
-        character.status.affection = affectionValue
-        character.status.affectionCycle = weeklyAffectionValue
-        character.status.healthy = healthyValue
-        character.status.clean = cleanValue
-        character.status.exp = expValue
-        character.status.expToNextLevel = expMaxValue
-        character.status.level = level
-        
-        // 캐릭터 업데이트
-        self.character = character
-        
-        // Firestore에 저장
-        saveCharacterToFirebase()
-    }
+    // MARK: - Action System
     
-    // MARK: - 통합 액션 처리 메서드
+    // 액션 버튼을 현재 상태에 맞게 갱신
+    private func refreshActionButtons() {
+        guard let character = character else {
+            // 캐릭터가 없으면 기본 액션(캐릭터 생성) 등장 설정
+            actionButtons = [
+                ("plus.circle", false, "캐릭터 생성")
+            ]
+            return
+        }
+        
+        // ActionManager를 통해 현재 상황에 맞는 버튼들 가져오기
+        let managerButtons = actionManager.getActionsButtons(
+            phase: character.status.phase,
+            isSleeping: isSleeping,
+            count: 4
+        )
+        
+        // ActionButton을 HomeViewModel의 튜플 형식으로 변환
+        actionButtons = managerButtons.map { button in
+            (icon: button.icon, unlocked: button.unlocked, name: button.name)
+        }
+        
+#if DEBUG
+        print("🔄 액션 버튼 갱신됨: \(character.status.phase.rawValue) 단계 (레벨 \(character.status.level)), 잠자는 상태: \(isSleeping)")
+        print("📋 현재 액션들: \(actionButtons.map { $0.name }.joined(separator: ", "))")
+        print("📊 레벨별 상세 정보:")
+        print("   - 현재 레벨: \(level)")
+        print("   - 현재 단계: \(character.status.phase.rawValue)")
+        print("   - 잠자는 상태: \(isSleeping)")
+        print("   - 총 액션 수: \(actionButtons.count)")
+#endif
+    }
     
     // 재우기/깨우기 액션 처리
     func putPetToSleep() {
@@ -1372,7 +1324,71 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // MARK: - 리소스 정리
+    // MARK: - Feature Management
+
+    // 성장 단계별 기능 해금
+    private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
+        switch phase {
+        case .egg:
+            // 알 단계에서는 제한된 기능만 사용 가능
+            sideButtons[3].unlocked = false // 일기
+            sideButtons[4].unlocked = false // 채팅
+            
+        case .infant:
+            // 유아기에서는 일기 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = false // 채팅
+            
+        case .child:
+            // 소아기에서는 채팅 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = true // 채팅
+            
+        case .adolescent, .adult, .elder:
+            // 청년기 이상에서는 모든 기능 해금
+            sideButtons[3].unlocked = true // 일기
+            sideButtons[4].unlocked = true // 채팅
+        }
+        
+#if DEBUG
+        print("🔓 기능 해금 업데이트: \(phase.rawValue) 단계")
+#endif
+    }
+    
+    // MARK: - Utility Methods
+    
+    // 스탯 값에 따라 색상을 반환하는 유틸 함수
+    private func colorForValue(_ value: Int) -> Color {
+        switch value {
+        case 0...20:
+            return .red
+        case 21...79:
+            return .green
+        case 80...100:
+            return .blue
+        default:
+            return .gray
+        }
+    }
+    
+    func loadCharacter() {
+        // Firebase에서 로드하도록 변경
+        if firebaseService.getCurrentUserID() != nil {
+            loadMainCharacterFromFirebase()
+        } else {
+            print("⚠️ 사용자가 로그인되지 않았습니다")
+            // 로그인되지 않은 경우 로컬 캐릭터만 생성
+            createAndSaveDefaultCharacter()
+        }
+    }
+    
+    // MARK: - Resource Cleanup
+    
+    deinit {
+        cleanupResources()
+        
+        print("⏰ 모든 타이머 정리됨")
+    }
     
     // 모든 리소스를 정리
     private func cleanupResources() {
@@ -1392,17 +1408,5 @@ class HomeViewModel: ObservableObject {
         print("🧹 모든 리소스 정리 완료")
     }
     
-    // loadCharacter 메서드 수정
-    func loadCharacter() {
-        // Firebase에서 로드하도록 변경
-        if firebaseService.getCurrentUserID() != nil {
-            loadMainCharacterFromFirebase()
-        } else {
-            print("⚠️ 사용자가 로그인되지 않았습니다")
-            // 로그인되지 않은 경우 로컬 캐릭터만 생성
-            createAndSaveDefaultCharacter()
-        }
-    }
     
 }
-
