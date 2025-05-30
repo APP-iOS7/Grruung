@@ -29,6 +29,7 @@ struct StoreGridView: View {
 
 struct ProductItemView: View {
     let product: GRShopItem
+    @State private var isLimitedItemVisible = true
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -38,6 +39,22 @@ struct ProductItemView: View {
                     .scaledToFit()
                     .frame(width: 80, height: 80)
                     .foregroundColor(.black)
+                
+                if product.itemTag == ItemTag.limited {
+                    Text("한정")
+                        .font(.caption2)
+                        .bold()
+                        .foregroundColor(.white)
+                        .padding(4)
+                        .background(Color.red)
+                        .clipShape(Capsule())
+                        .opacity(isLimitedItemVisible ? 1 : 0)
+                        .onAppear {
+                            withAnimation(Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                                isLimitedItemVisible.toggle()
+                            }
+                        }
+                }
             }
             
             Text(product.itemName)
@@ -46,8 +63,8 @@ struct ProductItemView: View {
                 .foregroundColor(.black)
             
             HStack(spacing: 8) {
-                Image(systemName: product.itemCurrencyType.rawValue == "다이아" ? "diamond.fill" : "circle.fill")
-                    .foregroundColor(product.itemCurrencyType.rawValue == "다이아" ? .cyan : .yellow)
+                Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
+                    .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
                 
                 Text("\(product.itemPrice)")
                     .font(.caption)

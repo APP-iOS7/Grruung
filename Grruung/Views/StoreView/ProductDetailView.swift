@@ -33,7 +33,7 @@ struct ProductDetailView: View {
                             .font(.largeTitle)
                             .bold()
                         HStack(spacing: 8) {
-                            if product.itemCurrencyType.rawValue == "다이아" {
+                            if product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue {
                                 Image(systemName: "diamond.fill")
                                     .resizable()
                                     .frame(width: 20, height: 25)

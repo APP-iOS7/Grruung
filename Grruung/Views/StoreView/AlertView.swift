@@ -45,8 +45,8 @@ struct AlertView: View {
                         .font(.headline)
                         .foregroundColor(.black)
                     
-                    Image(systemName: product.itemCurrencyType.rawValue == "다이아" ? "diamond.fill" : "circle.fill")
-                        .foregroundColor(product.itemCurrencyType.rawValue == "다이아" ? .cyan : .yellow)
+                    Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
+                        .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
                     
                     Text("\(product.itemPrice * quantity)")
                         .font(.headline)
@@ -148,7 +148,7 @@ struct AlertView: View {
         }
         
         guard hasEnoughCurrency else {
-            notEnoughCurrencyAmount = abs((product.itemCurrencyType.rawValue == "다이아" ? user.diamond : user.gold) - totalPrice)
+            notEnoughCurrencyAmount = abs((product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? user.diamond : user.gold) - totalPrice)
             print("❌ 잔액 부족: 구매 금액 \(totalPrice), 보유 금액 \(product.itemCurrencyType == .gold ? user.gold : user.diamond)")
             
             await MainActor.run {
