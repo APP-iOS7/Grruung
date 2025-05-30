@@ -14,10 +14,14 @@
 		A9CBE3862DD1B0B3002FD21B /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3852DD1B0B3002FD21B /* FirebaseStorage */; };
 		A9CBE3882DD1B0C3002FD21B /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3872DD1B0C3002FD21B /* FirebaseAppCheck */; };
 		A9CBE38A2DD1B0D2002FD21B /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3892DD1B0D2002FD21B /* FirebaseVertexAI */; };
+		A9FF5C0E2DE96C5800E07AC9 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9FF5C0D2DE96C5800E07AC9 /* StoreKit.framework */; };
+		A9FF5C102DE96CA000E07AC9 /* ShopItems.storekit in Resources */ = {isa = PBXBuildFile; fileRef = A9FF5C0F2DE96CA000E07AC9 /* ShopItems.storekit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8A02B20E2DC1FEEE0064A296 /* Grruung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Grruung.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9FF5C0D2DE96C5800E07AC9 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		A9FF5C0F2DE96CA000E07AC9 /* ShopItems.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = ShopItems.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -36,6 +40,7 @@
 				8A7831B82DC25F1200E346BF /* FirebaseDatabase in Frameworks */,
 				8A7831BA2DC25F1200E346BF /* FirebaseFirestore in Frameworks */,
 				8A7831B42DC25F1200E346BF /* FirebaseAnalytics in Frameworks */,
+				A9FF5C0E2DE96C5800E07AC9 /* StoreKit.framework in Frameworks */,
 				A9CBE3862DD1B0B3002FD21B /* FirebaseStorage in Frameworks */,
 				A9CBE38A2DD1B0D2002FD21B /* FirebaseVertexAI in Frameworks */,
 				A9CBE3882DD1B0C3002FD21B /* FirebaseAppCheck in Frameworks */,
@@ -49,6 +54,7 @@
 		8A02B2052DC1FEEE0064A296 = {
 			isa = PBXGroup;
 			children = (
+				A9FF5C0F2DE96CA000E07AC9 /* ShopItems.storekit */,
 				8A02B2102DC1FEEE0064A296 /* Grruung */,
 				A9CBE3842DD1B0B3002FD21B /* Frameworks */,
 				8A02B20F2DC1FEEE0064A296 /* Products */,
@@ -66,6 +72,7 @@
 		A9CBE3842DD1B0B3002FD21B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A9FF5C0D2DE96C5800E07AC9 /* StoreKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -144,6 +151,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9FF5C102DE96CA000E07AC9 /* ShopItems.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
