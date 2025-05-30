@@ -14,10 +14,13 @@ struct CharDexView: View {
     @State private var unlockCount: Int = 5
     // 정렬 타입 변수
     @State private var sortType: SortType = .original
-    // 잠금 해제 티켓의 수(테스트 용)
-    @State private var unlockTicketCount: Int = 3
+    // 언락 티켓 갯수
+    @State private var unlockTicketCount: Int = 0
     // 잠금 그리드 클릭 위치
     @State private var selectedLockedIndex: Int? = nil
+    @State private var realUserId: String = ""
+    @EnvironmentObject var authService: AuthService
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     
     // 잠금해제 alert 변수
     @State private var showingUnlockAlert = false
@@ -217,11 +220,27 @@ struct CharDexView: View {
                 Text("알 수 없는 에러가 발생하였습니다!")
             }
             .onAppear {
-                if unlockCount == garaCharacters.count && firstAlert {
-                    showingNotEnoughAlert = true
-                }
-                if garaCharacters.count > unlockCount {
-                    showingErrorAlert = true
+                Task {
+                    if authService.currentUserUID == "" {
+                        realUserId = "23456"
+                    } else {
+                        realUserId = authService.currentUserUID
+                    }
+                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
+                
+                    if let unlockTicketItem = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                        unlockTicketCount = unlockTicketItem.userItemQuantity
+                    } else {
+                        unlockTicketCount = 0
+                    }
+
+                    // 3. 알림 조건 검사
+                    if unlockCount == garaCharacters.count && firstAlert {
+                        showingNotEnoughAlert = true
+                    }
+                    if garaCharacters.count > unlockCount {
+                        showingErrorAlert = true
+                    }
                 }
             }
         }
@@ -232,7 +251,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             VStack(alignment: .center) {
                 ZStack {
                     Image(systemName: character.imageName)
@@ -240,7 +259,7 @@ struct CharDexView: View {
                         .frame(width: 100, height: 100)
                         .aspectRatio(contentMode: .fit)
                         .foregroundStyle(.black)
-
+                    
                     if character.status.address == "space" {
                         // xmark가 도감에서 보이면 안됨!!
                         // 우주로 돌려보냄(삭제)
@@ -259,13 +278,13 @@ struct CharDexView: View {
                             .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
                     }
                 }
-
+                
                 Text(character.name)
                     .foregroundStyle(.black)
                     .bold()
                     .lineLimit(1)
                     .frame(maxWidth: .infinity)
-
+                
                 Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
                     .foregroundStyle(.gray)
                     .font(.caption)
@@ -287,7 +306,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             Button {
                 selectedLockedIndex = index
                 showingUnlockAlert = true
@@ -316,7 +335,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             VStack {
                 Image(systemName: "plus")
                     .scaledToFit()

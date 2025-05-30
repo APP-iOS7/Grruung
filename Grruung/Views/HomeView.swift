@@ -196,7 +196,8 @@ struct HomeView: View {
                 }
             }
         } else if systemName == "mountain.2.fill" {
-            NavigationLink(destination: CharDexView()) {
+            NavigationLink(destination: CharDexView()
+                .environmentObject(AuthService())) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 60, height: 60)
