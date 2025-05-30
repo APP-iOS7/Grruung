@@ -11,8 +11,7 @@ struct AnimationSecondTestView: View {
     // MARK: - 상태 변수들
     @State private var selectedCharacter: PetSpecies = .quokka // 기본값: 쿼카
     @State private var selectedPhase: CharacterPhase = .egg    // 기본값: 운석
-    @State private var currentCharacterImage: UIImage? // 현재 표시할 이미지
-    @State private var isLoadingImage = false // 이미지 로딩 상태
+    @StateObject private var eggControl = EggControl() // EggControl 인스턴스
     
     // 홈뷰와 비슷한 상태바 더미 데이터
     let stats: [(icon: String, color: Color, value: CGFloat)] = [
@@ -31,6 +30,9 @@ struct AnimationSecondTestView: View {
                     // 캐릭터 이미지 표시 영역
                     characterImageSection
                     
+                    // 애니메이션 컨트롤 버튼들
+                    animationControlSection
+                    
                     // 상태 바 섹션 (홈뷰에서 가져온 것)
                     statsSection
                     
@@ -46,7 +48,12 @@ struct AnimationSecondTestView: View {
             .navigationTitle("애니메이션 테스트 2")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                loadCharacterImage() // 뷰가 나타날 때 기본 이미지 로드
+                // 뷰가 나타날 때는 EggControl이 자동으로 첫 프레임을 로드함
+                print("AnimationSecondTestView 나타남")
+            }
+            .onDisappear {
+                // 뷰가 사라질 때 EggControl 정리
+                eggControl.cleanup()
             }
         }
     }
@@ -80,9 +87,22 @@ struct AnimationSecondTestView: View {
     // 캐릭터 이미지 표시 섹션
     private var characterImageSection: some View {
         VStack(spacing: 10) {
-            Text("현재 선택: \(selectedCharacter.rawValue) - \(selectedPhase.rawValue)")
-                .font(.headline)
-                .foregroundColor(.secondary)
+            // 현재 선택 정보와 애니메이션 상태 표시
+            VStack(spacing: 5) {
+                Text("현재 선택: \(selectedCharacter.rawValue) - \(selectedPhase.rawValue)")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                // 애니메이션 상태 정보 표시
+                HStack {
+                    Text("프레임: \(eggControl.currentFrameIndex + 1)")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                    
+                    Text("상태: \(eggControl.isAnimating ? "재생중" : "정지")")
+                        .font(.caption)
+                        .foregroundColor(eggControl.isAnimating ? .green : .red)
+                }
+            }
             
             ZStack {
                 // 배경
@@ -90,13 +110,9 @@ struct AnimationSecondTestView: View {
                     .fill(Color.gray.opacity(0.1))
                     .frame(height: 200)
                 
-                if isLoadingImage {
-                    // 로딩 중 표시
-                    ProgressView("이미지 로딩 중...")
-                        .foregroundColor(.secondary)
-                } else if let image = currentCharacterImage {
-                    // 이미지 표시
-                    Image(uiImage: image)
+                // EggControl에서 현재 프레임 표시
+                if let currentFrame = eggControl.currentFrame {
+                    Image(uiImage: currentFrame)
                         .resizable()
                         .scaledToFit()
                         .frame(maxHeight: 180)
@@ -118,6 +134,50 @@ struct AnimationSecondTestView: View {
         .background(Color.white)
         .cornerRadius(15)
         .shadow(radius: 2)
+    }
+    
+    // 애니메이션 컨트롤 섹션 추가
+    private var animationControlSection: some View {
+        VStack(spacing: 15) {
+            Text("애니메이션 컨트롤")
+                .font(.headline)
+                .padding(.leading, 5)
+            
+            HStack(spacing: 20) {
+                // 재생/정지 버튼
+                Button(action: {
+                    eggControl.toggleAnimation()
+                }) {
+                    HStack {
+                        Image(systemName: eggControl.isAnimating ? "pause.fill" : "play.fill")
+                        Text(eggControl.isAnimating ? "정지" : "재생")
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(eggControl.isAnimating ? Color.red : Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+                }
+                
+                // 정지 버튼 (처음으로 돌아가기)
+                Button(action: {
+                    eggControl.stopAnimation()
+                }) {
+                    HStack {
+                        Image(systemName: "stop.fill")
+                        Text("정지")
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+                }
+            }
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(15)
     }
     
     // 상태 바 섹션 (홈뷰에서 가져옴)
@@ -159,7 +219,6 @@ struct AnimationSecondTestView: View {
                     Button(action: {
                         selectedCharacter = character
                         print("선택된 캐릭터: \(character.rawValue)")
-                        loadCharacterImage() // 이미지 다시 로드
                     }) {
                         Text(character.rawValue)
                             .padding(.horizontal, 16)
@@ -220,7 +279,10 @@ struct AnimationSecondTestView: View {
         Button(action: {
             selectedPhase = phase
             print("선택된 단계: \(phase.rawValue)")
-            loadCharacterImage() // 이미지 다시 로드
+            // 현재는 egg만 구현되어 있으므로 egg가 아닌 경우 알림
+            if phase != .egg {
+                print("아직 \(phase.rawValue) 단계는 구현되지 않았습니다")
+            }
         }) {
             Text(phase.rawValue)
                 .font(.caption)
@@ -237,29 +299,6 @@ struct AnimationSecondTestView: View {
                     : .primary
                 )
                 .cornerRadius(15)
-        }
-    }
-    
-    // 이미지 로드 함수
-    private func loadCharacterImage() {
-        isLoadingImage = true
-        currentCharacterImage = nil
-        
-        // 비동기로 이미지 로드 (UI 블록킹 방지)
-        DispatchQueue.global(qos: .userInitiated).async {
-            let characterTypeString = BundleAnimationLoader.characterTypeToString(selectedCharacter)
-            
-            let image = BundleAnimationLoader.loadFirstFrame(
-                characterType: characterTypeString,
-                phase: selectedPhase,
-                animationType: "normal"
-            )
-            
-            // 메인 스레드에서 UI 업데이트
-            DispatchQueue.main.async {
-                self.currentCharacterImage = image
-                self.isLoadingImage = false
-            }
         }
     }
 }
