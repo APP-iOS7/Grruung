@@ -91,7 +91,7 @@ struct StoreAdminView: View {
             .padding()
             
             Button(action: {
-                let item = GRShopItem(
+                let item = GRStoreItem(
                     itemName: itemName, itemTarget: .Undefined, itemType: itemType, itemImage: itemImage, itemQuantity: 0, limitedQuantity: Int(limitedQuantity) ?? 0, purchasedQuantity: 0, itemPrice: Int(itemPrice) ?? 0, itemCurrencyType: itemCurrencyType, itemDescription: itemDescription, itemEffectDescription: itemEffectDescription, itemTag: itemTag, itemCategory: itemCategory, isItemOwned: false, bgColor: .blue.opacity(0.4))
                 Task {
                     await MainActor.run {

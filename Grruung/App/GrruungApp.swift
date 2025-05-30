@@ -10,6 +10,7 @@ import Firebase
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseAppCheck // App Check 추가
+import StoreKit // 유료 구매를 위해서 추가
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -36,11 +37,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct GrruungApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authService = AuthService()
+    @StateObject private var transactionObserver = TransactionObserver()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authService)
+                .environmentObject(transactionObserver)
         }
         .modelContainer(for: [GRAnimationMetadata.self])
     }

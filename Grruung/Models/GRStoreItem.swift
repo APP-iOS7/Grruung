@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct GRShopItem: Identifiable {
+struct GRStoreItem: Identifiable {
     let id = UUID()
     let itemNumber: String
     var itemName: String
@@ -83,10 +83,11 @@ enum ItemTag: String, CaseIterable {
 enum ItemCurrencyType: String, CaseIterable {
     case gold = "골드"
     case diamond = "다이아"
+    case won = "원"
 }
 
 let products = [
-    GRShopItem(itemName: "다이아 → 골드",
+    GRStoreItem(itemName: "다이아 → 골드",
                itemType: .consumable,
                itemImage: "DiamondToGold",
                itemQuantity: 1,
@@ -100,7 +101,7 @@ let products = [
                itemCategory: .etc, // 새 범주 추가 가능
                bgColor: .yellow.opacity(0.4)),
     
-    GRShopItem(itemName: "주사 치료",
+    GRStoreItem(itemName: "주사 치료",
                itemType: .consumable,
                itemImage: "Injection",
                itemQuantity: 1,
@@ -113,7 +114,7 @@ let products = [
                itemCategory: .drug,
                bgColor: .blue.opacity(0.4)),
     
-    GRShopItem(itemName: "밴드 치료",
+    GRStoreItem(itemName: "밴드 치료",
                itemType: .consumable,
                itemImage: "bandage",
                itemQuantity: 1,
@@ -126,7 +127,7 @@ let products = [
                itemCategory: .drug,
                bgColor: .yellow.opacity(0.4)),
     
-    GRShopItem(itemName: "약물 치료",
+    GRStoreItem(itemName: "약물 치료",
                itemType: .consumable,
                itemImage: "pill",
                itemQuantity: 1,
@@ -139,7 +140,7 @@ let products = [
                itemCategory: .drug,
                bgColor: .pink.opacity(0.4)),
     
-    GRShopItem(itemName: "캐치볼 놀이",
+    GRStoreItem(itemName: "캐치볼 놀이",
                itemType: .permanent,
                itemImage: "tennisball",
                itemQuantity: 1,
@@ -152,7 +153,7 @@ let products = [
                itemCategory: .toy,
                bgColor: .green.opacity(0.4)),
     
-    GRShopItem(itemName: "힐링하기",
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -165,7 +166,7 @@ let products = [
                itemCategory: .etc,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "랜덤박스선물",
+    GRStoreItem(itemName: "랜덤박스선물",
                itemType: .consumable,
                itemImage: "shippingbox",
                itemQuantity: 1,
@@ -178,7 +179,7 @@ let products = [
                itemCategory: .etc,
                bgColor: .orange.opacity(0.4)),
     
-    GRShopItem(itemName: "약물 치료",
+    GRStoreItem(itemName: "약물 치료",
                itemType: .consumable,
                itemImage: "pill",
                itemQuantity: 1,
@@ -191,7 +192,7 @@ let products = [
                itemCategory: .drug,
                bgColor: .cyan.opacity(0.4)),
     
-    GRShopItem(itemName: "캐치볼 놀이",
+    GRStoreItem(itemName: "캐치볼 놀이",
                itemType: .permanent,
                itemImage: "tennisball",
                itemQuantity: 1,
@@ -206,7 +207,7 @@ let products = [
 ]
 
 let treatmentProducts = [
-    GRShopItem(itemName: "주사 치료",
+    GRStoreItem(itemName: "주사 치료",
                itemType: .consumable,
                itemImage: "syringe",
                itemQuantity: 1,
@@ -219,7 +220,7 @@ let treatmentProducts = [
                itemCategory: .drug,
                bgColor: .blue.opacity(0.4)),
     
-    GRShopItem(itemName: "밴드 치료",
+    GRStoreItem(itemName: "밴드 치료",
                itemType: .consumable,
                itemImage: "bandage",
                itemQuantity: 1,
@@ -232,7 +233,7 @@ let treatmentProducts = [
                itemCategory: .drug,
                bgColor: .yellow.opacity(0.4)),
     
-    GRShopItem(itemName: "약물 치료",
+    GRStoreItem(itemName: "약물 치료",
                itemType: .consumable,
                itemImage: "pill",
                itemQuantity: 1,
@@ -245,7 +246,7 @@ let treatmentProducts = [
                itemCategory: .drug,
                bgColor: .pink.opacity(0.4)),
     
-    GRShopItem(itemName: "주사 치료",
+    GRStoreItem(itemName: "주사 치료",
                itemType: .consumable,
                itemImage: "syringe",
                itemQuantity: 1,
@@ -261,7 +262,7 @@ let treatmentProducts = [
 
 // 놀이
 let playProducts = [
-    GRShopItem(itemName: "힐링하기",
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -274,7 +275,7 @@ let playProducts = [
                itemCategory: .etc,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "산책하기",
+    GRStoreItem(itemName: "산책하기",
                itemType: .consumable,
                itemImage: "leaf",
                itemQuantity: 1,
@@ -289,8 +290,8 @@ let playProducts = [
 ]
 
 // 회복
-let recoveryProducts: [GRShopItem] = [
-    GRShopItem(itemName: "힐링하기",
+let recoveryProducts: [GRStoreItem] = [
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -303,7 +304,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "산책하기",
+    GRStoreItem(itemName: "산책하기",
                itemType: .consumable,
                itemImage: "leaf",
                itemQuantity: 1,
@@ -316,7 +317,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
     
-    GRShopItem(itemName: "힐링하기",
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -329,7 +330,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "산책하기",
+    GRStoreItem(itemName: "산책하기",
                itemType: .consumable,
                itemImage: "leaf",
                itemQuantity: 1,
@@ -342,7 +343,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
     
-    GRShopItem(itemName: "힐링하기",
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -355,7 +356,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "산책하기",
+    GRStoreItem(itemName: "산책하기",
                itemType: .consumable,
                itemImage: "leaf",
                itemQuantity: 1,
@@ -368,7 +369,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .mint.opacity(0.4)),
     
-    GRShopItem(itemName: "힐링하기",
+    GRStoreItem(itemName: "힐링하기",
                itemType: .consumable,
                itemImage: "bird",
                itemQuantity: 1,
@@ -381,7 +382,7 @@ let recoveryProducts: [GRShopItem] = [
                itemCategory: .toy,
                bgColor: .purple.opacity(0.4)),
     
-    GRShopItem(itemName: "산책하기",
+    GRStoreItem(itemName: "산책하기",
                itemType: .consumable,
                itemImage: "leaf",
                itemQuantity: 1,
@@ -397,7 +398,7 @@ let recoveryProducts: [GRShopItem] = [
 
 //한정판
 let limitedProducts = [
-    GRShopItem(itemName: "스페셜 스파클",
+    GRStoreItem(itemName: "스페셜 스파클",
                itemType: .consumable,
                itemImage: "sparkles",
                itemQuantity: 1,
@@ -411,7 +412,7 @@ let limitedProducts = [
                itemCategory: .drug,
                bgColor: .indigo.opacity(0.5)),
     
-    GRShopItem(itemName: "울트라 부스터",
+    GRStoreItem(itemName: "울트라 부스터",
                itemType: .consumable,
                itemImage: "flame.fill",
                itemQuantity: 1,
@@ -425,7 +426,7 @@ let limitedProducts = [
                itemCategory: .drug,
                bgColor: .red.opacity(0.5)),
     
-    GRShopItem(itemName: "킹덤 VIP 티켓",
+    GRStoreItem(itemName: "킹덤 VIP 티켓",
                itemType: .consumable,
                itemImage: "crown.fill",
                itemQuantity: 1,
@@ -438,7 +439,7 @@ let limitedProducts = [
                itemCategory: .etc,
                bgColor: .yellow.opacity(0.5)),
     
-    GRShopItem(itemName: "랜덤 깜짝박스",
+    GRStoreItem(itemName: "랜덤 깜짝박스",
                itemType: .consumable,
                itemImage: "gift.fill",
                itemQuantity: 1,
@@ -454,7 +455,7 @@ let limitedProducts = [
 
 // 티켓
 let ticketProducts = [
-    GRShopItem(itemName: "10회 이용권",
+    GRStoreItem(itemName: "10회 이용권",
                itemType: .consumable,
                itemImage: "ticket.fill",
                itemQuantity: 10,
@@ -467,7 +468,7 @@ let ticketProducts = [
                itemCategory: .etc,
                bgColor: .orange.opacity(0.4)),
     
-    GRShopItem(itemName: "30일 패스",
+    GRStoreItem(itemName: "30일 패스",
                itemType: .consumable,
                itemImage: "ticket.fill",
                itemQuantity: 1,
@@ -478,10 +479,23 @@ let ticketProducts = [
                itemEffectDescription: "30일 동안 무제한 이용",
                itemTag: .normal,
                itemCategory: .etc,
+               bgColor: .cyan.opacity(0.4)),
+    GRStoreItem(itemName: "동산 잠금해제x1",
+               itemType: .permanent,
+               itemImage: "ticket.fill",
+               itemQuantity: 1,
+               limitedQuantity: 10,
+               purchasedQuantity: 0,
+               itemPrice: 1500,
+               itemCurrencyType: .won,
+               itemDescription: "캐릭터 동산의 슬롯 1개를 잠금해제 할 수 있습니다.",
+               itemEffectDescription: "30일 동안 무제한 이용",
+               itemTag: .normal,
+               itemCategory: .etc,
                bgColor: .cyan.opacity(0.4))
 ]
 
 // 모든 것들
-let allProducts: [GRShopItem] =
+let allProducts: [GRStoreItem] =
 products + treatmentProducts + playProducts + limitedProducts + ticketProducts
 

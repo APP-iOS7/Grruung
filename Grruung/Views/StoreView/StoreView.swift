@@ -138,7 +138,7 @@ struct StoreView: View {
 struct SectionView: View {
     let title: String
     let id: String
-    let products: [GRShopItem]
+    let products: [GRStoreItem]
     let proxy: ScrollViewProxy
     
     let columns = [

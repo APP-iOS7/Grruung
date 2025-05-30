@@ -7,15 +7,20 @@
 
 import SwiftUI
 import Foundation
+import StoreKit
 
 struct AlertView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
+    @StateObject var fetcher = StoreItemFetcher()
     @State private var isProcessing = false
     @State var realUserId = ""
+    @State private var updatedGold: Int = 0
+    @State private var updatedDiamond: Int = 0
     @State private var notEnoughCurrencyAmount: Int = 0
-    let product: GRShopItem
+    @State var purchaseStatus: String = ""
+    let product: GRStoreItem
     var quantity: Int
     private let diamondToGold: Int = 1000
     @State private var showNotEnoughMoneyAlert = false
@@ -44,9 +49,12 @@ struct AlertView: View {
                     Text("가격: ")
                         .font(.headline)
                         .foregroundColor(.black)
-                    
-                    Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
-                        .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                    if product.itemCurrencyType == .won {
+                        Text("₩")
+                    } else {
+                        Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
+                            .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                    }
                     
                     Text("\(product.itemPrice * quantity)")
                         .font(.headline)
@@ -61,13 +69,22 @@ struct AlertView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 } else {
-                    Text("\(product.itemName) \(quantity)개를 구매합니다.")
+                    Text("\(product.itemName)")
                         .font(.subheadline)
                         .foregroundColor(.black.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+                    Text("\(quantity)개를 구매합니다.")
+                        .font(.subheadline)
+                        .foregroundColor(.black.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    if !isProcessing && purchaseStatus == "실패" {
+                        Text("❌ 구매 실패 또는 취소됨")
+                            .font(.caption)
+                    }
                 }
-
+                
                 // 처리 중 표시
                 if isProcessing {
                     HStack {
@@ -145,6 +162,8 @@ struct AlertView: View {
             hasEnoughCurrency = user.gold >= totalPrice
         case .diamond:
             hasEnoughCurrency = user.diamond >= totalPrice
+        case .won:
+            hasEnoughCurrency = true
         }
         
         guard hasEnoughCurrency else {
@@ -158,10 +177,26 @@ struct AlertView: View {
             isProcessing = false
             return
         }
+        if product.itemCurrencyType != .won {
+            updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
+            updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
+        }
         
-        var updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
-        var updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
-        
+        if let product = fetcher.product {
+            let success = await purchase(product: product)
+            
+            guard success else {
+                print("❌ 구매 실패 또는 취소됨. 저장 중단.")
+                isProcessing = false
+                return
+            }
+            
+            print("✅ 결제 완료. 아이템 저장 시작.")
+        } else {
+            print("❌ 상품 정보 없음")
+            isProcessing = false
+            return
+        }
         // 재빌드시 아이템 넘버가 바뀌면서(UUID) 이전 구매 아이템과 아이템 넘버가 달라서 계속 새로 구매되는 오류 발생!
         // 반드시 아이템의 이름들이 고유해야함! -> 같으면 또 다시 에러남...
         let beforeItemNumber = userInventoryViewModel.inventories.first(where: { $0.userItemName == product.itemName })?.userItemNumber ?? product.itemNumber
@@ -223,6 +258,40 @@ struct AlertView: View {
             print("❌ 구매 처리 중 오류: \(error)")
         }
         isProcessing = false
+    }
+    
+    func purchase(product: Product) async -> Bool {
+        do {
+            let result = try await product.purchase()
+            switch result {
+            case .success(let verification):
+                switch verification {
+                case .verified(let transaction):
+                    purchaseStatus = "✅ 구매 성공"
+                    print("✅ 구매 성공: \(transaction.productID)")
+                    await transaction.finish()
+                    return true
+                case .unverified:
+                    print("❌ 영수증 검증 실패")
+                    purchaseStatus = "실패"
+                    return false
+                }
+            case .userCancelled:
+                print("🛑 유저가 구매 취소")
+                purchaseStatus = "실패"
+                return false
+            case .pending:
+                print("⏳ 승인 대기 중")
+                purchaseStatus = "실패"
+                return false
+            @unknown default:
+                purchaseStatus = "실패"
+                return false
+            }
+        } catch {
+            print("❌ 구매 중 오류: \(error)")
+            return false
+        }
     }
 }
 

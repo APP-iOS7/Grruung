@@ -28,7 +28,7 @@ struct StoreGridView: View {
 }
 
 struct ProductItemView: View {
-    let product: GRShopItem
+    let product: GRStoreItem
     @State private var isLimitedItemVisible = true
     
     var body: some View {
@@ -63,8 +63,12 @@ struct ProductItemView: View {
                 .foregroundColor(.black)
             
             HStack(spacing: 8) {
-                Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
-                    .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                if product.itemCurrencyType == .won {
+                 Text("₩")
+                } else {
+                    Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
+                        .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                }
                 
                 Text("\(product.itemPrice)")
                     .font(.caption)
