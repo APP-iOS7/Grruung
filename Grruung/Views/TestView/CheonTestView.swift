@@ -100,11 +100,8 @@ struct RecommendedGrid: View {
                     }
                 }
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
+    
     }
 }
 // MARK: - 액션 처리 메서드
@@ -141,7 +138,7 @@ struct SettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("설정")
-                .font(.headline)
+                .font(.title2)
                 .bold()
                 .padding(.horizontal)
                 .padding(.top)
@@ -194,6 +191,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
 }
 
 // MARK: - Preview
+
 #Preview {
     CheonTestView()
 }
