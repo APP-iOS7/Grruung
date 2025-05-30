@@ -61,4 +61,75 @@ class EggControl: ObservableObject {
             currentFrameIndex = 0
         }
     }
+    
+    // MARK: - 애니메이션 재생 함수
+    func startAnimation() {
+        // 이미 재생 중이면 중단
+        guard !isAnimating else { return }
+        
+        // 프레임이 없으면 재생할 수 없음
+        guard !animationFrames.isEmpty else {
+            print("재생할 프레임이 없습니다")
+            return
+        }
+        
+        print("애니메이션 시작 - 총 \(animationFrames.count)개 프레임")
+        
+        // 재생 상태로 변경
+        isAnimating = true
+        
+        // 타이머 간격 계산 (1초 / frameRate = 프레임 간 간격)
+        let timeInterval = 1.0 / frameRate
+        
+        // 타이머 시작
+        animationTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { [weak self] _ in
+            self?.updateFrame()
+        }
+    }
+    
+    // MARK: - 애니메이션 정지 함수
+    func stopAnimation() {
+        print("애니메이션 정지")
+        
+        // 타이머 중지 및 해제
+        animationTimer?.invalidate()
+        animationTimer = nil
+        
+        // 재생 상태 해제
+        isAnimating = false
+    }
+    
+    // MARK: - 프레임 업데이트 함수 (타이머에 의해 호출됨)
+    private func updateFrame() {
+        // 다음 프레임으로 이동
+        currentFrameIndex += 1
+        
+        // 마지막 프레임에 도달하면 처음으로 돌아가기 (루프)
+        if currentFrameIndex >= animationFrames.count {
+            currentFrameIndex = 0
+        }
+        
+        // 현재 프레임 이미지 업데이트
+        currentFrame = animationFrames[currentFrameIndex]
+        
+        // 디버깅용 로그 (매 10프레임마다 출력)
+        if currentFrameIndex % 10 == 0 {
+            print("현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count)")
+        }
+    }
+    
+    // MARK: - 애니메이션 재생/정지 토글 함수
+    func toggleAnimation() {
+        if isAnimating {
+            stopAnimation()
+        } else {
+            startAnimation()
+        }
+    }
+    
+    // MARK: - 정리 함수 (뷰가 사라질 때 호출)
+    func cleanup() {
+        stopAnimation()
+        print("EggControl 정리 완료")
+    }
 }
