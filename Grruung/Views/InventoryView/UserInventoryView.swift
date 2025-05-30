@@ -150,7 +150,7 @@ struct UserInventoryView: View {
                         }
                     }) { item in
                         UserInventoryDetailView(item: item, realUserId: realUserId, isEdited: $isEdited)
-                            .presentationDetents([.medium])
+                            .presentationDetents([.medium, .large]) // 유동적인 sheet 크기
                     }
                 }
                 
