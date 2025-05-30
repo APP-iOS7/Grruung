@@ -153,7 +153,7 @@ class QuokkaControl: ObservableObject {
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == currentAnimationType
+                metadata.animationType == self.currentAnimationType
             },
             sortBy: [SortDescriptor(\.frameIndex)]
         )
@@ -195,7 +195,7 @@ class QuokkaControl: ObservableObject {
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == currentAnimationType &&
+                metadata.animationType == self.currentAnimationType &&
                 metadata.frameIndex == frameIndex
             }
         )
@@ -296,6 +296,327 @@ class QuokkaControl: ObservableObject {
     func cleanup() {
         stopAnimation()
         print("QuokkaControl 정리 완료")
+    }
+    
+    // MARK: - Firebase Storage 다운로드 기능
+    
+    // 특정 애니메이션 타입 다운로드 (예: normal만)
+    func downloadAnimationType(_ animationType: AnimationType) {
+        guard let context = modelContext else {
+            print("SwiftData 컨텍스트가 설정되지 않음")
+            return
+        }
+        
+        // 다운로드 시작
+        isDownloading = true
+        downloadProgress = 0.0
+        downloadMessage = "\(animationType.displayName) 애니메이션 다운로드 중..."
+        
+        print("Firebase에서 \(animationType.rawValue) 애니메이션 다운로드 시작")
+        
+        // Firebase Storage 경로 설정
+        let phaseString = phaseToString(currentPhase)
+        let characterType = "quokka"
+        let basePath = "animations/\(characterType)/\(phaseString)/\(animationType.rawValue)"
+        
+        // 예상 최대 프레임 수 (실제로는 Firebase에서 확인해야 함)
+        let maxFrames = 100
+        var downloadedFrames = 0
+        var totalFramesToDownload = 0
+        
+        // 먼저 존재하는 프레임 수 확인
+        checkFrameCount(basePath: basePath, maxFrames: maxFrames) { [weak self] frameCount in
+            guard let self = self else { return }
+            
+            totalFramesToDownload = frameCount
+            print("다운로드할 프레임 수: \(frameCount)")
+            
+            if frameCount == 0 {
+                DispatchQueue.main.async {
+                    self.isDownloading = false
+                    self.downloadMessage = "다운로드할 프레임이 없습니다"
+                }
+                return
+            }
+            
+            // 각 프레임 다운로드
+            for frameIndex in 1...frameCount {
+                let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
+                let firebasePath = "\(basePath)/\(fileName)"
+                
+                self.downloadFrame(
+                    firebasePath: firebasePath,
+                    fileName: fileName,
+                    characterType: characterType,
+                    phase: self.currentPhase,
+                    animationType: animationType.rawValue,
+                    frameIndex: frameIndex,
+                    context: context
+                ) { success in
+                    downloadedFrames += 1
+                    
+                    DispatchQueue.main.async {
+                        self.downloadProgress = Double(downloadedFrames) / Double(totalFramesToDownload)
+                        
+                        if downloadedFrames == totalFramesToDownload {
+                            self.isDownloading = false
+                            self.downloadMessage = "\(animationType.displayName) 다운로드 완료!"
+                            print("다운로드 완료: \(downloadedFrames)개 프레임")
+                            
+                            // 다운로드 완료 후 애니메이션 다시 로드
+                            self.loadAnimationFrames()
+                        } else {
+                            self.downloadMessage = "\(animationType.displayName) 다운로드 중... (\(downloadedFrames)/\(totalFramesToDownload))"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 모든 애니메이션 타입 다운로드 (normal, sleeping, eating 전체)
+    func downloadAllAnimationTypes() {
+        guard let context = modelContext else {
+            print("SwiftData 컨텍스트가 설정되지 않음")
+            return
+        }
+        
+        isDownloading = true
+        downloadProgress = 0.0
+        downloadMessage = "전체 애니메이션 다운로드 중..."
+        
+        let allTypes = AnimationType.allCases
+        var completedTypes = 0
+        let totalTypes = allTypes.count
+        
+        for animationType in allTypes {
+            downloadAnimationTypeInternal(animationType, context: context) { [weak self] success in
+                completedTypes += 1
+                
+                DispatchQueue.main.async {
+                    self?.downloadProgress = Double(completedTypes) / Double(totalTypes)
+                    
+                    if completedTypes == totalTypes {
+                        self?.isDownloading = false
+                        self?.downloadMessage = "전체 다운로드 완료!"
+                        print("모든 애니메이션 타입 다운로드 완료")
+                        
+                        // 다운로드 완료 후 현재 애니메이션 다시 로드
+                        self?.loadAnimationFrames()
+                    } else {
+                        self?.downloadMessage = "전체 다운로드 중... (\(completedTypes)/\(totalTypes) 타입 완료)"
+                    }
+                }
+            }
+        }
+    }
+    
+    // 개별 애니메이션 타입 다운로드 (내부용)
+    private func downloadAnimationTypeInternal(_ animationType: AnimationType, context: ModelContext, completion: @escaping (Bool) -> Void) {
+        let phaseString = phaseToString(currentPhase)
+        let characterType = "quokka"
+        let basePath = "animations/\(characterType)/\(phaseString)/\(animationType.rawValue)"
+        
+        let maxFrames = 100
+        
+        checkFrameCount(basePath: basePath, maxFrames: maxFrames) { [weak self] frameCount in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+            
+            if frameCount == 0 {
+                completion(true) // 프레임이 없어도 완료로 처리
+                return
+            }
+            
+            var downloadedFrames = 0
+            let totalFramesToDownload = frameCount
+            
+            for frameIndex in 1...frameCount {
+                let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
+                let firebasePath = "\(basePath)/\(fileName)"
+                
+                self.downloadFrame(
+                    firebasePath: firebasePath,
+                    fileName: fileName,
+                    characterType: characterType,
+                    phase: self.currentPhase,
+                    animationType: animationType.rawValue,
+                    frameIndex: frameIndex,
+                    context: context
+                ) { success in
+                    downloadedFrames += 1
+                    
+                    if downloadedFrames == totalFramesToDownload {
+                        completion(true)
+                    }
+                }
+            }
+        }
+    }
+    
+    // Firebase에서 프레임 수 확인
+    private func checkFrameCount(basePath: String, maxFrames: Int, completion: @escaping (Int) -> Void) {
+        let phaseString = phaseToString(currentPhase)
+        let characterType = "quokka"
+        
+        // 간단하게 하기 위해 일단 고정값 사용 (나중에 Firebase에서 실제 확인하도록 개선 가능)
+        // 실제로는 Firebase Storage의 list() 메서드를 사용해서 파일 목록을 가져와야 함
+        
+        // 임시로 50개 프레임이 있다고 가정
+        completion(50)
+    }
+    
+    // 개별 프레임 다운로드 및 SwiftData 저장
+    private func downloadFrame(
+        firebasePath: String,
+        fileName: String,
+        characterType: String,
+        phase: CharacterPhase,
+        animationType: String,
+        frameIndex: Int,
+        context: ModelContext,
+        completion: @escaping (Bool) -> Void
+    ) {
+        let storageRef = storage.reference().child(firebasePath)
+        
+        storageRef.getData(maxSize: 5 * 1024 * 1024) { [weak self] data, error in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+            
+            if let error = error {
+                print("Firebase 다운로드 실패: \(firebasePath) - \(error)")
+                completion(false)
+                return
+            }
+            
+            guard let imageData = data else {
+                print("이미지 데이터가 없음: \(firebasePath)")
+                completion(false)
+                return
+            }
+            
+            // Documents 폴더에 이미지 저장
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let localPath = "animations/\(characterType)/\(self.phaseToString(phase))/\(animationType)/\(fileName)"
+            let fullURL = documentsPath.appendingPathComponent(localPath)
+            
+            // 디렉토리 생성
+            let directoryURL = fullURL.deletingLastPathComponent()
+            try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            
+            do {
+                // 파일 저장
+                try imageData.write(to: fullURL)
+                
+                // SwiftData에 메타데이터 저장
+                let metadata = GRAnimationMetadata(
+                    characterType: characterType,
+                    phase: phase,
+                    animationType: animationType,
+                    frameIndex: frameIndex,
+                    filePath: localPath,
+                    fileSize: imageData.count
+                )
+                
+                context.insert(metadata)
+                try context.save()
+                
+                print("프레임 저장 완료: \(fileName)")
+                completion(true)
+                
+            } catch {
+                print("파일 저장 실패: \(fileName) - \(error)")
+                completion(false)
+            }
+        }
+    }
+    
+    // MARK: - 다운로드 상태 확인 기능
+    
+    // 특정 애니메이션 타입이 완전히 다운로드되었는지 확인
+    func isAnimationTypeDownloaded(_ animationType: AnimationType) -> Bool {
+        guard let context = modelContext else { return false }
+        
+        let phaseString = phaseToString(currentPhase)
+        let characterType = "quokka"
+        
+        // 마지막 프레임(50번)이 존재하는지 확인
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == characterType &&
+                metadata.phase == phaseString &&
+                metadata.animationType == animationType.rawValue &&
+                metadata.frameIndex == 50 // 마지막 프레임
+            }
+        )
+        
+        do {
+            let results = try context.fetch(descriptor)
+            let isDownloaded = !results.isEmpty
+            print("\(animationType.rawValue) 다운로드 상태: \(isDownloaded)")
+            return isDownloaded
+        } catch {
+            print("다운로드 상태 확인 실패: \(error)")
+            return false
+        }
+    }
+    
+    // 모든 애니메이션 타입이 다운로드되었는지 확인
+    func areAllAnimationTypesDownloaded() -> Bool {
+        return AnimationType.allCases.allSatisfy { isAnimationTypeDownloaded($0) }
+    }
+    
+    // MARK: - SwiftData 삭제 기능
+    
+    // 현재 성장 단계의 모든 애니메이션 데이터 삭제
+    func deleteAllAnimationData() {
+        guard let context = modelContext else {
+            print("SwiftData 컨텍스트가 설정되지 않음")
+            return
+        }
+        
+        let phaseString = phaseToString(currentPhase)
+        let characterType = "quokka"
+        
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == characterType &&
+                metadata.phase == phaseString
+            }
+        )
+        
+        do {
+            let metadataToDelete = try context.fetch(descriptor)
+            print("삭제할 메타데이터 수: \(metadataToDelete.count)")
+            
+            // 파일 삭제
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            for metadata in metadataToDelete {
+                let fileURL = documentsPath.appendingPathComponent(metadata.filePath)
+                try? FileManager.default.removeItem(at: fileURL)
+                print("파일 삭제: \(metadata.filePath)")
+            }
+            
+            // SwiftData에서 메타데이터 삭제
+            for metadata in metadataToDelete {
+                context.delete(metadata)
+            }
+            
+            try context.save()
+            
+            // 현재 애니메이션 프레임들도 초기화
+            animationFrames.removeAll()
+            currentFrame = nil
+            
+            print("모든 애니메이션 데이터 삭제 완료")
+            
+        } catch {
+            print("데이터 삭제 실패: \(error)")
+        }
     }
     
     // MARK: - 성장 단계를 문자열로 변환
