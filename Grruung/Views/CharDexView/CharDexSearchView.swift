@@ -17,7 +17,7 @@ struct CharDexSearchView: View {
     // 검색되는 캐릭터들
     let searchCharacters: [GRCharacter]
     
-    enum SortType {
+    private enum SortType {
         case original, createdAscending, createdDescending, alphabet
     }
     

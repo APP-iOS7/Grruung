@@ -20,7 +20,6 @@ struct UserInventoryAdminView: View {
     @State private var itemQuantity: String = ""
     @State private var isOn2: Bool = false
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    
     var body: some View {
         ScrollView {
             Text("인벤토리 아이템 생성기")

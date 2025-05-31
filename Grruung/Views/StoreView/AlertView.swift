@@ -225,8 +225,8 @@ struct AlertView: View {
                     let newQuantity = existingItem.userItemQuantity + quantity
                     print("[수량업데이트] 새로운 수량: \(newQuantity)")
                     
-                    // 수량 업데이트 (await로 즉시 처리)
-                    await userInventoryViewModel.updateItemQuantity(
+                    // 수량 업데이트
+                    userInventoryViewModel.updateItemQuantity(
                         userId: realUserId,
                         item: existingItem,
                         newQuantity: newQuantity

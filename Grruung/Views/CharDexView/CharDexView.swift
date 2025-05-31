@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CharDexView: View {
     // 생성 가능한 최대 캐릭터 수
-    private let maxDexCount: Int = 20
+    private let maxDexCount: Int = 10
     // 초기 생성 가능한 캐릭터 수
     @State private var unlockCount: Int = 5
     // 정렬 타입 변수
@@ -20,7 +20,7 @@ struct CharDexView: View {
     @State private var selectedLockedIndex: Int? = nil
     @State private var realUserId: String = ""
     @EnvironmentObject var authService: AuthService
-    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     
     // 잠금해제 alert 변수
     @State private var showingUnlockAlert = false
