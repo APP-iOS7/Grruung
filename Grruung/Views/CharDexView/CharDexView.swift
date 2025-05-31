@@ -198,8 +198,13 @@ struct CharDexView: View {
                         showingNotEnoughTicketAlert = true
                     } else {
                         if unlockCount < maxDexCount {
-                            unlockCount += 1
-                            unlockTicketCount -= 1
+                            if let item = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                                unlockCount += 1
+                                unlockTicketCount -= 1
+                                userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: unlockTicketCount)
+                            } else {
+                                showingErrorAlert = true
+                            }
                         }
                     }
                     
@@ -227,14 +232,13 @@ struct CharDexView: View {
                         realUserId = authService.currentUserUID
                     }
                     try await userInventoryViewModel.fetchInventories(userId: realUserId)
-                
+                    
                     if let unlockTicketItem = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
                         unlockTicketCount = unlockTicketItem.userItemQuantity
                     } else {
                         unlockTicketCount = 0
                     }
-
-                    // 3. 알림 조건 검사
+                    
                     if unlockCount == garaCharacters.count && firstAlert {
                         showingNotEnoughAlert = true
                     }
