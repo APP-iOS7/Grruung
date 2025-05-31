@@ -79,8 +79,8 @@ struct AlertView: View {
                         .foregroundColor(.black.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
-                    if !isProcessing && purchaseStatus == "실패" {
-                        Text("❌ 구매 실패 또는 취소됨")
+                    if !isProcessing {
+                        Text(purchaseStatus)
                             .font(.caption)
                     }
                 }
@@ -186,14 +186,15 @@ struct AlertView: View {
             let success = await purchase(product: product)
             
             guard success else {
-                print("❌ 구매 실패 또는 취소됨. 저장 중단.")
+                purchaseStatus = "❌ 구매 실패 또는 취소됨."
+                print(purchaseStatus)
                 isProcessing = false
                 return
             }
-            
             print("✅ 결제 완료. 아이템 저장 시작.")
         } else {
-            print("❌ 상품 정보 없음")
+            purchaseStatus = "❌ 상품 정보 없음"
+            print(purchaseStatus)
             isProcessing = false
             return
         }
@@ -272,20 +273,21 @@ struct AlertView: View {
                     await transaction.finish()
                     return true
                 case .unverified:
-                    print("❌ 영수증 검증 실패")
-                    purchaseStatus = "실패"
+                    purchaseStatus = "❌ 영수증 검증 실패"
+                    print(purchaseStatus)
                     return false
                 }
             case .userCancelled:
-                print("🛑 유저가 구매 취소")
-                purchaseStatus = "실패"
+                purchaseStatus = "🛑 유저가 구매 취소"
+                print(purchaseStatus)
                 return false
             case .pending:
-                print("⏳ 승인 대기 중")
-                purchaseStatus = "실패"
+                purchaseStatus = "⏳ 승인 대기 중"
+                print(purchaseStatus)
                 return false
             @unknown default:
-                purchaseStatus = "실패"
+                purchaseStatus = "❓알 수 없는 오류"
+                print(purchaseStatus)
                 return false
             }
         } catch {
