@@ -146,8 +146,13 @@ class QuokkaControl: ObservableObject {
         }
         
         // 현재 설정에 맞는 애니메이션 메타데이터 조회
-        let phaseString = phaseToString(currentPhase)
+        let phaseString = phaseToString(currentPhase) // 영어 변환 함수 사용
         let characterType = "quokka"
+        
+        print("SwiftData에서 프레임 로드 시도:")
+        print("  - characterType: \(characterType)")
+        print("  - phaseString: \(phaseString)")
+        print("  - animationType: \(currentAnimationType)")
         
         let descriptor = FetchDescriptor<GRAnimationMetadata>(
             predicate: #Predicate { metadata in
@@ -162,19 +167,39 @@ class QuokkaControl: ObservableObject {
             let metadataList = try context.fetch(descriptor)
             print("SwiftData에서 \(metadataList.count)개 메타데이터 발견")
             
+            // 임시 배열에 프레임들 로드
+            var tempFrames: [UIImage] = []
+            
             // 각 메타데이터에서 이미지 로드
             for metadata in metadataList {
+                print("이미지 로드 시도: \(metadata.filePath)")
+                
                 if let image = loadImageFromPath(metadata.filePath) {
-                    animationFrames.append(image)
+                    tempFrames.append(image)
+                    print("이미지 로드 성공: 프레임 \(metadata.frameIndex)")
+                } else {
+                    print("이미지 로드 실패: \(metadata.filePath)")
+                    // 파일 존재 여부 확인
+                    let fileExists = FileManager.default.fileExists(atPath: metadata.filePath)
+                    print("   파일 존재 여부: \(fileExists)")
                 }
             }
             
-            if !animationFrames.isEmpty {
-                currentFrame = animationFrames[0]
-                currentFrameIndex = 0
+            // ✅ 메인 스레드에서 UI 업데이트
+            DispatchQueue.main.async {
+                self.animationFrames = tempFrames
+                
+                if !self.animationFrames.isEmpty {
+                    self.currentFrame = self.animationFrames[0]
+                    self.currentFrameIndex = 0
+                    print("UI 업데이트 완료: \(self.animationFrames.count)개 프레임")
+                } else {
+                    print("로드된 프레임이 없음")
+                }
             }
             
-            print("SwiftData에서 \(animationFrames.count)개 프레임 로드 완료")
+            // 변경사항 저장
+            try context.save()
             
         } catch {
             print("SwiftData에서 프레임 로드 실패: \(error)")

@@ -340,7 +340,9 @@ struct AnimationSecondTestView: View {
     private func phaseButton(_ phase: CharacterPhase) -> some View {
         Button(action: {
             selectedPhase = phase
+            print("=== 단계 변경 ===")
             print("선택된 단계: \(phase.rawValue)")
+            print("선택된 캐릭터: \(selectedCharacter.rawValue)")
             
             // 애니메이션 정지
             eggControl.stopAnimation()
@@ -348,8 +350,12 @@ struct AnimationSecondTestView: View {
             
             // 쿼카이고 egg가 아닌 경우 QuokkaControl 설정
             if selectedCharacter == .quokka && phase != .egg {
+                print("QuokkaControl 설정 중...")
                 quokkaControl.setPhase(phase)
+            } else {
+                print("EggControl 사용")
             }
+            print("===============")
         }) {
             Text(phase.rawValue)
                 .font(.caption)
