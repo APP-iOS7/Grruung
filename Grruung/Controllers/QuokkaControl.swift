@@ -571,8 +571,11 @@ class QuokkaControl: ObservableObject {
                 let fileExists = FileManager.default.fileExists(atPath: fullURL.path)
                 print("파일 존재 확인: \(fileExists)")
                 
+                // ✅ 메타데이터 생성 전 로그
+                print("=== 메타데이터 생성 중 ===")
                 // 중요: phase를 영어로 저장하도록 수정
                 let englishPhase = self.phaseToString(phase)  // 영어 변환
+                print("영어 phase: \(englishPhase)")
                 
                 // SwiftData에 메타데이터 저장
                 let metadata = GRAnimationMetadata(
@@ -583,8 +586,16 @@ class QuokkaControl: ObservableObject {
                     filePath: localPath,
                     fileSize: imageData.count
                 )
+                
+                print("생성된 메타데이터 초기값:")
+                print("  - phase (초기): \(metadata.phase)")
+                
                 // 저장 후 영어로 덮어쓰기
                 metadata.phase = englishPhase
+                print("  - phase (수정 후): \(metadata.phase)")
+                
+                print("=== SwiftData 저장 시도 ===")
+                print("사용 중인 context: \(context)")
                 
                 print("=== SwiftData 저장 정보 ===")
                 print("characterType: \(metadata.characterType)")
@@ -594,8 +605,36 @@ class QuokkaControl: ObservableObject {
                 print("filePath: \(metadata.filePath)")
                 print("========================")
                 
+                // ✅ 저장 전에 context 상태 확인
+                print("context.hasChanges: \(context.hasChanges)")
+                
                 context.insert(metadata)
+                print("✅ context.insert 완료")
+                print("context.hasChanges (insert 후): \(context.hasChanges)")
+                
                 try context.save()
+                print("✅ context.save() 완료")
+                
+                // ✅ 저장 직후 바로 조회해보기
+                let testDescriptor = FetchDescriptor<GRAnimationMetadata>(
+                    predicate: #Predicate { meta in
+                        meta.characterType == characterType &&
+                        meta.phase == englishPhase &&
+                        meta.animationType == animationType &&
+                        meta.frameIndex == frameIndex
+                    }
+                )
+                
+                let testResults = try context.fetch(testDescriptor)
+                print("저장 직후 조회 결과: \(testResults.count)개")
+                
+                if let savedMetadata = testResults.first {
+                    print("저장된 메타데이터 확인:")
+                    print("  - characterType: \(savedMetadata.characterType)")
+                    print("  - phase: \(savedMetadata.phase)")
+                    print("  - animationType: \(savedMetadata.animationType)")
+                    print("  - frameIndex: \(savedMetadata.frameIndex)")
+                }
                 
                 print("✅ SwiftData 저장 완료: \(fileName)")
                 completion(true)
