@@ -12,6 +12,7 @@ struct CharDexSearchView: View {
     @State private var unlockCount: Int = 5
     @State private var sortType: SortType = .original
     @State private var showingErrorAlert = false
+    @Environment(\.dismiss) var dismiss
     // 검색 내용
     @State private var searchText = ""
     // 검색되는 캐릭터들
@@ -125,7 +126,9 @@ struct CharDexSearchView: View {
                 }
             }
             .alert("에러 발생", isPresented: $showingErrorAlert) {
-                Button("확인", role: .cancel) {}
+                Button("확인", role: .cancel) {
+                    dismiss()
+                }
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
             }

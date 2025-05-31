@@ -9,28 +9,19 @@ import Foundation
 import FirebaseFirestore
 
 class CharacterDexViewModel: ObservableObject {
-    @Published var unlockCount: Int = 3
-    @Published var sortType: SortType = .original
+    @Published var unlockCount: Int = 2
     @Published var unlockTicketCount: Int = 0
-    @Published var selectedLockedIndex: Int = 0
+    @Published var selectedLockedIndex: Int = -1
     @Published var isLoading = false
-    
+    @Published var noData: Bool = false
     private let db = Firestore.firestore()
     private let collectionName = "charDex"
-    
-    enum SortType {
-        case original
-        case createdAscending
-        case createdDescending
-        case alphabet
-    }
     
     // MARK: - 동산관련 초기 데이터 저장
     func saveCharDex(userId: String) async {
         do {
             let data: [String: Any] = [
                 "unlockCount": unlockCount,
-                "sortType": "\(sortType)",
                 "unlockTicketCount": unlockTicketCount,
                 "selectedLockedIndex": selectedLockedIndex
             ]
@@ -61,24 +52,31 @@ class CharacterDexViewModel: ObservableObject {
                 print("❌ 문서 없음")
                 await MainActor.run {
                     self.isLoading = false
+                    self.noData = true
                 }
                 return
             }
             
             guard
-                let unlockCount = data["unlockCount"] as? Int,
-                let sortType = data["sortType"] as? SortType,
-                let unlockTicketCount = data["unlockTicketCount"] as? Int,
-                let selectedLockedIndex = data["selectedLockedIndex"] as? Int
+                let fetchUnlockCount = data["unlockCount"] as? Int,
+                let fetchUnlockTicketCount = data["unlockTicketCount"] as? Int,
+                let fetchSelectedLockedIndex = data["selectedLockedIndex"] as? Int
             else {
                 throw NSError(domain: "ParsingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "❌ 동산 데이터 파싱 실패"])
             }
-            print("✅ 동산 데이터 로드 성공: \(userId)")
+
+            await MainActor.run {
+                self.unlockCount = fetchUnlockCount
+                self.unlockTicketCount = fetchUnlockTicketCount
+                self.selectedLockedIndex = fetchSelectedLockedIndex
+                print("✅ 동산 데이터 로드 성공: \(userId)")
+            }
+            
         } catch {
             print("❌ 사용자 조회 실패: \(error.localizedDescription)")
             throw error
         }
-        
+
         await MainActor.run {
             isLoading = false
         }
@@ -88,13 +86,11 @@ class CharacterDexViewModel: ObservableObject {
     func updateCharDex(
         userId: String,
         unlockCount: Int,
-        sortType: SortType,
         unlockTicketCount: Int,
         selectedLockedIndex: Int
     ) {
         let data: [String: Any] = [
             "unlockCount": unlockCount,
-            "sortType": "\(sortType)",
             "unlockTicketCount": unlockTicketCount,
             "selectedLockedIndex": selectedLockedIndex
         ]
