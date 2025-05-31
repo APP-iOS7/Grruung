@@ -140,11 +140,17 @@ class UserInventoryViewModel: ObservableObject {
                     self.errorMessage = error.localizedDescription
                     print("❌ 수량 업데이트 실패: \(error.localizedDescription)")
                 } else {
-                    // 로컬 배열 업데이트
-                    if let index = self.inventories.firstIndex(where: { $0.userItemNumber == item.userItemNumber }) {
-                        self.inventories[index].userItemQuantity = newQuantity
+                    if newQuantity == 0 {
+                        // ✅ 수량이 0이면 아이템 삭제
+                        print("⚠️ 수량 0, 아이템 삭제 처리 중: \(item.userItemName)")
+                        self.deleteItem(userId: userId, item: item)
+                    } else {
+                        // ✅ 로컬 배열 업데이트
+                        if let index = self.inventories.firstIndex(where: { $0.userItemNumber == item.userItemNumber }) {
+                            self.inventories[index].userItemQuantity = newQuantity
+                        }
+                        print("✅ 수량 업데이트 성공")
                     }
-                    print("✅ 수량 업데이트 성공")
                 }
             }
         }
