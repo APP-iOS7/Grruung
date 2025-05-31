@@ -661,6 +661,9 @@ class QuokkaControl: ObservableObject {
         // 현재 phase + animationType에 맞는 마지막 프레임 번호 사용
         let lastFrameIndex = getCurrentTotalFrameCount(for: animationType)
         
+        // 현재 phase + animationType에 맞는 총 프레임 수 (디버깅용)
+        let expectedFrameCount = getCurrentTotalFrameCount(for: animationType)
+        
         print("=== 다운로드 상태 확인 ===")
         print("characterType: \(characterType)")
         print("currentPhase: \(currentPhase.rawValue)")
@@ -674,21 +677,34 @@ class QuokkaControl: ObservableObject {
             return true
         }
         
-        // 마지막 프레임(50번)이 존재하는지 확인
+        // 모든 프레임 수를 세어서 확인
         let descriptor = FetchDescriptor<GRAnimationMetadata>(
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == animationTypeString &&
-                metadata.frameIndex == lastFrameIndex // 마지막 프레임
+                metadata.animationType == animationTypeString
             }
         )
         
         do {
             let results = try context.fetch(descriptor)
-            let isDownloaded = !results.isEmpty
+            // let isDownloaded = !results.isEmpty
 
             // -- 디버깅 섹션 시작 --
+            let actualFrameCount = results.count
+            print("실제 저장된 프레임 수: \(actualFrameCount)")
+            print("저장된 프레임 번호들: \(results.map { $0.frameIndex }.sorted())")
+            
+            // ✅ 실제 프레임 수가 예상 프레임 수와 같으면 다운로드 완료
+            let isDownloaded = actualFrameCount == expectedFrameCount
+            
+            if !isDownloaded {
+                print("⚠️ 다운로드 미완료: \(actualFrameCount)/\(expectedFrameCount)")
+            } else {
+                print("✅ 다운로드 완료: \(actualFrameCount)/\(expectedFrameCount)")
+            }
+            print("=================================")
+            
             print("조회 결과 개수: \(results.count)")
             if let firstResult = results.first {
                 print("발견된 메타데이터:")
@@ -779,6 +795,189 @@ class QuokkaControl: ObservableObject {
         case .adolescent: return "adolescent"
         case .adult: return "adult"
         case .elder: return "elder"
+        }
+    }
+    
+    // MARK: - 디버깅용 임시 함수 (삭제 예정)
+    // QuokkaControl.swift에 임시 디버깅 함수 추가
+    func debugSwiftDataContents() {
+        guard let context = modelContext else {
+            print("❌ ModelContext가 없음")
+            return
+        }
+        
+        print("=== SwiftData 전체 내용 확인 ===")
+        
+        do {
+            // 모든 quokka 메타데이터 조회
+            let descriptor = FetchDescriptor<GRAnimationMetadata>(
+                predicate: #Predicate { metadata in
+                    metadata.characterType == "quokka"
+                },
+                sortBy: [SortDescriptor(\.phase), SortDescriptor(\.animationType), SortDescriptor(\.frameIndex)]
+            )
+            
+            let allMetadata = try context.fetch(descriptor)
+            print("총 저장된 메타데이터 개수: \(allMetadata.count)")
+            
+            // phase별로 그룹화해서 출력
+            let groupedByPhase = Dictionary(grouping: allMetadata) { $0.phase }
+            
+            for (phase, metadataList) in groupedByPhase.sorted(by: { $0.key < $1.key }) {
+                print("\n--- Phase: \(phase) ---")
+                
+                let groupedByAnimation = Dictionary(grouping: metadataList) { $0.animationType }
+                
+                for (animationType, frames) in groupedByAnimation.sorted(by: { $0.key < $1.key }) {
+                    let frameIndices = frames.map { $0.frameIndex }.sorted()
+                    let minFrame = frameIndices.min() ?? 0
+                    let maxFrame = frameIndices.max() ?? 0
+                    print("  \(animationType): \(frames.count)개 프레임 (범위: \(minFrame)~\(maxFrame))")
+                    
+                    // 처음 몇 개와 마지막 몇 개 프레임 번호 출력
+                    if frameIndices.count > 10 {
+                        let first5 = Array(frameIndices.prefix(5))
+                        let last5 = Array(frameIndices.suffix(5))
+                        print("    시작: \(first5)")
+                        print("    끝: \(last5)")
+                    } else {
+                        print("    전체: \(frameIndices)")
+                    }
+                }
+            }
+            
+            print("=============================")
+            
+        } catch {
+            print("❌ SwiftData 내용 확인 실패: \(error)")
+        }
+    }
+    
+    // 저장된 파일의 메타데이터 확인
+    func debugSwiftDataDatabase() {
+        guard let context = modelContext else {
+            print("❌ ModelContext가 없음")
+            return
+        }
+        
+        print("=== SwiftData 데이터베이스 상세 확인 ===")
+        
+        do {
+            // 모든 애니메이션 메타데이터 가져오기 (조건 없이)
+            let allDescriptor = FetchDescriptor<GRAnimationMetadata>()
+            let allMetadata = try context.fetch(allDescriptor)
+            
+            print("전체 메타데이터 개수: \(allMetadata.count)")
+            
+            if allMetadata.isEmpty {
+                print("⚠️ SwiftData에 메타데이터가 하나도 없습니다!")
+                
+                // 다른 가능한 이유들 확인
+                print("\n--- 가능한 원인들 ---")
+                print("1. 메타데이터 저장이 실패했을 수 있음")
+                print("2. 다른 ModelContext를 사용하고 있을 수 있음")
+                print("3. 데이터베이스 파일이 삭제되었을 수 있음")
+                print("4. 백그라운드 스레드에서 저장 시 동기화 문제")
+                
+            } else {
+                // 각 메타데이터의 상세 정보 출력
+                for (index, metadata) in allMetadata.enumerated() {
+                    print("\n--- 메타데이터 #\(index + 1) ---")
+                    print("ID: \(metadata.id)")
+                    print("characterType: '\(metadata.characterType)'")
+                    print("phase: '\(metadata.phase)'")
+                    print("animationType: '\(metadata.animationType)'")
+                    print("frameIndex: \(metadata.frameIndex)")
+                    print("filePath: '\(metadata.filePath)'")
+                    print("fileSize: \(metadata.fileSize)")
+                    print("downloadDate: \(metadata.downloadDate)")
+                    print("lastAccessed: \(metadata.lastAccessed)")
+                    print("isDownloaded: \(metadata.isDownloaded)")
+                    
+                    // 실제 파일 존재 여부 확인
+                    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                    let fullPath = documentsPath.appendingPathComponent(metadata.filePath).path
+                    let fileExists = FileManager.default.fileExists(atPath: fullPath)
+                    print("실제 파일 존재: \(fileExists)")
+                    
+                    if !fileExists {
+                        print("⚠️ 메타데이터는 있지만 실제 파일이 없음!")
+                    }
+                }
+            }
+            
+            print("=====================================")
+            
+        } catch {
+            print("❌ SwiftData 조회 실패: \(error)")
+        }
+    }
+    
+    // 파일 시스템 직접 확인
+    func debugFileSystemContents() {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let animationsPath = documentsPath.appendingPathComponent("animations")
+        
+        print("=== 파일 시스템 내용 확인 ===")
+        print("Documents 경로: \(documentsPath.path)")
+        print("Animations 경로: \(animationsPath.path)")
+        
+        // animations 폴더 존재 여부 확인
+        let animationsExists = FileManager.default.fileExists(atPath: animationsPath.path)
+        print("animations 폴더 존재: \(animationsExists)")
+        
+        if animationsExists {
+            // 재귀적으로 모든 파일 탐색
+            exploreDirectory(at: animationsPath.path, depth: 0)
+        }
+        
+        print("============================")
+    }
+
+    private func exploreDirectory(at path: String, depth: Int) {
+        let indent = String(repeating: "  ", count: depth)
+        
+        do {
+            let contents = try FileManager.default.contentsOfDirectory(atPath: path)
+            
+            for item in contents.sorted() {
+                let itemPath = (path as NSString).appendingPathComponent(item)
+                var isDirectory: ObjCBool = false
+                
+                if FileManager.default.fileExists(atPath: itemPath, isDirectory: &isDirectory) {
+                    if isDirectory.boolValue {
+                        print("\(indent)📁 \(item)/")
+                        exploreDirectory(at: itemPath, depth: depth + 1)
+                    } else {
+                        // 파일 정보 출력
+                        do {
+                            let attributes = try FileManager.default.attributesOfItem(atPath: itemPath)
+                            let fileSize = attributes[.size] as? Int ?? 0
+                            let modificationDate = attributes[.modificationDate] as? Date ?? Date()
+                            
+                            let formatter = DateFormatter()
+                            formatter.dateFormat = "HH:mm:ss"
+                            let timeString = formatter.string(from: modificationDate)
+                            
+                            print("\(indent)📄 \(item) (\(formatFileSize(fileSize)), \(timeString))")
+                        } catch {
+                            print("\(indent)📄 \(item) (크기 확인 실패)")
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("\(indent)❌ 디렉토리 읽기 실패: \(error)")
+        }
+    }
+
+    private func formatFileSize(_ bytes: Int) -> String {
+        if bytes < 1024 {
+            return "\(bytes)B"
+        } else if bytes < 1024 * 1024 {
+            return String(format: "%.1fKB", Double(bytes) / 1024.0)
+        } else {
+            return String(format: "%.1fMB", Double(bytes) / (1024.0 * 1024.0))
         }
     }
 }

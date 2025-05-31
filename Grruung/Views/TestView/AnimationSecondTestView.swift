@@ -395,6 +395,35 @@ struct AnimationSecondTestView: View {
                 .padding(.horizontal)
             }
             
+            // 디버깅 버튼 추가 (삭제 예정)
+            HStack(spacing: 15) {
+                Button(action: {
+                    quokkaControl.debugSwiftDataContents()
+                }) {
+                    HStack {
+                        Image(systemName: "info.circle")
+                        Text("SwiftData 내용 확인")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.gray)
+                    .foregroundColor(.white)
+                    .cornerRadius(20)
+                }
+                
+                Button("파일시스템 확인") {
+                    quokkaControl.debugFileSystemContents()
+                }
+                .buttonStyle(.bordered)
+                
+                Button("SwiftData 확인") {
+                    quokkaControl.debugSwiftDataDatabase()
+                }
+                .buttonStyle(.bordered)
+                
+                Spacer()
+            }
+            
             // 다운로드 버튼들
             VStack(spacing: 10) {
                 // Normal 애니메이션 다운로드 버튼
