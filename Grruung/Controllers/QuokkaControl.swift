@@ -571,19 +571,24 @@ class QuokkaControl: ObservableObject {
                 let fileExists = FileManager.default.fileExists(atPath: fullURL.path)
                 print("파일 존재 확인: \(fileExists)")
                 
+                // 중요: phase를 영어로 저장하도록 수정
+                let englishPhase = self.phaseToString(phase)  // 영어 변환
+                
                 // SwiftData에 메타데이터 저장
                 let metadata = GRAnimationMetadata(
                     characterType: characterType,
-                    phase: phase,
+                    phase: phase,  // 이건 초기화용
                     animationType: animationType,
                     frameIndex: frameIndex,
                     filePath: localPath,
                     fileSize: imageData.count
                 )
+                // 저장 후 영어로 덮어쓰기
+                metadata.phase = englishPhase
                 
                 print("=== SwiftData 저장 정보 ===")
                 print("characterType: \(metadata.characterType)")
-                print("phase: \(metadata.phase)")
+                print("phase(저장될 값): \(metadata.phase)")
                 print("animationType: \(metadata.animationType)")
                 print("frameIndex: \(metadata.frameIndex)")
                 print("filePath: \(metadata.filePath)")
