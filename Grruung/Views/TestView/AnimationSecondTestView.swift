@@ -468,10 +468,15 @@ struct AnimationSecondTestView: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                 
+                // 상태를 미리 계산하여 반복 호출 방지
+                let normalStatus = quokkaControl.isAnimationTypeDownloaded(.normal)
+                let sleepingStatus = quokkaControl.isAnimationTypeDownloaded(.sleeping)
+                let eatingStatus = quokkaControl.isAnimationTypeDownloaded(.eating)
+                
                 HStack {
-                    statusIndicator(type: .normal, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.normal))
-                    statusIndicator(type: .sleeping, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.sleeping))
-                    statusIndicator(type: .eating, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.eating))
+                    statusIndicator(type: .normal, isDownloaded: normalStatus)
+                    statusIndicator(type: .sleeping, isDownloaded: sleepingStatus)
+                    statusIndicator(type: .eating, isDownloaded: eatingStatus)
                 }
             }
             .padding(.top, 10)

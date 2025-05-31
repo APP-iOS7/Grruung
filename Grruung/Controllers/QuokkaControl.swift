@@ -244,12 +244,43 @@ class QuokkaControl: ObservableObject {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let imageURL = documentsPath.appendingPathComponent(filePath)
         
+        // --- 디버깅 섹션 시작 ---
+        print("=== 이미지 로드 시도 ===")
+        print("상대 경로: \(filePath)")
+        print("전체 경로: \(imageURL.path)")
+        
+        // 파일 존재 여부 확인
+        let fileExists = FileManager.default.fileExists(atPath: imageURL.path)
+        print("파일 존재: \(fileExists)")
+        
+        if fileExists {
+            // 파일 크기 확인
+            do {
+                let attributes = try FileManager.default.attributesOfItem(atPath: imageURL.path)
+                if let fileSize = attributes[.size] as? Int {
+                    print("파일 크기: \(fileSize) 바이트")
+                }
+            } catch {
+                print("파일 속성 확인 실패: \(error)")
+            }
+        }
+        
+        // --- 디버깅 섹션 끝 ---
+        
         guard let imageData = try? Data(contentsOf: imageURL) else {
             print("이미지 데이터 로드 실패: \(filePath)")
             return nil
         }
         
-        return UIImage(data: imageData)
+        guard let image = UIImage(data: imageData) else {
+            print("❌ UIImage 변환 실패: \(filePath)")
+            return nil
+        }
+        
+        print("✅ 이미지 로드 성공: \(image.size.width)x\(image.size.height)")
+        print("=====================")
+        
+        return image
     }
     
     // MARK: - 애니메이션 재생 함수
@@ -491,6 +522,11 @@ class QuokkaControl: ObservableObject {
     ) {
         let storageRef = storage.reference().child(firebasePath)
         
+        print("=== 프레임 다운로드 시작 ===")
+        print("Firebase 경로: \(firebasePath)")
+        print("파일명: \(fileName)")
+        print("프레임 번호: \(frameIndex)")
+        
         storageRef.getData(maxSize: 5 * 1024 * 1024) { [weak self] data, error in
             guard let self = self else {
                 completion(false)
@@ -509,18 +545,31 @@ class QuokkaControl: ObservableObject {
                 return
             }
             
+            print("✅ Firebase 다운로드 성공: \(imageData.count) 바이트")
+            
             // Documents 폴더에 이미지 저장
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let localPath = "animations/\(characterType)/\(self.phaseToString(phase))/\(animationType)/\(fileName)"
             let fullURL = documentsPath.appendingPathComponent(localPath)
             
+            print("로컬 저장 경로: \(fullURL.path)")
+            
             // 디렉토리 생성
             let directoryURL = fullURL.deletingLastPathComponent()
-            try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            do {
+                try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            } catch {
+                print("❌ 디렉토리 생성 실패: \(error)")
+            }
             
             do {
                 // 파일 저장
                 try imageData.write(to: fullURL)
+                print("✅ 파일 저장 성공: \(fullURL.path)")
+                
+                // 파일 존재 확인
+                let fileExists = FileManager.default.fileExists(atPath: fullURL.path)
+                print("파일 존재 확인: \(fileExists)")
                 
                 // SwiftData에 메타데이터 저장
                 let metadata = GRAnimationMetadata(
@@ -532,10 +581,18 @@ class QuokkaControl: ObservableObject {
                     fileSize: imageData.count
                 )
                 
+                print("=== SwiftData 저장 정보 ===")
+                print("characterType: \(metadata.characterType)")
+                print("phase: \(metadata.phase)")
+                print("animationType: \(metadata.animationType)")
+                print("frameIndex: \(metadata.frameIndex)")
+                print("filePath: \(metadata.filePath)")
+                print("========================")
+                
                 context.insert(metadata)
                 try context.save()
                 
-                print("프레임 저장 완료: \(fileName)")
+                print("✅ SwiftData 저장 완료: \(fileName)")
                 completion(true)
                 
             } catch {
@@ -587,7 +644,10 @@ class QuokkaControl: ObservableObject {
     
     // 특정 애니메이션 타입이 완전히 다운로드되었는지 확인
     func isAnimationTypeDownloaded(_ animationType: AnimationType) -> Bool {
-        guard let context = modelContext else { return false }
+        guard let context = modelContext else {
+            print("❌ ModelContext가 없음")
+            return false
+        }
         
         let phaseString = phaseToString(currentPhase)
         let characterType = "quokka"
@@ -596,8 +656,16 @@ class QuokkaControl: ObservableObject {
         // 현재 phase + animationType에 맞는 마지막 프레임 번호 사용
         let lastFrameIndex = getCurrentTotalFrameCount(for: animationType)
         
+        print("=== 다운로드 상태 확인 ===")
+        print("characterType: \(characterType)")
+        print("currentPhase: \(currentPhase.rawValue)")
+        print("phaseString: \(phaseString)")
+        print("animationType: \(animationTypeString)")
+        print("마지막 프레임 번호: \(lastFrameIndex)")
+        
         // egg 단계는 Bundle에서 처리하므로 항상 true 반환
         if currentPhase == .egg {
+            print("✅ egg 단계 - Bundle에서 처리")
             return true
         }
         
@@ -614,7 +682,28 @@ class QuokkaControl: ObservableObject {
         do {
             let results = try context.fetch(descriptor)
             let isDownloaded = !results.isEmpty
-            print("\(phaseString)/\(animationType.rawValue) 다운로드 상태: \(isDownloaded) (마지막 프레임: \(lastFrameIndex))")
+
+            // -- 디버깅 섹션 시작 --
+            print("조회 결과 개수: \(results.count)")
+            if let firstResult = results.first {
+                print("발견된 메타데이터:")
+                print("  - characterType: \(firstResult.characterType)")
+                print("  - phase: \(firstResult.phase)")
+                print("  - animationType: \(firstResult.animationType)")
+                print("  - frameIndex: \(firstResult.frameIndex)")
+                print("  - filePath: \(firstResult.filePath)")
+                
+                // 실제 파일 존재 여부도 확인
+                let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let fullPath = documentsPath.appendingPathComponent(firstResult.filePath).path
+                let fileExists = FileManager.default.fileExists(atPath: fullPath)
+                print("  - 실제 파일 존재: \(fileExists)")
+            }
+            
+            print("\(phaseString)/\(animationType.rawValue) 다운로드 상태: \(isDownloaded)")
+            print("=========================")
+            // -- 디버깅 섹션 끝 --
+            
             return isDownloaded
         } catch {
             print("다운로드 상태 확인 실패: \(error)")
