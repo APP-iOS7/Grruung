@@ -117,7 +117,7 @@ struct AnimationSecondTestView: View {
                         
                         Text("상태: \(quokkaControl.isAnimating ? "재생중" : "정지")")
                             .font(.caption)
-                            .foregroundColor(eggControl.isAnimating ? .green : .red)
+                            .foregroundColor(quokkaControl.isAnimating ? .green : .red)
                     }
                 } else {
                     // egg 단계이거나 다른 캐릭터
@@ -142,7 +142,7 @@ struct AnimationSecondTestView: View {
                 // 선택된 캐릭터에 따라 다른 컨트롤에서 이미지 가져오기
                 if selectedCharacter == .quokka && selectedPhase != .egg {
                     // 쿼카 + egg가 아닌 경우 QuokkaControl 사용
-                    if let currentFrame = eggControl.currentFrame {
+                    if let currentFrame = quokkaControl.currentFrame {
                         Image(uiImage: currentFrame)
                             .resizable()
                             .scaledToFit()
