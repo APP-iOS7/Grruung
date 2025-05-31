@@ -153,7 +153,7 @@ class QuokkaControl: ObservableObject {
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == self.currentAnimationType
+                metadata.animationType == currentAnimationType
             },
             sortBy: [SortDescriptor(\.frameIndex)]
         )
@@ -195,7 +195,7 @@ class QuokkaControl: ObservableObject {
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == self.currentAnimationType &&
+                metadata.animationType == currentAnimationType &&
                 metadata.frameIndex == frameIndex
             }
         )
@@ -319,55 +319,49 @@ class QuokkaControl: ObservableObject {
         let characterType = "quokka"
         let basePath = "animations/\(characterType)/\(phaseString)/\(animationType.rawValue)"
         
-        // 예상 최대 프레임 수 (실제로는 Firebase에서 확인해야 함)
-        let maxFrames = 100
+        // 최대 프레임 수
+        let actualFrameCount = getCurrentTotalFrameCount(for: animationType)
         var downloadedFrames = 0
-        var totalFramesToDownload = 0
+        let totalFramesToDownload = actualFrameCount
         
-        // 먼저 존재하는 프레임 수 확인
-        checkFrameCount(basePath: basePath, maxFrames: maxFrames) { [weak self] frameCount in
-            guard let self = self else { return }
-            
-            totalFramesToDownload = frameCount
-            print("다운로드할 프레임 수: \(frameCount)")
-            
-            if frameCount == 0 {
-                DispatchQueue.main.async {
-                    self.isDownloading = false
-                    self.downloadMessage = "다운로드할 프레임이 없습니다"
-                }
-                return
+        print("다운로드할 프레임 수: \(totalFramesToDownload)")
+        
+        if totalFramesToDownload == 0 {
+            DispatchQueue.main.async {
+                self.isDownloading = false
+                self.downloadMessage = "다운로드할 프레임이 없습니다"
             }
+            return
+        }
+        
+        // 각 프레임 다운로드
+        for frameIndex in 1...totalFramesToDownload {
+            let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
+            let firebasePath = "\(basePath)/\(fileName)"
             
-            // 각 프레임 다운로드
-            for frameIndex in 1...frameCount {
-                let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
-                let firebasePath = "\(basePath)/\(fileName)"
+            self.downloadFrame(
+                firebasePath: firebasePath,
+                fileName: fileName,
+                characterType: characterType,
+                phase: self.currentPhase,
+                animationType: animationType.rawValue,
+                frameIndex: frameIndex,
+                context: context
+            ) { success in
+                downloadedFrames += 1
                 
-                self.downloadFrame(
-                    firebasePath: firebasePath,
-                    fileName: fileName,
-                    characterType: characterType,
-                    phase: self.currentPhase,
-                    animationType: animationType.rawValue,
-                    frameIndex: frameIndex,
-                    context: context
-                ) { success in
-                    downloadedFrames += 1
+                DispatchQueue.main.async {
+                    self.downloadProgress = Double(downloadedFrames) / Double(totalFramesToDownload)
                     
-                    DispatchQueue.main.async {
-                        self.downloadProgress = Double(downloadedFrames) / Double(totalFramesToDownload)
+                    if downloadedFrames == totalFramesToDownload {
+                        self.isDownloading = false
+                        self.downloadMessage = "\(animationType.displayName) 다운로드 완료!"
+                        print("다운로드 완료: \(downloadedFrames)개 프레임")
                         
-                        if downloadedFrames == totalFramesToDownload {
-                            self.isDownloading = false
-                            self.downloadMessage = "\(animationType.displayName) 다운로드 완료!"
-                            print("다운로드 완료: \(downloadedFrames)개 프레임")
-                            
-                            // 다운로드 완료 후 애니메이션 다시 로드
-                            self.loadAnimationFrames()
-                        } else {
-                            self.downloadMessage = "\(animationType.displayName) 다운로드 중... (\(downloadedFrames)/\(totalFramesToDownload))"
-                        }
+                        // 다운로드 완료 후 애니메이션 다시 로드
+                        self.loadAnimationFrames()
+                    } else {
+                        self.downloadMessage = "\(animationType.displayName) 다운로드 중... (\(downloadedFrames)/\(totalFramesToDownload))"
                     }
                 }
             }
@@ -417,55 +411,46 @@ class QuokkaControl: ObservableObject {
         let characterType = "quokka"
         let basePath = "animations/\(characterType)/\(phaseString)/\(animationType.rawValue)"
         
-        let maxFrames = 100
+        let actualFrameCount = getCurrentTotalFrameCount(for: animationType) // 수정: getTotalFrameCount 사용
         
-        checkFrameCount(basePath: basePath, maxFrames: maxFrames) { [weak self] frameCount in
-            guard let self = self else {
-                completion(false)
-                return
-            }
+        if actualFrameCount == 0 {
+            completion(true) // 프레임이 없어도 완료로 처리
+            return
+        }
+        
+        var downloadedFrames = 0
+        let totalFramesToDownload = actualFrameCount
+        
+        for frameIndex in 1...actualFrameCount {
+            let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
+            let firebasePath = "\(basePath)/\(fileName)"
             
-            if frameCount == 0 {
-                completion(true) // 프레임이 없어도 완료로 처리
-                return
-            }
-            
-            var downloadedFrames = 0
-            let totalFramesToDownload = frameCount
-            
-            for frameIndex in 1...frameCount {
-                let fileName = "\(characterType)_\(phaseString)_\(animationType.rawValue)_\(frameIndex).png"
-                let firebasePath = "\(basePath)/\(fileName)"
+            self.downloadFrame(
+                firebasePath: firebasePath,
+                fileName: fileName,
+                characterType: characterType,
+                phase: self.currentPhase,
+                animationType: animationType.rawValue,
+                frameIndex: frameIndex,
+                context: context
+            ) { success in
+                downloadedFrames += 1
                 
-                self.downloadFrame(
-                    firebasePath: firebasePath,
-                    fileName: fileName,
-                    characterType: characterType,
-                    phase: self.currentPhase,
-                    animationType: animationType.rawValue,
-                    frameIndex: frameIndex,
-                    context: context
-                ) { success in
-                    downloadedFrames += 1
-                    
-                    if downloadedFrames == totalFramesToDownload {
-                        completion(true)
-                    }
+                if downloadedFrames == totalFramesToDownload {
+                    completion(true)
                 }
             }
         }
     }
     
-    // Firebase에서 프레임 수 확인
+    // Firebase에서 프레임 수 확인 (수정됨) - 지금은 사용하지 않음 (지금은 일단 프레임 수 수동으로 계산해서 반영)
     private func checkFrameCount(basePath: String, maxFrames: Int, completion: @escaping (Int) -> Void) {
-        let phaseString = phaseToString(currentPhase)
-        let characterType = "quokka"
+        // ✅ 수정: 현재 phase와 애니메이션 타입에 따라 실제 프레임 수 반환
+        let animationType = AnimationType(rawValue: currentAnimationType) ?? .normal
+        let actualFrameCount = getCurrentTotalFrameCount(for: animationType)
         
-        // 간단하게 하기 위해 일단 고정값 사용 (나중에 Firebase에서 실제 확인하도록 개선 가능)
-        // 실제로는 Firebase Storage의 list() 메서드를 사용해서 파일 목록을 가져와야 함
-        
-        // 임시로 50개 프레임이 있다고 가정
-        completion(50)
+        print("성장단계: \(phaseToString(currentPhase)), 애니메이션 타입: \(currentAnimationType), 프레임 수: \(actualFrameCount)")
+        completion(actualFrameCount)
     }
     
     // 개별 프레임 다운로드 및 SwiftData 저장
@@ -537,27 +522,74 @@ class QuokkaControl: ObservableObject {
     
     // MARK: - 다운로드 상태 확인 기능
     
+    // 각 성장 단계 + 애니메이션 타입별 총 프레임 수 정의
+    private func getTotalFrameCount(for phase: CharacterPhase, animationType: AnimationType) -> Int {
+        switch (phase, animationType) {
+        // infant 단계
+        case (.infant, .normal): return 122
+        case (.infant, .sleeping): return 1
+        case (.infant, .eating): return 1
+        
+        // child 단계
+        case (.child, .normal): return 80    // 새로 추가된 경우
+        case (.child, .sleeping): return 20
+        case (.child, .eating): return 25
+        
+        // adolescent 단계
+        case (.adolescent, .normal): return 60
+        case (.adolescent, .sleeping): return 15
+        case (.adolescent, .eating): return 18
+        
+        // adult 단계
+        case (.adult, .normal): return 70
+        case (.adult, .sleeping): return 12
+        case (.adult, .eating): return 20
+        
+        // elder 단계
+        case (.elder, .normal): return 90
+        case (.elder, .sleeping): return 25
+        case (.elder, .eating): return 30
+        
+        // egg는 Bundle에서 처리하므로 여기서는 0 반환
+        case (.egg, _): return 0
+        }
+    }
+
+    // 편의 메서드: 현재 phase와 animationType 기준으로 프레임 수 가져오기
+    private func getCurrentTotalFrameCount(for animationType: AnimationType) -> Int {
+        return getTotalFrameCount(for: currentPhase, animationType: animationType)
+    }
+    
     // 특정 애니메이션 타입이 완전히 다운로드되었는지 확인
     func isAnimationTypeDownloaded(_ animationType: AnimationType) -> Bool {
         guard let context = modelContext else { return false }
         
         let phaseString = phaseToString(currentPhase)
         let characterType = "quokka"
+        let animationTypeString = animationType.rawValue // 수정: animationType.rawValue를 미리 추출 (#Predicate 에러 방지)
+        
+        // 현재 phase + animationType에 맞는 마지막 프레임 번호 사용
+        let lastFrameIndex = getCurrentTotalFrameCount(for: animationType)
+        
+        // egg 단계는 Bundle에서 처리하므로 항상 true 반환
+        if currentPhase == .egg {
+            return true
+        }
         
         // 마지막 프레임(50번)이 존재하는지 확인
         let descriptor = FetchDescriptor<GRAnimationMetadata>(
             predicate: #Predicate { metadata in
                 metadata.characterType == characterType &&
                 metadata.phase == phaseString &&
-                metadata.animationType == animationType.rawValue &&
-                metadata.frameIndex == 50 // 마지막 프레임
+                metadata.animationType == animationTypeString &&
+                metadata.frameIndex == lastFrameIndex // 마지막 프레임
             }
         )
         
         do {
             let results = try context.fetch(descriptor)
             let isDownloaded = !results.isEmpty
-            print("\(animationType.rawValue) 다운로드 상태: \(isDownloaded)")
+            print("\(phaseString)/\(animationType.rawValue) 다운로드 상태: \(isDownloaded) (마지막 프레임: \(lastFrameIndex))")
             return isDownloaded
         } catch {
             print("다운로드 상태 확인 실패: \(error)")

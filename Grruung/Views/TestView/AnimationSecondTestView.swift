@@ -11,7 +11,12 @@ struct AnimationSecondTestView: View {
     // MARK: - 상태 변수들
     @State private var selectedCharacter: PetSpecies = .quokka // 기본값: 쿼카
     @State private var selectedPhase: CharacterPhase = .egg    // 기본값: 운석
+    
+    // 컨트롤 인스턴스
     @StateObject private var eggControl = EggControl() // EggControl 인스턴스
+    @StateObject private var quokkaControl = QuokkaControl() // QuokkaControl 인스턴스
+    
+    @Environment(\.modelContext) private var modelContext // SwiftData 환경
     
     // 홈뷰와 비슷한 상태바 더미 데이터
     let stats: [(icon: String, color: Color, value: CGFloat)] = [
@@ -42,18 +47,26 @@ struct AnimationSecondTestView: View {
                     // 캐릭터 단계 선택 토글 버튼
                     phaseSelectionSection
                     
+                    // 다운로드 버튼 섹션 (쿼카 + egg가 아닌 경우에만 표시)
+                    if selectedCharacter == .quokka && selectedPhase != .egg {
+                        downloadButtonsSection
+                    }
+                    
                     Spacer(minLength: 20)
                 }
             }
             .navigationTitle("애니메이션 테스트 2")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
+                // QuokkaControl에 SwiftData 컨텍스트 설정
+                quokkaControl.setModelContext(modelContext)
                 // 뷰가 나타날 때는 EggControl이 자동으로 첫 프레임을 로드함
                 print("AnimationSecondTestView 나타남")
             }
             .onDisappear {
-                // 뷰가 사라질 때 EggControl 정리
+                // 뷰가 사라질 때 모든 컨트롤 정리
                 eggControl.cleanup()
+                quokkaControl.cleanup()
             }
         }
     }
@@ -92,15 +105,31 @@ struct AnimationSecondTestView: View {
                 Text("현재 선택: \(selectedCharacter.rawValue) - \(selectedPhase.rawValue)")
                     .font(.headline)
                     .foregroundColor(.secondary)
+                
                 // 애니메이션 상태 정보 표시
-                HStack {
-                    Text("프레임: \(eggControl.currentFrameIndex + 1)")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                    
-                    Text("상태: \(eggControl.isAnimating ? "재생중" : "정지")")
-                        .font(.caption)
-                        .foregroundColor(eggControl.isAnimating ? .green : .red)
+                // 선택된 캐릭터에 따라 다른 상태 정보 표시
+                if selectedCharacter == .quokka && selectedPhase != .egg {
+                    // 쿼카 + egg가 아닌 경우
+                    HStack {
+                        Text("프레임: \(quokkaControl.currentFrameIndex + 1)")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        
+                        Text("상태: \(quokkaControl.isAnimating ? "재생중" : "정지")")
+                            .font(.caption)
+                            .foregroundColor(eggControl.isAnimating ? .green : .red)
+                    }
+                } else {
+                    // egg 단계이거나 다른 캐릭터
+                    HStack {
+                        Text("프레임: \(eggControl.currentFrameIndex + 1)")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        
+                        Text("상태: \(eggControl.isAnimating ? "재생중" : "정지")")
+                            .font(.caption)
+                            .foregroundColor(eggControl.isAnimating ? .green : .red)
+                    }
                 }
             }
             
@@ -110,22 +139,28 @@ struct AnimationSecondTestView: View {
                     .fill(Color.gray.opacity(0.1))
                     .frame(height: 200)
                 
-                // EggControl에서 현재 프레임 표시
-                if let currentFrame = eggControl.currentFrame {
-                    Image(uiImage: currentFrame)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 180)
-                        .padding()
+                // 선택된 캐릭터에 따라 다른 컨트롤에서 이미지 가져오기
+                if selectedCharacter == .quokka && selectedPhase != .egg {
+                    // 쿼카 + egg가 아닌 경우 QuokkaControl 사용
+                    if let currentFrame = eggControl.currentFrame {
+                        Image(uiImage: currentFrame)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 180)
+                            .padding()
+                    } else {
+                        placeholderImage
+                    }
                 } else {
-                    // 이미지가 없을 때
-                    VStack {
-                        Image(systemName: "photo")
-                            .font(.system(size: 40))
-                            .foregroundColor(.gray)
-                        Text("이미지를 찾을 수 없습니다")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                    // egg 단계이거나 다른 캐릭터는 EggControl 사용
+                    if let currentFrame = eggControl.currentFrame {
+                        Image(uiImage: currentFrame)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 180)
+                            .padding()
+                    } else {
+                        placeholderImage
                     }
                 }
             }
@@ -135,8 +170,20 @@ struct AnimationSecondTestView: View {
         .cornerRadius(15)
         .shadow(radius: 2)
     }
+        
+    // 플레이스홀더 이미지
+    private var placeholderImage: some View {
+        VStack {
+            Image(systemName: "photo")
+                .font(.system(size: 40))
+                .foregroundColor(.gray)
+            Text("프레임을 로드할 수 없습니다")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+    }
     
-    // 애니메이션 컨트롤 섹션 추가
+    // 애니메이션 컨트롤 섹션 추가 - 선택된 캐릭터에 따라 다른 컨트롤 사용
     private var animationControlSection: some View {
         VStack(spacing: 15) {
             Text("애니메이션 컨트롤")
@@ -146,22 +193,36 @@ struct AnimationSecondTestView: View {
             HStack(spacing: 20) {
                 // 재생/정지 버튼
                 Button(action: {
-                    eggControl.toggleAnimation()
+                    if selectedCharacter == .quokka && selectedPhase != .egg {
+                        quokkaControl.toggleAnimation()
+                    } else {
+                        eggControl.toggleAnimation()
+                    }
                 }) {
                     HStack {
-                        Image(systemName: eggControl.isAnimating ? "pause.fill" : "play.fill")
-                        Text(eggControl.isAnimating ? "정지" : "재생")
+                        let isAnimating = (selectedCharacter == .quokka && selectedPhase != .egg)
+                        ? quokkaControl.isAnimating
+                        : eggControl.isAnimating
+                        
+                        Image(systemName: isAnimating ? "pause.fill" : "play.fill")
+                        Text(isAnimating ? "정지" : "재생")
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
-                    .background(eggControl.isAnimating ? Color.red : Color.green)
+                    .background((selectedCharacter == .quokka && selectedPhase != .egg)
+                                ? (quokkaControl.isAnimating ? Color.red : Color.green)
+                                : (eggControl.isAnimating ? Color.red : Color.green))
                     .foregroundColor(.white)
                     .cornerRadius(20)
                 }
                 
-                // 정지 버튼 (처음으로 돌아가기)
+                // 정지 버튼
                 Button(action: {
-                    eggControl.stopAnimation()
+                    if selectedCharacter == .quokka && selectedPhase != .egg {
+                        quokkaControl.stopAnimation()
+                    } else {
+                        eggControl.stopAnimation()
+                    }
                 }) {
                     HStack {
                         Image(systemName: "stop.fill")
@@ -219,6 +280,7 @@ struct AnimationSecondTestView: View {
                     Button(action: {
                         selectedCharacter = character
                         print("선택된 캐릭터: \(character.rawValue)")
+                        // TODO: 나중에 다른 캐릭터 컨트롤러로 전환하는 로직 추가 예정
                     }) {
                         Text(character.rawValue)
                             .padding(.horizontal, 16)
@@ -279,9 +341,14 @@ struct AnimationSecondTestView: View {
         Button(action: {
             selectedPhase = phase
             print("선택된 단계: \(phase.rawValue)")
-            // 현재는 egg만 구현되어 있으므로 egg가 아닌 경우 알림
-            if phase != .egg {
-                print("아직 \(phase.rawValue) 단계는 구현되지 않았습니다")
+            
+            // 애니메이션 정지
+            eggControl.stopAnimation()
+            quokkaControl.stopAnimation()
+            
+            // 쿼카이고 egg가 아닌 경우 QuokkaControl 설정
+            if selectedCharacter == .quokka && phase != .egg {
+                quokkaControl.setPhase(phase)
             }
         }) {
             Text(phase.rawValue)
@@ -299,6 +366,125 @@ struct AnimationSecondTestView: View {
                     : .primary
                 )
                 .cornerRadius(15)
+        }
+    }
+    
+    // MARK: - 다운로드 버튼 섹션
+    private var downloadButtonsSection: some View {
+        VStack(spacing: 15) {
+            Text("애니메이션 다운로드")
+                .font(.headline)
+                .padding(.leading, 5)
+            
+            // 다운로드 진행률 표시 (다운로드 중일 때만)
+            if quokkaControl.isDownloading {
+                VStack(spacing: 8) {
+                    ProgressView(value: quokkaControl.downloadProgress)
+                        .progressViewStyle(LinearProgressViewStyle())
+                    
+                    Text(quokkaControl.downloadMessage)
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                .padding(.horizontal)
+            }
+            
+            // 다운로드 버튼들
+            VStack(spacing: 10) {
+                // Normal 애니메이션 다운로드 버튼
+                HStack(spacing: 15) {
+                    Button(action: {
+                        quokkaControl.downloadAnimationType(.normal)
+                    }) {
+                        HStack {
+                            Image(systemName: quokkaControl.isAnimationTypeDownloaded(.normal)
+                                ? "checkmark.circle.fill" : "arrow.down.circle")
+                            Text(quokkaControl.isAnimationTypeDownloaded(.normal)
+                                ? "노멀 다운완료" : "노멀 다운로드")
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(quokkaControl.isAnimationTypeDownloaded(.normal)
+                            ? Color.green.opacity(0.7) : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                    }
+                    .disabled(quokkaControl.isAnimationTypeDownloaded(.normal) || quokkaControl.isDownloading)
+                    Spacer()
+                }
+                // 전체 애니메이션 다운로드 버튼
+                HStack(spacing: 15) {
+                    Button(action: {
+                        quokkaControl.downloadAllAnimationTypes()
+                    }) {
+                        HStack {
+                            Image(systemName: quokkaControl.areAllAnimationTypesDownloaded()
+                                ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                            Text(quokkaControl.areAllAnimationTypesDownloaded()
+                                ? "전체 다운완료" : "전체 다운로드")
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(quokkaControl.areAllAnimationTypesDownloaded()
+                            ? Color.green.opacity(0.7) : Color.purple)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                    }
+                    .disabled(quokkaControl.areAllAnimationTypesDownloaded() || quokkaControl.isDownloading)
+                    
+                    Spacer()
+                }
+                
+                // 전체 타입 삭제 버튼
+                HStack(spacing: 15) {
+                    Button(action: {
+                        quokkaControl.deleteAllAnimationData()
+                    }) {
+                        HStack {
+                            Image(systemName: "trash.circle.fill")
+                            Text("전체 타입 삭제")
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
+                    }
+                    .disabled(quokkaControl.isDownloading)
+                    
+                    Spacer()
+                }
+            }
+            
+            // 현재 상태 정보 표시
+            VStack(alignment: .leading, spacing: 5) {
+                Text("다운로드 상태:")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                
+                HStack {
+                    statusIndicator(type: .normal, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.normal))
+                    statusIndicator(type: .sleeping, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.sleeping))
+                    statusIndicator(type: .eating, isDownloaded: quokkaControl.isAnimationTypeDownloaded(.eating))
+                }
+            }
+            .padding(.top, 10)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(15)
+    }
+    
+    // 상태 표시 인디케이터
+    private func statusIndicator(type: QuokkaControl.AnimationType, isDownloaded: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: isDownloaded ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isDownloaded ? .green : .gray)
+                .font(.caption)
+            
+            Text(type.displayName)
+                .font(.caption2)
+                .foregroundColor(isDownloaded ? .green : .gray)
         }
     }
 }
