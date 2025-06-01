@@ -257,58 +257,105 @@ struct HomeView: View {
     
     // 아이콘 버튼
     @ViewBuilder
-    func iconButton(systemName: String) -> some View {
-        if systemName == "cart.fill" {
-            NavigationLink(destination: StoreView() .environmentObject(AuthService())) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                    Image(systemName: systemName)
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                }
-            }
-        } else if systemName == "backpack.fill" {
-            NavigationLink(destination: UserInventoryView()
-                .environmentObject(AuthService())) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                    Image(systemName: systemName)
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                }
-            }
-        } else if systemName == "mountain.2.fill" {
-            NavigationLink(destination: CharDexView()) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                    Image(systemName: systemName)
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                }
+    func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
+        if !unlocked {
+            // 잠긴 버튼
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .frame(width: 60, height: 60)
+                    .foregroundColor(Color.gray.opacity(0.05))
+                
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.gray)
             }
         } else {
-            Button(action: {
-                print("\(systemName) 버튼 클릭")
-            }) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                    Image(systemName: systemName)
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
+            if systemName == "cart.fill" {
+                NavigationLink(destination: StoreView()) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: 60, height: 60)
+                            .foregroundColor(Color.gray.opacity(0.2))
+                        Image(systemName: systemName)
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    }
                 }
+            } else if systemName == "backpack.fill" {
+                NavigationLink(destination: UserInventoryView()) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(width: 60, height: 60)
+                                .foregroundColor(Color.gray.opacity(0.2))
+                            Image(systemName: systemName)
+                                .font(.system(size: 24))
+                                .foregroundColor(.gray)
+                        }
+                    }
+            } else if systemName == "mountain.2.fill" {
+                NavigationLink(destination: CharDexView()) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: 60, height: 60)
+                            .foregroundColor(Color.gray.opacity(0.2))
+                        Image(systemName: systemName)
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    }
+                }
+            } else {
+                Button(action: {
+                    handleSideButtonAction(systemName: systemName)
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: 60, height: 60)
+                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.05) : Color.gray.opacity(0.2))
+                        
+                        Image(systemName: systemName)
+                            .font(.system(size: 24))
+                            .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                    }
+                }
+                .disabled(viewModel.isSleeping)
             }
         }
     }
+    
+    // 버튼 내용 (재사용 가능한 부분)
+    private func handleSideButtonAction(systemName: String) {
+        switch systemName {
+        case "backpack.fill": // 인벤토리
+            showInventory.toggle()
+        case "cart.fill": // 상점
+            // NavigationLink는 이미 처리됨
+            break
+        case "mountain.2.fill": // 동산
+            showPetGarden.toggle()
+        case "book.fill": // 일기
+            if let character = viewModel.character {
+                // 스토리 작성 시트 표시
+                isShowingWriteStory = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "microphone.fill": // 채팅
+            if let character = viewModel.character {
+                // 챗펫 시트 표시
+                isShowingChatPet = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "gearshape.fill": // 설정
+            // 설정 시트 표시
+            isShowingSettings.toggle()
+        default:
+            break
+        }
+    }
+    
 }
-
 
 // MARK: - Preview
 #Preview {
