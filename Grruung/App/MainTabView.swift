@@ -19,6 +19,7 @@ struct MainTabView: View {
         case charDex = "캐릭터"
         case store = "상점"
         case myPage = "설정"
+        case testPage = "테스트뷰"
         
         var icon: String {
             switch self {
@@ -26,6 +27,7 @@ struct MainTabView: View {
             case .charDex: return "teddybear.fill"
             case .store: return "cart.fill"
             case .myPage: return "person.circle.fill"
+            case .testPage: return "questionmark.circle.fill"
             }
         }
     }
@@ -54,11 +56,17 @@ struct MainTabView: View {
                 .tag(2)
             
             // 마이페이지 탭
-            SettingView()
+            CheonTestView()
                 .tabItem {
                     Label(TabItem.myPage.rawValue, systemImage: TabItem.myPage.icon)
                 }
                 .tag(3)
+            // 테스트뷰 탭
+            SettingView()
+                .tabItem {
+                    Label(TabItem.testPage.rawValue, systemImage: TabItem.testPage.icon)
+                }
+                .tag(4)
         }
         .onAppear {
             // 탭 아이템 모양 설정
