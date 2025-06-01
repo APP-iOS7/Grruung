@@ -17,15 +17,15 @@ enum ViewMode {
 struct WriteStoryView: View {
     
     @StateObject private var viewModel = WriteStoryViewModel()
+    @StateObject private var writingCountVM: WritingCountViewModel
+    
     @Environment(\.dismiss) var dismiss
     
     var currentMode: ViewMode
     var characterUUID: String
     var postID: String?
     
-    
     @State private var currentPost: GRPost? = nil
-    
     @State private var postBody: String = ""
     @State private var postTitle: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
@@ -67,6 +67,13 @@ struct WriteStoryView: View {
         case .edit, .create:
             return "저장"
         }
+    }
+    
+    init(currentMode: ViewMode, characterUUID: String, postID: String? = nil, userID: String) {
+        self.currentMode = currentMode
+        self.characterUUID = characterUUID
+        self.postID = postID
+        _writingCountVM = StateObject(wrappedValue: WritingCountViewModel(userID: userID))
     }
     
     var body: some View {
@@ -209,12 +216,19 @@ struct WriteStoryView: View {
                             print("우측 상단 button tapped!")
                             
                             if currentMode == .create {
-                                let _ =  try await viewModel.createPost(
-                                    characterUUID: characterUUID,
-                                    postTitle: postTitle,
-                                    postBody: postBody,
-                                    imageData: selectedImageData
-                                )
+                                // 글쓰기 횟수 확인 후 처리
+                                if writingCountVM.tryToWrite() {
+                                    let _ =  try await viewModel.createPost(
+                                        characterUUID: characterUUID,
+                                        postTitle: postTitle,
+                                        postBody: postBody,
+                                        imageData: selectedImageData
+                                    )
+                                    dismiss()
+                                } else {
+                                    print("글쓰기 횟수가 부족합니다")
+                                    
+                                }
                             } else if currentMode == .edit {
                                 try await viewModel.editPost(
                                     postID: currentPost?.postID ?? "",
@@ -346,6 +360,6 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
+        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E", userID: "uCMGt4DjgiPPpyd2p9Di")
     }
 }

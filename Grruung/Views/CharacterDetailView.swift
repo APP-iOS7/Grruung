@@ -79,7 +79,8 @@ struct CharacterDetailView: View {
             WriteStoryView(
                 currentMode: .edit,
                 characterUUID: post.characterUUID,
-                postID: post.postID
+                postID: post.postID,
+                userID: viewModel.user.id
             )
         }
         .navigationTitle("\(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)")
@@ -160,6 +161,12 @@ struct CharacterDetailView: View {
                         .padding()
                 }
                 .padding()
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .padding()
             }
             
             VStack(alignment: .leading) {
@@ -303,7 +310,7 @@ struct CharacterDetailView: View {
             } else {
                 List {
                     ForEach(viewModel.posts.indices, id: \.self) { index in
-                        NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: characterUUID, postID: viewModel.posts[index].postID)) {
+                        NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: characterUUID, postID: viewModel.posts[index].postID, userID: viewModel.user.id)) {
                             HStack {
                                 if !viewModel.posts[index].postImage.isEmpty {
                                     AsyncImage(url: URL(string: viewModel.posts[index].postImage)) { image in
@@ -319,6 +326,12 @@ struct CharacterDetailView: View {
                                             .frame(width: 60, height: 60)
                                             .padding(10)
                                     }
+                                }  else {
+                                    Image(systemName: "photo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 60, height: 60)
+                                        .padding(10)
                                 }
                                 VStack(alignment: .leading) {
                                     Text(viewModel.posts[index].postTitle)
