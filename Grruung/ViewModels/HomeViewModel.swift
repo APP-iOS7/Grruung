@@ -125,13 +125,21 @@ class HomeViewModel: ObservableObject {
         ("bed.double", true, "재우기")
     ]
     
-    // 스탯 표시 형식 수정 (3개의 보이는 스탯만)
-    @Published var stats: [(icon: String, iconColor: Color, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, Color.orange, 1.0), // 포만감
-        ("figure.run", Color.blue, Color.blue, 1.0),     // 운동량
-        ("bolt.fill", Color.yellow, Color.yellow, 1.0)   // 활동량
+    // 스탯 표시 형식
+    @Published var stats: [(icon: String, color: Color, value: CGFloat)] = [
+        ("fork.knife", .orange, 0.5),
+        ("heart.fill", .red, 0.5),
+        ("bolt.fill", .yellow, 0.5)
     ]
-
+    
+    // 스탯 값에 따라 색상을 반환하는 유틸 함수
+    func colorForValue(_ value: CGFloat) -> Color {
+        switch value {
+        case 0...0.3: return .red
+        case 0.3...0.79: return .yellow
+        default: return .green
+        }
+    }
     
     // 액션 관리자
     private let actionManager = ActionManager.shared
