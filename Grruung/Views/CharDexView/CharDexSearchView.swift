@@ -12,12 +12,13 @@ struct CharDexSearchView: View {
     @State private var unlockCount: Int = 5
     @State private var sortType: SortType = .original
     @State private var showingErrorAlert = false
+    @Environment(\.dismiss) var dismiss
     // 검색 내용
     @State private var searchText = ""
     // 검색되는 캐릭터들
     let searchCharacters: [GRCharacter]
     
-    enum SortType {
+    private enum SortType {
         case original, createdAscending, createdDescending, alphabet
     }
     
@@ -125,7 +126,9 @@ struct CharDexSearchView: View {
                 }
             }
             .alert("에러 발생", isPresented: $showingErrorAlert) {
-                Button("확인", role: .cancel) {}
+                Button("확인", role: .cancel) {
+                    dismiss()
+                }
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
             }
@@ -179,14 +182,14 @@ struct CharDexSearchView: View {
 #Preview {
     CharDexSearchView(searchCharacters: [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, createdAt: Date()),
         GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, createdAt: Date()),
     ])
 }

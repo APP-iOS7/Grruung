@@ -8,11 +8,6 @@
 import SwiftUI
 import PhotosUI
 
-
-// 더미 데이터 모델
-
-// --- 더미 데이터 끝
-
 enum ViewMode {
     case create
     case read
@@ -25,13 +20,14 @@ struct WriteStoryView: View {
     @Environment(\.dismiss) var dismiss
     
     var currentMode: ViewMode
-    var characterUUID: String?
+    var characterUUID: String
     var postID: String?
     
     
     @State private var currentPost: GRPost? = nil
     
     @State private var postBody: String = ""
+    @State private var postTitle: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil // 새로 선택/변경한 이미지 데이터
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
@@ -40,9 +36,16 @@ struct WriteStoryView: View {
         postBody.isEmpty
     }
     
+    private var isTitlePlaceholderVisible: Bool {
+        postTitle.isEmpty
+    }
+    
     private var currentDateString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy년 MM월 dd일"
+        if currentMode == .edit || currentMode == .read {
+            return formatter.string(from: currentPost?.createdAt ?? Date())
+        }
         return formatter.string(from: Date())
     }
     
@@ -85,43 +88,53 @@ struct WriteStoryView: View {
                             .padding(.leading)
                     }
                 } else {
-                PhotosPicker(
-                    selection: $selectedPhotoItem,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ){
-                    Group {
-                        if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .padding(.leading)
+                    PhotosPicker(
+                        selection: $selectedPhotoItem,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ){
+                        Group {
+                            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                                // 사용자가 새로 선택한 이미지가 있으면 표시
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(.leading)
+                                
+                            } else if let existingImage = displayedImage {
+                                // 새로 선택한 이미지는 없지만, 기존에 로드된 이미지가 있으면 표시
+                                Image(uiImage: existingImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(.leading)
+                            }
                             
-                        } else {
-                            Image(systemName: "photo.on.rectangle.angled")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 100, height: 100)
-                                .rotationEffect(.degrees(-15))
-                                .foregroundColor(.gray)
-                                .padding(.leading)
+                            else {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 100, height: 100)
+                                    .rotationEffect(.degrees(-15))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading)
+                            }
                         }
                     }
-                }
-                .onChange(of: selectedPhotoItem) { _,newItem in
-                    Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                            selectedImageData = data
-                        } else {
-                            print("이미지 로딩 중 오류 발생")
-                            selectedImageData = nil
+                    .onChange(of: selectedPhotoItem) { _,newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                selectedImageData = data
+                            } else {
+                                print("이미지 로딩 중 오류 발생")
+                                selectedImageData = nil
+                            }
                         }
                     }
+                    .padding(.leading, 20)
+                    
                 }
-                .padding(.leading, 20)
-                
-            }
                 Spacer()
                 
                 Text(currentDateString)
@@ -135,17 +148,43 @@ struct WriteStoryView: View {
             
             
             if currentMode == .read {
+                // 읽기 모드에서는 제목과 내용을 표시만 함
+                Text(currentPost?.postTitle ?? "")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.horizontal)
+                
                 Text(currentPost?.postBody ?? "")
                     .padding(.horizontal)
                     .padding(.bottom, 10)
             }
             else {
-                
+                // 제목 입력 필드
                 ZStack(alignment: .topLeading) {
+                    TextField("", text: $postTitle)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(8)
                     
+                    if isTitlePlaceholderVisible {
+                        Text("제목을 입력해주세요")
+                            .foregroundColor(Color(UIColor.placeholderText))
+                            .font(.title2)
+                            .padding()
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // 내용 입력 필드
+                ZStack(alignment: .topLeading) {
                     TextEditor(text: $postBody)
                         .frame(minHeight: 150)
                         .border(Color.clear)
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(8)
                     
                     if isPlaceholderVisible {
                         Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
@@ -163,42 +202,42 @@ struct WriteStoryView: View {
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(
-            trailing: Button("\(buttonTitle)") {
-                Task {
-                    do {
-                        print("우측 상단 button tapped!")
-                        
-                        if currentMode == .create {
-                           let _ =  try await viewModel.createPost(
-                                characterUUID: characterUUID ?? "",
-                                postBody: postBody,
-                                imageData: selectedImageData
-                            )
-                        } else if currentMode == .edit {
-                            try await viewModel.editPost(
-                                postID: currentPost?.postID ?? "",
-                                postBody: postBody,
-                                newImageData: selectedImageData,
-                                existingImageUrl: currentPost?.postImage ?? ""
-                             )
+            trailing:
+                Button("\(buttonTitle)") {
+                    Task {
+                        do {
+                            print("우측 상단 button tapped!")
+                            
+                            if currentMode == .create {
+                                let _ =  try await viewModel.createPost(
+                                    characterUUID: characterUUID,
+                                    postTitle: postTitle,
+                                    postBody: postBody,
+                                    imageData: selectedImageData
+                                )
+                            } else if currentMode == .edit {
+                                try await viewModel.editPost(
+                                    postID: currentPost?.postID ?? "",
+                                    postTitle: postTitle,
+                                    postBody: postBody,
+                                    newImageData: selectedImageData,
+                                    existingImageUrl: currentPost?.postImage ?? ""
+                                )
+                            }
+                            dismiss()
+                        } catch {
+                            print("Error saving post: \(error)")
                         }
-//                        else if currentMode == .read {
-//                            
-//                        }
-                        
-                        
-                        dismiss()
-                    } catch {
-                        print("Error saving post: \(error)")
+                    }
+                    
+                    if let imageData = selectedImageData {
+                        print("Image data size: \(imageData.count) bytes")
+                    } else {
+                        print("No image selected.")
                     }
                 }
-                
-                if let imageData = selectedImageData {
-                    print("Image data size: \(imageData.count) bytes")
-                } else {
-                    print("No image selected.")
-                }
-            }
+                .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
+                .opacity(postBody.isEmpty ? 0.5 : 1)
         )
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onAppear {
@@ -222,6 +261,7 @@ struct WriteStoryView: View {
                     self.currentPost = fetchedPost
                     if let post = fetchedPost {
                         self.postBody = post.postBody
+                        self.postTitle = post.postTitle
                         if !post.postImage.isEmpty {
                             loadImageFrom(urlString: post.postImage)
                         } else {
@@ -265,21 +305,22 @@ struct WriteStoryView: View {
                 if currentMode == .create {
                     let newPostId = try await viewModel.createPost(
                         characterUUID: characterUUID,
+                        postTitle: postTitle,
                         postBody: postBody,
                         imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
                     )
                     print("새 게시물 ID: \(newPostId)")
                 } else if currentMode == .edit, let postToEdit = currentPost {
-                    let existingPostID = postToEdit.postID
                     try await viewModel.editPost(
-                        postID: existingPostID,
+                        postID: postToEdit.postID,
+                        postTitle: postTitle,
                         postBody: postBody,
                         newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
                         existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
                     )
                     
                     
-                    print("게시물 수정 완료, ID: \(existingPostID)")
+                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
                 }
                 dismiss()
             } catch {
@@ -287,29 +328,24 @@ struct WriteStoryView: View {
             }
         }
     }
-    
-    
-    
 } // end of WriteStoryView
 
 
-
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+//    }
+//}
+//
 //
 //#Preview {
 //    NavigationStack {
-//        WriteStoryView(currentMode: .create)
-//    }
-//}
-
-
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .edit, postID: "pLYj75FYFJAWJCeGaty7")
+//        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
 //    }
 //}
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "characterUUID", postID: "pLYj75FYFJAWJCeGaty7")
+        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
     }
 }

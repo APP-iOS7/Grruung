@@ -11,53 +11,6 @@ import FirebaseFirestore
 import FirebaseStorage
 
 
-//// 더미 데이터
-//struct GRPost {
-//    let characterUUID: String
-//    var postImage: String
-//    var postBody: String
-//    var createdAt: Date
-//    var updatedAt: Date
-//    let postID: String?
-//    
-//    init(
-//        characterUUID: String,
-//        postImage: String,
-//        postBody: String,
-//        createdAt: Date,
-//        updatedAt: Date
-//    ){
-//        self.characterUUID = characterUUID
-//        self.postImage = postImage
-//        self.postBody = postBody
-//        self.createdAt = createdAt
-//        self.updatedAt = updatedAt
-//        self.postID = nil
-//    }
-//    
-//    // Firestore 데이터로부터 GRPost 객체 생성 시 사용
-//    init?(documentID: String, dictionary: [String: Any]) {
-//        guard
-//            let characterUUID = dictionary["characterUUID"] as? String,
-//            let postImage = dictionary["postImage"] as? String,
-//            let postBody = dictionary["postBody"] as? String,
-//            let createdAtTimestamp = dictionary["createdAt"] as? Timestamp,
-//            let updatedAtTimestamp = dictionary["updatedAt"] as? Timestamp
-//        else {
-//            print("Failed to parse GRPost from dictionary: \(dictionary)")
-//            return nil
-//        }
-//        
-//        self.postID = documentID
-//        self.characterUUID = characterUUID
-//        self.postImage = postImage
-//        self.postBody = postBody
-//        self.createdAt = createdAtTimestamp.dateValue()
-//        self.updatedAt = updatedAtTimestamp.dateValue()
-//    }
-//}
-//// 더미 데이터 끝
-
 class WriteStoryViewModel: ObservableObject {
     @Published var posts: [GRPost] = []
     
@@ -65,32 +18,38 @@ class WriteStoryViewModel: ObservableObject {
     private var db = Firestore.firestore()
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
-    init() {
+    private func uploadImageToStorage(imageData: Data) async throws -> String {
+        let imageName = UUID().uuidString + ".jpg"
+        let imageRef = storage.reference().child("post_images/\(imageName)") // "post_images" 폴더에 저장
         
-//#if DEBUG
-//        // Firebase Emulator 설정
-//        let settings = Firestore.firestore().settings
-//        settings.host = "localhost:8080" // Firestore emulator 기본 포트
-//        settings.isPersistenceEnabled = false
-//        settings.isSSLEnabled = false
-//        db.settings = settings
-//        
-//        // Storage Emulator 설정
-//        Storage.storage().useEmulator(withHost: "localhost", port: 9199) // Storage emulator 기본 포트
-//#endif
+        do {
+            // 2. Firebase Storage에 이미지 데이터 업로드
+            print("Firebase Storage로 이미지 데이터 (\(imageData.count) 바이트) 업로드 중 ...")
+            let _ = try await imageRef.putDataAsync(imageData, metadata: nil) // async/await를 위해 putDataAsync 사용
+            
+            // 3. 다운로드 URL 가져오기
+            let downloadURL = try await imageRef.downloadURL()
+            let urlString = downloadURL.absoluteString
+            print("Firebase Storage에 이미지 업로드 완료: \(urlString)")
+            return urlString
+        } catch {
+            print("Firebase Storage에 이미지 업로드 실패: \(error)")
+            throw error
+        }
     }
     
-    func createPost(characterUUID: String, postBody: String, imageData: Data?) async throws -> String {
+    
+    func createPost(characterUUID: String, postTitle: String, postBody: String, imageData: Data?) async throws -> String {
         
         var imageUrlToSave: String = ""
+        
         if let data = imageData {
-            // TODO: 이미지 업로드 로직 (임시로 구현 했으므로 실제 구현 필요!!!)
-            print("이미지 데이터 \(data.count) 바이트를 업로드 해야 합니다.")
-            imageUrlToSave = "https://firebasestore.googleapis.com/v0/b/grruung.appspot.com/o/your_image_name.jpg?alt=media&token=your_token"
+            imageUrlToSave = try await uploadImageToStorage(imageData: data)
         }
         
         let newPostData: [String: Any] = [
             "characterUUID": characterUUID,
+            "postTitle": postTitle,
             "postImage": imageUrlToSave,
             "postBody": postBody,
             "createdAt": Timestamp(date: Date()),
@@ -99,30 +58,54 @@ class WriteStoryViewModel: ObservableObject {
         
         do {
             let documentReference = try await db.collection("GRPost").addDocument(data: newPostData)
-            print("Post created with ID: \(documentReference.documentID)")
+            print("게시물 생성 완료. ID: \(documentReference.documentID)")
             return documentReference.documentID
         } catch {
+            print("게시물 생성 중 오류 발생: \(error)")
             throw error
         }
     }
     
-    func editPost(postID: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
+    func editPost(postID: String, postTitle: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
         
         var imageUrlToSave = existingImageUrl ?? ""
-        if let data = newImageData {
-            print("새 이미지 데이터 \(data.count) 바이트를 업로드 해야 합니다.")
-            imageUrlToSave = "https://firebasestore.googleapis.com/v0/b/grruung.appspot.com/o/your_image_name.jpg?alt=media&token=your_token"
-        }
         
-        do {
-            try await db.collection("GRPost").document(postID).updateData([
-                "postImage": imageUrlToSave,
-                "postBody": postBody,
-                "updatedAt": Timestamp(date: Date())
-            ])
-            print("Post updated with ID: \(postID)")
-        } catch {
-            throw error
+        if let data = newImageData {
+            print("새 이미지 데이터 \(data.count) 바이트를 업로드 중입니다...")
+            
+            
+            // 1. 기존 이미지가 있다면 Firebase Storage에서 삭제
+            //    - existingImageUrl이 비어있지 않고,
+            //    - 유효한 URL이며,
+            //    - Firebase Storage URL인 경우에만 삭제 시도
+            if let oldUrlString = existingImageUrl,
+               !oldUrlString.isEmpty,
+               let oldUrl = URL(string: oldUrlString) ,
+               oldUrl.host?.contains("firebasestorage.googleapis.com") ?? false {
+                
+                let oldImageRef = storage.reference(forURL: oldUrlString)
+                do {
+                    try await oldImageRef.delete()
+                    print("기존 이미지 삭제 완료: \(oldUrlString)")
+                } catch {
+                    print("기존 이미지 삭제 실패: \(error)")
+                }
+            }
+            
+            // 2. 새 이미지를 Firebase Storage에 업로드
+            imageUrlToSave = try await uploadImageToStorage(imageData: data)
+            
+            do {
+                try await db.collection("GRPost").document(postID).updateData([
+                    "postTitle": postTitle,
+                    "postImage": imageUrlToSave,
+                    "postBody": postBody,
+                    "updatedAt": Timestamp(date: Date())
+                ])
+                print("Post updated with ID: \(postID)")
+            } catch {
+                throw error
+            }
         }
     }
     
@@ -148,7 +131,9 @@ class WriteStoryViewModel: ObservableObject {
                 characterUUID: data["characterUUID"] as? String ?? "",
                 postTitle: data["postTitle"] as? String ?? "",
                 postBody: data["postBody"] as? String ?? "",
-                postImage: data["postImage"] as? String ?? ""
+                postImage: data["postImage"] as? String ?? "",
+                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
             )
         } catch {
             throw error

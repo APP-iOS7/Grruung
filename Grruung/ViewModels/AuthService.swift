@@ -28,6 +28,7 @@ class AuthService: ObservableObject {
     init() {
         self.user = auth.currentUser
         self.authenticationState = auth.currentUser != nil ? .authenticated : .unauthenticated
+        self.currentUserUID = auth.currentUser?.uid ?? ""
     }
     
     // 현재 인증 상태 확인 메서드 (앱 시작 시 또는 필요할 때 호출)

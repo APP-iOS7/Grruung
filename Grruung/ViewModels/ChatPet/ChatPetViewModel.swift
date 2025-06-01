@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import FirebaseFirestore
 
 // 챗펫(AI 반려동물) 대화를 위한 ViewModel
 class ChatPetViewModel: ObservableObject {
@@ -14,92 +15,98 @@ class ChatPetViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var showSubtitle: Bool = true
-    @Published var voiceGender: SpeechService.VoiceGender = .female
-    @Published var voiceType: SpeechService.VoiceType = .human
-    @Published var isSpeaking: Bool = false
-    @Published var isListening: Bool = false
-    @Published var speechEnabled: Bool = false
+    
+    // 오류 해결을 위해 추가된 프로퍼티
+    @Published var showSubtitle: Bool = true // 자막 표시 여부
+    @Published var isListening: Bool = false // 음성 인식 상태
     
     // 서비스
     private let vertexService = VertexAIService.shared
     private let firebaseService = FirebaseService.shared
-    private let speechService = SpeechService.shared
+    
+    // 대화 세션 관리
+    private var currentSessionID: String?
+    private var conversationContext: [ChatMessage] = []
+    private var importantMemories: [[String: Any]] = []
     
     // 프롬프트 및 캐릭터 정보
-    private var prompt: String
     private var character: GRCharacter
+    private var basePrompt: String
     
     private var cancellables = Set<AnyCancellable>()
     
     init(character: GRCharacter, prompt: String) {
         self.character = character
-        self.prompt = prompt
+        self.basePrompt = prompt
         
-        setupSpeechHandlers()
-        loadChatHistory()
+        initializeChat()
     }
     
-    // MARK: - 음성 관련 설정
-    private func setupSpeechHandlers() {
-        // 음성 서비스 이벤트 핸들러 설정
-        speechService.onSpeechStart = { [weak self] in
-            DispatchQueue.main.async {
-                self?.isSpeaking = true
-            }
-        }
-        
-        speechService.onSpeechFinish = { [weak self] in
-            DispatchQueue.main.async {
-                self?.isSpeaking = false
-            }
-        }
-        
-        speechService.onRecognitionResult = { [weak self] text in
-            DispatchQueue.main.async {
-                self?.inputText = text
-            }
-        }
-        
-        speechService.onRecognitionFinish = { [weak self] in
-            DispatchQueue.main.async {
-                self?.isListening = false
-                // 인식된 텍스트가 있다면 메시지 전송
-                if let self = self, !self.inputText.isEmpty {
-                    self.sendMessage()
-                }
-            }
-        }
-        
-        speechService.onRecognitionError = { [weak self] error in
-            DispatchQueue.main.async {
-                self?.isListening = false
-                self?.errorMessage = error.localizedDescription
-            }
-        }
-    }
+    // MARK: - 초기화 및 설정
     
-    // Firestore에서 이전 대화 기록 로드
-    func loadChatHistory() {
+    // 채팅 초기화
+    private func initializeChat() {
         isLoading = true
         errorMessage = nil
         
-        firebaseService.fetchChatMessages(characterID: character.id) { [weak self] messages, error in
+        // 세션 가져오기 생성
+        firebaseService.getOrCreateActiveSession(characterID: character.id) { [weak self] sessionID, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "세션 생성 실패: \(error.localizedDescription)"
+                }
+                return
+            }
+            
+            if let sessionID = sessionID {
+                self.currentSessionID = sessionID
+                
+                // 대화 기록 로드
+                self.loadChatHistory()
+                
+                // 중요 기억 로드
+                self.loadImportantMemories()
+            } else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "세션을 생성할 수 없습니다."
+                }
+            }
+        }
+    }
+    
+    // MARK: - 대화 기록 관리
+    
+    // Firestore에서 이전 대화 기록 로드
+    func loadChatHistory() {
+        guard let sessionID = currentSessionID else {
+            isLoading = false
+            return
+        }
+        
+        firebaseService.fetchMessagesFromSession(
+            sessionID: sessionID,
+            characterID: character.id
+        ) { [weak self] messages, error in
             guard let self = self else { return }
             
             DispatchQueue.main.async {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = "대화 기록 로드 실패: \(error.localizedDescription)"
                     return
                 }
                 
                 if let messages = messages {
                     self.messages = messages
+                    self.updateConversationContext()
                     
-                    // 메시지가 없는 경우 첫 인사 추가
-                    if messages.isEmpty {
+                    // 메시지가 없을 경우 첫 인사 추가
+                    if self.messages.isEmpty {
                         self.addGreetingMessage()
                     }
                 }
@@ -107,9 +114,40 @@ class ChatPetViewModel: ObservableObject {
         }
     }
     
+    // 중요 기억을 로드
+    private func loadImportantMemories() {
+        firebaseService.fetchImportantMemories(
+            characterID: character.id,
+            limit: 10
+        ) { [weak self] memories, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("중요 기억 로드 실패: \(error.localizedDescription)")
+                return
+            }
+            
+            if let memories = memories {
+                self.importantMemories = memories
+            }
+        }
+    }
+    
+    // 대화 컨텍스트를 업데이트
+    private func updateConversationContext() {
+        // 최근 5-10개 메시지만 컨텍스트로 사용
+        let contextCount = min(10, messages.count)
+        if contextCount > 0 {
+            conversationContext = Array(messages.suffix(contextCount))
+        } else {
+            conversationContext = []
+        }
+    }
+    
     // 첫 인사 메시지 추가
     func addGreetingMessage() {
         // 성장 단계에 따른 인사말 생성
+        // TODO: - 추후 변경 or 수정, 더 정교한 방식이 필요함
         let greeting: String
         
         switch character.status.phase {
@@ -143,25 +181,74 @@ class ChatPetViewModel: ObservableObject {
         
         let message = ChatMessage(text: greeting, isFromPet: true)
         addMessage(message)
-        
-        // 음성으로 인사말 재생
-        if showSubtitle && speechEnabled && !greeting.isEmpty {
-            speakMessage(greeting)
-        }
     }
     
     // Firestore에 메시지 저장
     private func addMessage(_ message: ChatMessage) {
         messages.append(message)
+        updateConversationContext()
         
-        firebaseService.saveChatMessage(message, characterID: character.id) { [weak self] error in
+        // 펫의 현재 상태 정보 생성
+        let petStatus: [String: Any] = [
+            "phase": character.status.phase.rawValue,
+            "mood": getCurrentMood(),
+            "dominant": getDominantStat()
+        ]
+        
+        // Firestore에 저장
+        firebaseService.saveChatMessageWithSession(
+            message,
+            characterID: character.id,
+            sessionID: currentSessionID,
+            petStatus: petStatus
+        ) { [weak self] error in
             if let error = error {
                 DispatchQueue.main.async {
-                    self?.errorMessage = error.localizedDescription
+                    self?.errorMessage = "메시지 저장 실패: \(error.localizedDescription)"
                 }
             }
         }
     }
+    
+    // 현재 캐릭터의 기분 상태를 반환
+    private func getCurrentMood() -> String {
+        // 스텟에 따른 기분 상태 계산 (간단한 구현)
+        // TODO: - 추후 변경 or 수정, 더 정교한 방식이 필요함
+        let satiety = character.status.satiety
+        let stamina = character.status.stamina
+        let clean = character.status.clean
+        let affection = character.status.affection
+        
+        if satiety < 30 {
+            return "배고픔"
+        } else if stamina < 30 {
+            return "피곤함"
+        } else if clean < 30 {
+            return "불쾌함"
+        } else if affection < 30 {
+            return "외로움"
+        } else if satiety > 70 && stamina > 70 && clean > 70 && affection > 70 {
+            return "매우 행복함"
+        } else if satiety > 50 && stamina > 50 && clean > 50 && affection > 50 {
+            return "행복함"
+        } else {
+            return "보통"
+        }
+    }
+    
+    // 현재 가장 높은 스텟을 반환
+    private func getDominantStat() -> String {
+        let stats = [
+            ("포만감", character.status.satiety),
+            ("체력", character.status.stamina),
+            ("청결", character.status.clean),
+            ("애정", character.status.affection)
+        ]
+        
+        return stats.max(by: { $0.1 < $1.1 })?.0 ?? "포만감"
+    }
+    
+    // MARK: - 메시지 전송 및 응답 생성
     
     // 메시지 전송 및 챗펫 응답을 생성
     func sendMessage() {
@@ -174,7 +261,7 @@ class ChatPetViewModel: ObservableObject {
         let userInput = inputText
         inputText = ""
         
-        // 쳇팻 응답 생성
+        // 챗펫 응답 생성
         generatePetResponse(to: userInput)
     }
     
@@ -183,30 +270,31 @@ class ChatPetViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        // 완전한 프롬프트 구성
-        let fullPrompt = prompt + "\n\n사용자: " + userInput
+        // 1. 맥락화된 프롬프트 생성
+        let contextualPrompt = generateContextualPrompt(userInput: userInput)
         
-        // Vertex AI로 응답 생성
-        vertexService.generatePetResponse(prompt: fullPrompt, history: messages) { [weak self] response, error in
+        // 2. Vertex AI로 응답 생성
+        vertexService.generatePetResponse(prompt: contextualPrompt) { [weak self] response, error in
             guard let self = self else { return }
             
             DispatchQueue.main.async {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = "응답 생성 실패: \(error.localizedDescription)"
                     return
                 }
                 
                 if let response = response, !response.isEmpty {
+                    // 응답에서 부적절한 내용 필터링
+                    let filteredResponse = self.filterInappropriateContent(response)
+                    
                     // 챗펫 응답 메시지 추가
-                    let petMessage = ChatMessage(text: response, isFromPet: true)
+                    let petMessage = ChatMessage(text: filteredResponse, isFromPet: true)
                     self.addMessage(petMessage)
                     
-                    // 음성으로 응답 재생 (자막이 활성화된 경우에만)
-                    if self.showSubtitle {
-                        self.speakMessage(response)
-                    }
+                    // 중요한 대화 내용 분석 및 저장
+                    self.analyzeAndStoreImportantContent(userInput: userInput, response: filteredResponse)
                 } else {
                     // 응답 생성 실패 시 기본 메시지
                     let defaultResponse: String
@@ -219,62 +307,178 @@ class ChatPetViewModel: ObservableObject {
                     
                     let petMessage = ChatMessage(text: defaultResponse, isFromPet: true)
                     self.addMessage(petMessage)
-                    
-                    if self.showSubtitle && self.speechEnabled {
-                        self.speakMessage(defaultResponse)
+                }
+            }
+        }
+    }
+    
+    // 맥락화된 프롬프트를 생성
+    private func generateContextualPrompt(userInput: String) -> String {
+        var prompt = basePrompt
+        
+        // 1. 캐릭터 상태 정보 추가
+        prompt += "\n\n현재 상태:"
+        prompt += "\n- 포만감: \(character.status.satiety)/100"
+        prompt += "\n- 체력: \(character.status.stamina)/100"
+        prompt += "\n- 청결: \(character.status.clean)/100"
+        prompt += "\n- 애정도: \(character.status.affection)/100"
+        prompt += "\n- 기분: \(getCurrentMood())"
+        
+        // 2. 대화 컨텍스트 추가
+        if !conversationContext.isEmpty {
+            prompt += "\n\n최근 대화 내용:"
+            
+            for (_, message) in conversationContext.enumerated() {
+                let speaker = message.isFromPet ? character.name : "사용자"
+                prompt += "\n\(speaker): \(message.text)"
+            }
+        }
+        
+        // 3. 중요 기억 추가
+        if !importantMemories.isEmpty {
+            let relevantMemories = filterRelevantMemories(userInput: userInput, maxCount: 3)
+            
+            if !relevantMemories.isEmpty {
+                prompt += "\n\n중요한 기억:"
+                
+                for memory in relevantMemories {
+                    if let content = memory["content"] as? String {
+                        prompt += "\n- \(content)"
+                    }
+                }
+            }
+        }
+        
+        // 4. 부적절한 콘텐츠 차단 지침 추가
+        prompt += "\n\n중요 지침:"
+        prompt += "\n- 사용자의 질문이 부적절하거나 불쾌감을 줄 수 있는 내용이라면, 정중하게 다른 주제로 대화를 전환하세요."
+        prompt += "\n- 항상 캐릭터의 성격과 성장 단계에 맞는 어조와 표현을 사용하세요."
+        
+        // 5. 사용자 입력 추가
+        prompt += "\n\n사용자: \(userInput)"
+        prompt += "\n\(character.name): "
+        
+        return prompt
+    }
+    
+    // 관련된 중요 기억을 필터링
+    private func filterRelevantMemories(userInput: String, maxCount: Int) -> [[String: Any]] {
+        // 키워드 매칭
+        // TODO: - 추후 개선: 앱 출시시 더 정교한 방식 사용이 필요해보임
+        let userWords = userInput.lowercased().components(separatedBy: .whitespacesAndNewlines)
+        
+        return importantMemories
+            .filter { memory in
+                if let content = memory["content"] as? String {
+                    let memoryLower = content.lowercased()
+                    return userWords.contains { word in
+                        word.count > 3 && memoryLower.contains(word)
+                    }
+                }
+                return false
+            }
+            .prefix(maxCount)
+            .map { $0 }
+    }
+    
+    // 부적절한 내용을 필터링
+    private func filterInappropriateContent(_ text: String) -> String {
+        // TODO: - 추후 개선: 앱 출시시 더 정교한 방식 사용이 필요해보임
+        let inappropriateWords: [String] = ["비속어", "욕설", "성인", "19금"]
+        
+        var filteredText = text
+        for word in inappropriateWords {
+            filteredText = filteredText.replacingOccurrences(
+                of: word,
+                with: String(repeating: "*", count: word.count)
+            )
+        }
+        
+        return filteredText
+    }
+    
+    // 중요한 대화 내용을 분석하고 저장
+    private func analyzeAndStoreImportantContent(userInput: String, response: String) {
+        // 중요 정보 키워드
+        // TODO: - 추후 변경 or 수정, 더 정교한 방식이 필요함
+        let importantKeywords = ["좋아하는", "싫어하는", "취미", "생일", "가족", "친구", "학교", "직장", "이름"]
+        
+        // 사용자 입력에서 중요 정보 검사
+        for keyword in importantKeywords {
+            if userInput.contains(keyword) || response.contains(keyword) {
+                // 중요 정보가 포함된 대화 저장
+                let memoryContent = "사용자: \(userInput)\n\(character.name): \(response)"
+                let memoryData: [String: Any] = [
+                    "content": memoryContent,
+                    "importance": 7, // 중요도 높음
+                    "emotionalContext": getCurrentMood(),
+                    "category": "사용자_정보",
+                    "timestamp": Timestamp(date: Date())
+                ]
+                
+                firebaseService.storeImportantMemory(
+                    memory: memoryData,
+                    characterID: character.id
+                ) { _ in }
+                break // 하나의 중요 키워드만 처리
+            }
+        }
+    }
+    
+    // MARK: - 세션 관리
+    
+    // 현재 대화 세션 종료
+    func endCurrentsSession(completion: @escaping (Error?) -> Void) {
+        guard let sessionID = currentSessionID else {
+            completion(NSError(domain: "ChatPetViewModel", code: 404, userInfo: [NSLocalizedDescriptionKey: "활성 세션이 없습니다."]))
+            return
+        }
+        
+        // 세션 요약 생성
+        var summary = "대화 내용 요약: "
+        if messages.count > 3 {
+            let lastMessages = messages.suffix(3)
+            summary += lastMessages.map { $0.text.prefix(30) + "..." }.joined(separator: ", ")
+        } else {
+            summary += "짧은 대화"
+        }
+        
+        firebaseService.endConversationSession(
+            sessionID: sessionID,
+            characterID: character.id,
+            summary: summary
+        ) { [weak self] error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(error)
+            } else {
+                self.currentSessionID = nil
+                
+                // 새 세션 시작
+                self.firebaseService.createConversationSession(
+                    characterID: self.character.id
+                ) { newSessionID, error in
+                    if let newSessionID = newSessionID {
+                        self.currentSessionID = newSessionID
+                        completion(nil)
+                    } else {
+                        completion(error)
                     }
                 }
             }
         }
     }
     
-    
-    // MARK: 음성 관련 메서드
-    // 텍스트를 음성으로 말합니다.
-    func speakMessage(_ text: String) {
-        // 음성 비활성화시 재생되지 않음
-        guard speechEnabled else { return }
-        
-        // 음성 타입 설정
-        speechService.setVoiceType(voiceType)
-        
-        // 텍스트를 음성으로 변환
-        speechService.speak(text, gender: voiceGender)
-    }
-    
-    // 음성 인식을 시작합니다.
+    // 음성 인식 시작
     func startListening() {
         isListening = true
-        inputText = ""
-        speechService.startListening()
+        // 실제 음성 인식 로직은 구현하지 않음 (VoiceChatViewModel에서 구현)
     }
     
-    // 음성 인식을 중지합니다.
+    // 음성 인식 중지
     func stopListening() {
-        speechService.stopListening()
         isListening = false
-    }
-    
-    // 음성 출력을 중지합니다.
-    func stopSpeaking() {
-        speechService.speak("", gender: voiceGender) // 빈 문자열로 현재 음성 중지
-    }
-    
-    // MARK: - 5. 설정 메서드
-    
-    // 자막 표시 설정을 변경합니다.
-    func toggleSubtitle() {
-        showSubtitle.toggle()
-    }
-    
-    // 음성 성별을 변경합니다.
-    func setVoiceGender(_ gender: SpeechService.VoiceGender) {
-        voiceGender = gender
-    }
-    
-    // 음성 타입을 변경합니다.
-    func setVoiceType(_ type: SpeechService.VoiceType) {
-        voiceType = type
-        speechService.setVoiceType(type)
+        // 실제 음성 인식 로직은 구현하지 않음 (VoiceChatViewModel에서 구현)
     }
 }
