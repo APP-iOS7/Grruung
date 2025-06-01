@@ -244,22 +244,14 @@ struct CharDexView: View {
                     if !characterDexViewModel.isLoading {
                         try await characterDexViewModel.fetchCharDex(userId: realUserId)
                         
-                        // 데이터가 없는 경우
-                        if characterDexViewModel.noData {
-                            try await handleNoCharDexData(userId: realUserId)
-                        } else {
-                            // 인벤토리에서 티켓 갯수 가져와서 저장 후 불러오기
-                            if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
-                                characterDexViewModel.updateCharDex(userId: realUserId, unlockCount: characterDexViewModel.unlockCount, unlockTicketCount: ticket.userItemQuantity, selectedLockedIndex: characterDexViewModel.selectedLockedIndex)
-                                try await characterDexViewModel.fetchCharDex(userId: realUserId)
-                            }
+                        // 인벤토리에서 티켓 갯수 가져와서 저장 후 불러오기
+                        if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                            characterDexViewModel.updateCharDex(userId: realUserId, unlockCount: characterDexViewModel.unlockCount, unlockTicketCount: ticket.userItemQuantity, selectedLockedIndex: characterDexViewModel.selectedLockedIndex)
+                            try await characterDexViewModel.fetchCharDex(userId: realUserId)
                         }
                         unlockTicketCount = characterDexViewModel.unlockTicketCount
                         unlockCount = characterDexViewModel.unlockCount
-                        
-                        if characterDexViewModel.selectedLockedIndex != -1 {
-                            selectedLockedIndex = characterDexViewModel.selectedLockedIndex
-                        }
+                        selectedLockedIndex = characterDexViewModel.selectedLockedIndex
                     }
                     
                     // 캐릭터 수와 해제 슬롯 수가 같은 경우 안내
@@ -274,26 +266,6 @@ struct CharDexView: View {
                 }
             }
         }
-    }
-    
-    // 파이어베이스에 데이터가 없는 경우
-    private func handleNoCharDexData(userId: String) async throws {
-        try await userInventoryViewModel.fetchInventories(userId: userId)
-        
-        // 만약에 티켓은 있는데 동산 데이터가 없는 경우(드뭄)
-        if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
-            characterDexViewModel.updateCharDex(
-                userId: userId,
-                unlockCount: 2,
-                unlockTicketCount: ticket.userItemQuantity,
-                selectedLockedIndex: characterDexViewModel.selectedLockedIndex
-            )
-        } else {
-            // 아닌 경우 기본 데이터 생성 및 불러오기
-            await characterDexViewModel.saveCharDex(userId: userId)
-        }
-        
-        try await characterDexViewModel.fetchCharDex(userId: userId)
     }
     
     // 캐릭터 슬롯
