@@ -17,10 +17,9 @@ struct StoreGridView: View {
                     ForEach(products) { product in
                         NavigationLink(destination: ProductDetailView(product: product)) {
                             ProductItemView(
-                                iconName: product.iconName,
-                                name: product.name,
-                                price: product.price,
-                                bgColor: product.bgColor
+                                iconName: product.itemImage,
+                                name: product.itemName,
+                                price: product.itemPrice,
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -36,19 +35,14 @@ struct ProductItemView: View {
     let iconName: String
     let name: String
     let price: Int
-    let bgColor: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(bgColor)
-                    .frame(height: 90)
-
-                Image(systemName: iconName)
+                Image(iconName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 30, height: 30)
+                    .frame(width: 80, height: 80)
                     .foregroundColor(.black)
             }
 

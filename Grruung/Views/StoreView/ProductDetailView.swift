@@ -15,10 +15,13 @@
 import SwiftUI
 
 struct ProductDetailView: View {
-    let product: Product
+    let product: GRShopItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
-    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel 
+    @State private var isRotating = false
+    @State private var isBouncing = false
+    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         VStack(spacing: 0) {
@@ -26,26 +29,46 @@ struct ProductDetailView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // 제품명 + 가격
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(product.name)
+                        Text(product.itemName)
                             .font(.largeTitle)
                             .bold()
                         
-                        Text("₩\(product.price)")
+                        Text("₩\(product.itemPrice)")
                             .font(.title)
                             .bold()
                     }
                     .padding(.horizontal)
                     
                     // 제품 이미지
-                    Image(systemName: product.iconName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                    ZStack {
+                        // 바닥 그림자처럼 보이는 배경 타원형
+                        Ellipse()
+                            .fill(Color.black.opacity(0.1))
+                            .frame(width: 140, height: 20)
+                            .offset(y: 90)
+
+                        // 메인 이미지
+                        Image(product.itemImage)
+                            .resizable()
+                            .renderingMode(.original)
+                            .scaledToFit()
+                            .frame(width: 180, height: 180)
+                            .rotationEffect(.degrees(isRotating ? 3 : -3))
+                            .offset(y: isBouncing ? -2 : 2)
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                    isRotating = true
+                                }
+                                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                    isBouncing = true
+                                }
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
                     
                     // 설명
-                    Text(product.description)
+                    Text(product.itemDescription)
                         .font(.body)
                         .foregroundColor(.gray)
                         .padding(.horizontal)
@@ -94,6 +117,8 @@ struct ProductDetailView: View {
         }
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
+                .environmentObject(userInventoryViewModel)
+                .environmentObject(authService)
         }
     }
 }
