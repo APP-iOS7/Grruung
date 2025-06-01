@@ -4,30 +4,22 @@
 //
 //  Created by NoelMacMini on 5/1/25.
 //
+// TODO: 10. 만들어 놓은거 전부 연결
+// 활동 액션 별로 골드 획득 / 수면시 일정 골드 획득 / 레벨업 할때 일정 골드 획득
+//
 
 import SwiftUI
 
 struct HomeView: View {
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
-    @State private var progressValue: CGFloat = 0.65 // 진행률을 동적으로 관리
-    @State private var showStoreView: Bool = false
+    @StateObject private var viewModel = HomeViewModel()
     
-    let buttons = ["backpack.fill", "cart.fill", "mountain.2.fill"]
-    let icons = ["book.fill", "microphone.fill", "lock.fill"]
-    
-    // 캐릭터 상태 정보를 구조체로 관리
-    let stats: [(icon: String, color: Color, value: CGFloat)] = [
-        ("fork.knife", Color.orange, 0.7),
-        ("heart.fill", Color.red, 0.9),
-        ("bolt.fill", Color.yellow, 0.8)]
-    
-    // 하단 아이템 정보
-    let lockedItems: [(isLocked: Bool, icon: String?, name: String)] = [
-        (true, nil, "잠금1"),
-        (true, nil, "잠금2"),
-        (true, nil, "잠금3"),
-        (true, nil, "잠금4")]
+    @State private var showInventory = false
+    @State private var showPetGarden = false
+    @State private var isShowingWriteStory = false
+    @State private var isShowingChatPet = false
+    @State private var isShowingSettings = false
     
     // MARK: - Body
     var body: some View {
@@ -44,15 +36,71 @@ struct HomeView: View {
                 // 상태 바 섹션
                 statsSection
                 
+                // 캐릭터 상태 메시지
+                Text(viewModel.statusMessage)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 5)
+                    .foregroundColor(getMessageColor()) // 이것만 추가
+                
                 Spacer()
                 
-                // 아이템 그리드
-                itemsGrid
+                // 액션 버튼 그리드
+                actionButtonsGrid
             }
             .padding()
-            .navigationTitle("나의 캐릭터")
-            .toolbar {
+            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
+            .onAppear {
+                viewModel.loadCharacter()
             }
+        }
+        
+        .sheet(isPresented: $showInventory) {
+            //            InventoryView(character: viewModel.character)
+        }
+        .sheet(isPresented: $showPetGarden) {
+            //            PetGardenView(character: viewModel.character)
+        }
+        .sheet(isPresented: $isShowingWriteStory) {
+            if let character = viewModel.character {
+                NavigationStack {
+                    WriteStoryView(
+                        currentMode: .create,
+                        characterUUID: character.id
+                    )
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingChatPet) {
+            if let character = viewModel.character {
+                let prompt = PetPrompt(
+                    petType: character.species,
+                    phase: character.status.phase,
+                    name: character.name
+                ).generatePrompt(status: character.status)
+                
+                ChatPetView(character: character, prompt: prompt)
+            }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            //            SettingsSheetView()
+        }
+    }
+    
+    // 상태 메시지에 따른 색상을 반환합니다.
+    private func getMessageColor() -> Color {
+        let message = viewModel.statusMessage.lowercased()
+        
+        if message.contains("배고파") || message.contains("아파") || message.contains("지쳐") {
+            return .red
+        } else if message.contains("피곤") || message.contains("더러워") || message.contains("외로워") {
+            return .orange
+        } else if message.contains("행복") || message.contains("좋은") || message.contains("감사") {
+            return .green
+        } else if message.contains("잠을") {
+            return .blue
+        } else {
+            return .primary
         }
     }
     
@@ -62,20 +110,25 @@ struct HomeView: View {
     private var levelProgressBar: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
-                Text("레벨 2")
+                Text("레벨 \(viewModel.level)")
                     .font(.caption)
                     .fontWeight(.semibold)
                 
                 ZStack(alignment: .leading) {
-                    // 배경 바
+                    // 배경 바 (전체 너비)
                     RoundedRectangle(cornerRadius: 20)
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: 30)
                     
                     // 진행 바
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(hex: "6159A0"))
-                        .frame(width: UIScreen.main.bounds.width * 0.7 * progressValue, height: 30)
+                    GeometryReader { geometry in
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color(hex: "6159A0"))
+                            .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
+                            .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
+                        
+                    }
+                    .frame(height: 30)
                 }
             }
         }
@@ -87,25 +140,47 @@ struct HomeView: View {
         HStack {
             // 왼쪽 버튼들
             VStack(spacing: 15) {
-                ForEach(buttons, id: \.self) { button in
-                    iconButton(systemName: button)
+                ForEach(0..<3) { index in
+                    let button = viewModel.sideButtons[index]
+                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
                 }
             }
             
             Spacer()
             
             // 캐릭터 이미지
-            Image("CatLion")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 200)
+            ZStack {
+                Image(viewModel.character?.imageName ?? "CatLion")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 200)
+                    .scaleEffect(viewModel.isSleeping ? 0.95 : 1.0)
+                // TODO: TODO 0 애니메이션 및 디플리케이티드 수정
+                    .animation(
+                        viewModel.isSleeping ?
+                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
+                                .default,
+                        value: viewModel.isSleeping
+                    )
+                
+                
+                // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
+                if viewModel.isSleeping {
+                    VStack {
+                        Text("💤")
+                            .font(.largeTitle)
+                            .offset(x: 50, y: -50)
+                    }
+                }
+            }
             
             Spacer()
             
             // 오른쪽 버튼들
             VStack(spacing: 15) {
-                ForEach(icons, id: \.self) { icon in
-                    iconButton(systemName: icon)
+                ForEach(3..<6) { index in
+                    let button = viewModel.sideButtons[index]
+                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
                 }
             }
         }
@@ -114,92 +189,137 @@ struct HomeView: View {
     // 상태 바 섹션
     private var statsSection: some View {
         VStack(spacing: 12) {
-            ForEach(stats, id: \.icon) { stat in
+            ForEach(viewModel.stats, id: \.icon) { stat in
                 HStack(spacing: 15) {
                     // 아이콘
                     Image(systemName: stat.icon)
-                        .foregroundColor(stat.color)
+                        .foregroundColor(stat.iconColor)
                         .frame(width: 30)
                     
                     // 상태 바
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(height: 12)
-                            .foregroundColor(Color.gray.opacity(0.1))
-                        
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(width: UIScreen.main.bounds.width * 0.5 * stat.value, height: 12)
-                            .foregroundColor(stat.color)
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // 배경 바 (전체 너비)
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(height: 12)
+                                .foregroundColor(Color.gray.opacity(0.1))
+                            
+                            // 진행 바
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(width: geometry.size.width * stat.value, height: 12)
+                                .foregroundColor(stat.color)
+                                .animation(.easeInOut(duration: 0.6), value: stat.value)
+                        }
                     }
+                    .frame(height: 12)
                 }
             }
         }
         .padding(.vertical)
     }
     
-    // 아이템 그리드
-    private var itemsGrid: some View {
+    // 액션 버튼 그리드
+    private var actionButtonsGrid: some View {
         HStack(spacing: 15) {
-            ForEach(lockedItems.indices, id: \.self) { index in
-                let item = lockedItems[index]
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 75, height: 75)
-                        .foregroundColor(Color.gray.opacity(0.1))
-                    
-                    if item.isLocked {
-                        Image(systemName: "lock.fill")
-                            .foregroundColor(.gray)
-                    } else {
-                        VStack(spacing: 5) {
-                            Image(systemName: item.icon ?? "")
-                                .font(.system(size: 24))
+            // FIXME: ForEach에서 RandomAccessCollection 에러 해결
+            ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
+                Button(action: {
+                    viewModel.performAction(at: index)
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: 75, height: 75)
+                            .foregroundColor(action.unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                        
+                        if !action.unlocked {
+                            Image(systemName: "lock.fill")
                                 .foregroundColor(.gray)
-                            
-                            Text(item.name)
-                                .font(.caption2)
-                                .foregroundColor(.gray)
+                        } else {
+                            VStack(spacing: 5) {
+                                // 자고 있을 때 재우기 버튼의 아이콘 변경
+                                
+                                Image(systemName: action.icon)
+                                    .font(.system(size: 24))
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+                                
+                                Text(action.name)
+                                    .font(.caption2)
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+                            }
                         }
                     }
                 }
-                .onTapGesture {
-                    print("\(item.name) 아이템 선택됨")
-                }
+                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))
             }
         }
     }
     
     // 아이콘 버튼
     @ViewBuilder
-    func iconButton(systemName: String) -> some View {
-        if systemName == "cart.fill" {
-            NavigationLink(destination: StoreView()) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
-                    Image(systemName: systemName)
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                }
+    func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
+        if !unlocked {
+            // 잠긴 버튼
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .frame(width: 60, height: 60)
+                    .foregroundColor(Color.gray.opacity(0.05))
+                
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.gray)
             }
         } else {
             Button(action: {
-                print("\(systemName) 버튼 클릭")
+                handleSideButtonAction(systemName: systemName)
             }) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .frame(width: 60, height: 60)
-                        .foregroundColor(Color.gray.opacity(0.2))
+                        .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.05) : Color.gray.opacity(0.2))
+                    
                     Image(systemName: systemName)
                         .font(.system(size: 24))
-                        .foregroundColor(.gray)
+                        .foregroundColor(viewModel.isSleeping ? .gray : .primary)
                 }
             }
+            .disabled(viewModel.isSleeping)
         }
     }
+    
+    // 버튼 내용 (재사용 가능한 부분)
+    private func handleSideButtonAction(systemName: String) {
+        switch systemName {
+        case "backpack.fill": // 인벤토리
+            showInventory.toggle()
+        case "cart.fill": // 상점
+            // NavigationLink는 이미 처리됨
+            break
+        case "mountain.2.fill": // 동산
+            showPetGarden.toggle()
+        case "book.fill": // 일기
+            if let character = viewModel.character {
+                // 스토리 작성 시트 표시
+                isShowingWriteStory = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "microphone.fill": // 채팅
+            if let character = viewModel.character {
+                // 챗펫 시트 표시
+                isShowingChatPet = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "gearshape.fill": // 설정
+            // 설정 시트 표시
+            isShowingSettings.toggle()
+        default:
+            break
+        }
+    }
+    
 }
-
 
 // MARK: - Preview
 #Preview {

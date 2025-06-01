@@ -418,7 +418,7 @@ struct CharacterDetailView: View {
                     } else {
                         viewModel.updateAddress(characterUUID: characterUUID, newAddress: destination)
                     }
-                },
+                }
             )
         }
     }
