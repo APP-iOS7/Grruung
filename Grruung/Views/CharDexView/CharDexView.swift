@@ -247,8 +247,13 @@ struct CharDexView: View {
                         // 데이터가 없는 경우
                         if characterDexViewModel.noData {
                             try await handleNoCharDexData(userId: realUserId)
+                        } else {
+                            // 인벤토리에서 티켓 갯수 가져와서 저장 후 불러오기
+                            if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                                characterDexViewModel.updateCharDex(userId: realUserId, unlockCount: characterDexViewModel.unlockCount, unlockTicketCount: ticket.userItemQuantity, selectedLockedIndex: characterDexViewModel.selectedLockedIndex)
+                                try await characterDexViewModel.fetchCharDex(userId: realUserId)
+                            }
                         }
-                        
                         unlockTicketCount = characterDexViewModel.unlockTicketCount
                         unlockCount = characterDexViewModel.unlockCount
                         
@@ -281,7 +286,7 @@ struct CharDexView: View {
                 userId: userId,
                 unlockCount: 2,
                 unlockTicketCount: ticket.userItemQuantity,
-                selectedLockedIndex: -1
+                selectedLockedIndex: characterDexViewModel.selectedLockedIndex
             )
         } else {
             // 아닌 경우 기본 데이터 생성 및 불러오기

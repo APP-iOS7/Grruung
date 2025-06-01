@@ -486,7 +486,7 @@ let ticketProducts = [
                itemQuantity: 1,
                limitedQuantity: 10,
                purchasedQuantity: 0,
-               itemPrice: 1500,
+               itemPrice: 9900,
                itemCurrencyType: .won,
                itemDescription: "캐릭터 동산의 슬롯 1개를 잠금해제 할 수 있습니다.",
                itemEffectDescription: "30일 동안 무제한 이용",
