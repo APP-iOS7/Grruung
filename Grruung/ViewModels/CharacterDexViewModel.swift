@@ -17,6 +17,20 @@ class CharacterDexViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private let collectionName = "charDex"
     
+    // MARK: - 앱 실행시 초기 메서드
+    func initialize(userId: String) async {
+        do {
+            let doc = try await db.collection(collectionName).document(userId).getDocument()
+            if doc.exists {
+                try await fetchCharDex(userId: userId)
+            } else {
+                await saveCharDex(userId: userId)
+            }
+        } catch {
+            print("❌ 초기화 실패: \(error.localizedDescription)")
+        }
+    }
+    
     // MARK: - 동산관련 초기 데이터 저장
     func saveCharDex(userId: String) async {
         do {
@@ -64,7 +78,7 @@ class CharacterDexViewModel: ObservableObject {
             else {
                 throw NSError(domain: "ParsingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "❌ 동산 데이터 파싱 실패"])
             }
-
+            
             await MainActor.run {
                 self.unlockCount = fetchUnlockCount
                 self.unlockTicketCount = fetchUnlockTicketCount
@@ -76,7 +90,7 @@ class CharacterDexViewModel: ObservableObject {
             print("❌ 사용자 조회 실패: \(error.localizedDescription)")
             throw error
         }
-
+        
         await MainActor.run {
             isLoading = false
         }
@@ -98,11 +112,11 @@ class CharacterDexViewModel: ObservableObject {
         db.collection(collectionName)
             .document(userId)
             .setData(data, merge: true) { error in
-            if let error = error {
-                print("❌ 동산 데이터 업데이트 실패: \(error.localizedDescription)")
-            } else {
-                print("✅ 동산 데이터 업데이트 성공")
+                if let error = error {
+                    print("❌ 동산 데이터 업데이트 실패: \(error.localizedDescription)")
+                } else {
+                    print("✅ 동산 데이터 업데이트 성공")
+                }
             }
-        }
     }
 }

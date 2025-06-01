@@ -9,6 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
+    
     var body: some View {
         Group {
             if authService.authenticationState == .authenticated {
@@ -20,9 +22,17 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // 앱 시작 시 자동으로 로그인 상태 확인
-            authService.checkAuthState()
-            
+            Task {
+                // 앱 시작 시 자동으로 로그인 상태 확인
+                authService.checkAuthState()
+                
+                // UID가 세팅됐다고 가정하고 사용
+                if authService.currentUserUID != "" {
+                    await characterDexViewModel.initialize(userId: authService.currentUserUID)
+                } else {
+                    print("❌ 로그인된 사용자 없음, 동산뷰 초기화 안 됨")
+                }
+            }
             // TODO: 이미 로그인된 상태라면 캐릭터 정보 로드
         }
         .onChange(of: authService.authenticationState) { oldState, newState in
@@ -47,9 +57,9 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     
     // 탭 아이템 정의
-//    enum Tab {
-//        case home, test, character, shop, myPage
-//    }
+    //    enum Tab {
+    //        case home, test, character, shop, myPage
+    //    }
     
     var body: some View {
         TabView(selection: $selectedTab) {
