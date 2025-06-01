@@ -10,10 +10,11 @@ import SwiftUI
 struct StoreView: View {
     let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
     @State private var selectedTab = 0
-    @State private var coins = 40
-    @State private var cash = 12000
+    @State private var gold = 0
+    @State private var diamond = 0
     
     @StateObject var userInventoryViewModel = UserInventoryViewModel()
+    @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     @State var realUserId = ""
     
@@ -21,30 +22,31 @@ struct StoreView: View {
         NavigationView {
             VStack(spacing: 0) {
                 HStack {
-                    Spacer()
-
-                    HStack(spacing: 200) {
-                        //현금
+                    HStack {
+                        // 다이아
                         HStack(spacing: 8) {
                             Image(systemName: "diamond.fill")
                                 .resizable()
                                 .frame(width: 20, height: 25)
                                 .foregroundColor(.cyan)
-                            Text("\(cash)")
+                            Text("\(diamond)")
                                 .font(.title3)
                         }
-
-                        //코인
+                        .padding(.leading, 50)
+                        
+                        Spacer()
+                        
+                        // 골드
                         HStack(spacing: 8) {
                             Image(systemName: "circle.fill")
                                 .resizable()
                                 .frame(width: 25, height: 25)
                                 .foregroundColor(.yellow)
-                            Text("\(coins)")
-                                .font(.title2)
+                            Text("\(gold)")
+                                .font(.title3)
                         }
+                        .padding(.trailing, 50)
                     }
-                    .padding(.trailing, 20)
                 }
                 .padding(.top, 8)
                 // 상단 탭
@@ -102,11 +104,18 @@ struct StoreView: View {
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드
             Task {
-                if authService.currentUserUID == "" {
-                    realUserId = "23456"
-                } else {
-                    realUserId = authService.currentUserUID
+                realUserId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
+                
+                do {
+                    try await userViewModel.fetchUser(userId: realUserId)
+                    print("[유저로드] \(realUserId) user 로드 완료")
+                    
+                    gold = userViewModel.user?.gold ?? 0
+                    diamond = userViewModel.user?.diamond ?? 0
+                } catch {
+                    print("[유저로드] 유저 로드 실패: \(error.localizedDescription)")
                 }
+                
                 do {
                     try await userInventoryViewModel.fetchInventories(userId: realUserId)
                     print("[상점진입] 인벤토리 미리 로드 완료")
@@ -123,7 +132,7 @@ struct StoreView: View {
 struct SectionView: View {
     let title: String
     let id: String
-    let products: [GRShopItem]
+    let products: [GRStoreItem]
     let proxy: ScrollViewProxy
     
     let columns = [
@@ -133,6 +142,7 @@ struct SectionView: View {
     ]
     
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -153,18 +163,13 @@ struct SectionView: View {
                 .frame(height: 1)
                 .background(Color.black.opacity(0.7 ))
                 .padding(.vertical, 8)
-
+            
             
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
-                    NavigationLink(destination: ProductDetailView(product: product)
-                        .environmentObject(userInventoryViewModel))
+                    NavigationLink(destination: ProductDetailView(product: product))
                     {
-                        ProductItemView(
-                            iconName: product.itemImage,
-                            name: product.itemName,
-                            price: product.itemPrice,
-                        )
+                        ProductItemView(product: product)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -176,4 +181,5 @@ struct SectionView: View {
 #Preview {
     StoreView()
         .environmentObject(AuthService())
+        .environmentObject(UserViewModel())
 }

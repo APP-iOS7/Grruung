@@ -15,12 +15,14 @@
 import SwiftUI
 
 struct ProductDetailView: View {
-    let product: GRShopItem
+    let product: GRStoreItem
     @State private var quantity: Int = 1
     @State private var showAlert = false
     @State private var isRotating = false
     @State private var isBouncing = false
+    @State private var isOutOfLimitedQuantity: Bool = false
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     
     var body: some View {
@@ -32,10 +34,29 @@ struct ProductDetailView: View {
                         Text(product.itemName)
                             .font(.largeTitle)
                             .bold()
-                        
-                        Text("₩\(product.itemPrice)")
-                            .font(.title)
-                            .bold()
+                        HStack(spacing: 8) {
+                            if product.itemCurrencyType == .won {
+                                Text("₩")
+                                    .font(.title)
+                                    .bold()
+                            } else {
+                                if product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue {
+                                    Image(systemName: "diamond.fill")
+                                        .resizable()
+                                        .frame(width: 20, height: 25)
+                                        .foregroundColor(.cyan)
+                                } else {
+                                    Image(systemName: "circle.fill")
+                                        .resizable()
+                                        .frame(width: 25, height: 25)
+                                        .foregroundColor(.yellow)
+                                }
+                            }
+                            
+                            Text("\(product.itemPrice)")
+                                .font(.title)
+                                .bold()
+                        }
                     }
                     .padding(.horizontal)
                     
@@ -76,30 +97,38 @@ struct ProductDetailView: View {
                 .padding(.vertical)
             }
             // 수량 선택
-            HStack {
-                Button {
-                    if quantity > 1 { quantity -= 1 }
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .font(.title2)
+            if product.itemCurrencyType != .won {
+                HStack {
+                    Button {
+                        if quantity > 1 { quantity -= 1 }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.title2)
+                    }
+                    
+                    Text("\(quantity)")
+                        .font(.title)
+                        .padding(.horizontal, 16)
+                    
+                    Button {
+                        if quantity < product.limitedQuantity {
+                            quantity += 1
+                        } else {
+                            isOutOfLimitedQuantity = true
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.title2)
+                    }
+                    .alert("한정 수량 이상을 구매하실 수 없습니다.", isPresented: $isOutOfLimitedQuantity) {
+                        Button("확인", role: .cancel) { }
+                    }
+                    
+                    Spacer()
                 }
-                
-                Text("\(quantity)")
-                    .font(.title)
-                    .padding(.horizontal, 16)
-                
-                Button {
-                    quantity += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.title2)
-                }
-                
-                Spacer()
+                .padding(.horizontal)
+                .padding(.top, 8)
             }
-            .padding(.horizontal)
-            .padding(.top, 8)
-            
             
             // 하단 버튼
             Button(action: {
@@ -118,6 +147,7 @@ struct ProductDetailView: View {
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
                 .environmentObject(userInventoryViewModel)
+                .environmentObject(userViewModel)
                 .environmentObject(authService)
         }
     }

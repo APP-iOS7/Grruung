@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct userInventoryView: View {
+struct UserInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     @State var realUserId = ""
@@ -67,7 +67,7 @@ struct userInventoryView: View {
     
     fileprivate func itemCellView(_ item: GRUserInventory) -> HStack<TupleView<(some View, VStack<TupleView<(HStack<TupleView<(Text, Spacer, Text)>>, some View, Text)>>)>> {
         return HStack {
-            Image(systemName: item.userItemImage)
+            Image(item.userItemImage)
                 .resizable()
                 .frame(width: 60, height: 60)
                 .aspectRatio(contentMode: .fit)
@@ -118,40 +118,40 @@ struct userInventoryView: View {
                         .padding()
                 } else {
                     LazyVGrid(columns: columns) {
-                                ForEach(sortedItems, id: \.userItemNumber) { item in
-                                    Button {
-                                        selectedItem = item
-                                    } label: {
-                                        itemCellView(item)
-                                            .foregroundStyle(.black)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(16)
-                                            .overlay {
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.black, lineWidth: 2)
-                                            }
-                                            .padding(.horizontal, 16)
-                                            .padding(.bottom, 16)
+                        ForEach(sortedItems, id: \.userItemNumber) { item in
+                            Button {
+                                selectedItem = item
+                            } label: {
+                                itemCellView(item)
+                                    .foregroundStyle(.black)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(16)
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.black, lineWidth: 2)
                                     }
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 16)
+                            }
+                        }
+                    }
+                    .sheet(item: $selectedItem, onDismiss: {
+                        // 수량 변경이 있는 경우에만 인벤토리 리로드
+                        if isEdited {
+                            isEdited = false
+                            Task {
+                                do {
+                                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
+                                    print("모달 닫힘 후 인벤토리 리로드 완료")
+                                } catch {
+                                    print("모달 닫힘 후 인벤토리 로드 실패: \(error)")
                                 }
                             }
-                            .sheet(item: $selectedItem, onDismiss: {
-                                // 수량 변경이 있는 경우에만 인벤토리 리로드
-                                if isEdited {
-                                    isEdited = false
-                                    Task {
-                                        do {
-                                            try await userInventoryViewModel.fetchInventories(userId: realUserId)
-                                            print("모달 닫힘 후 인벤토리 리로드 완료")
-                                        } catch {
-                                            print("모달 닫힘 후 인벤토리 로드 실패: \(error)")
-                                        }
-                                    }
-                                }
-                            }) { item in
-                                userInventoryDetailView(item: item, realUserId: realUserId, isEdited: $isEdited)
-                                        .presentationDetents([.medium])
-                            }
+                        }
+                    }) { item in
+                        UserInventoryDetailView(item: item, realUserId: realUserId, isEdited: $isEdited)
+                            .presentationDetents([.medium, .large]) // 유동적인 sheet 크기
+                    }
                 }
                 
                 // 에러 메시지 표시
@@ -177,6 +177,6 @@ struct userInventoryView: View {
 }
 
 #Preview {
-    userInventoryView()
+    UserInventoryView()
         .environmentObject(AuthService())
 }

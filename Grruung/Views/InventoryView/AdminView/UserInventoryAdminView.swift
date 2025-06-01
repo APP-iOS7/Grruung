@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct userInventoryAdminView: View {
+struct UserInventoryAdminView: View {
     private let garaUserId = "23456"
     
     @State private var itemNumber: String = UUID().uuidString
@@ -20,7 +20,6 @@ struct userInventoryAdminView: View {
     @State private var itemQuantity: String = ""
     @State private var isOn2: Bool = false
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
-    
     var body: some View {
         ScrollView {
             Text("인벤토리 아이템 생성기")
@@ -94,5 +93,5 @@ struct userInventoryAdminView: View {
 
 
 #Preview {
-    userInventoryAdminView()
+    UserInventoryAdminView()
 }

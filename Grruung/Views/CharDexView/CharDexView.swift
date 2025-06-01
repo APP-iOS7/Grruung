@@ -9,16 +9,19 @@ import SwiftUI
 
 struct CharDexView: View {
     // 생성 가능한 최대 캐릭터 수
-    private let maxDexCount: Int = 20
+    private let maxDexCount: Int = 10
     // 초기 생성 가능한 캐릭터 수
-    @State private var unlockCount: Int = 5
+    @State private var unlockCount: Int = 0
     // 정렬 타입 변수
     @State private var sortType: SortType = .original
-    // 잠금 해제 티켓의 수(테스트 용)
-    @State private var unlockTicketCount: Int = 3
+    // 언락 티켓 갯수
+    @State private var unlockTicketCount: Int = 0
     // 잠금 그리드 클릭 위치
-    @State private var selectedLockedIndex: Int? = nil
-    
+    @State private var selectedLockedIndex: Int = -1
+    @State private var realUserId: String = ""
+    @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
     // 잠금해제 alert 변수
     @State private var showingUnlockAlert = false
     // 생성 가능한 캐릭터 수가 부족한 경우 alert 변수
@@ -29,6 +32,7 @@ struct CharDexView: View {
     @State private var firstAlert = true
     // 알 수 없는 에러 alert
     @State private var showingErrorAlert = false
+    @Environment(\.dismiss) var dismiss
     
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -38,15 +42,7 @@ struct CharDexView: View {
     // 임시 데이터(테스트 용)
     @State private var garaCharacters: [GRCharacter] = [
         GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome")),
-        GRCharacter(species: PetSpecies.CatLion, name: "구릉이2", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(),status: GRCharacterStatus(address: "paradise")),
-        GRCharacter(species: PetSpecies.CatLion, name: "구릉이3", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2010, month: 12, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "paradise")),
-        GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "paradise")),
-        GRCharacter(species: PetSpecies.CatLion, name: "구르릉", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2000, month: 2, day: 13))!, createdAt: Date(), status: GRCharacterStatus(address: "space")),
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome"))
     ].filter { !($0.status.address == "space") }
     
     private enum SortType {
@@ -70,6 +66,7 @@ struct CharDexView: View {
         }
     }
     
+    // 전체 슬롯 계산 (캐릭터 + 추가 가능한 슬롯 + 잠금 슬롯)
     private var characterSlots: [GRCharacter] {
         let hasCharacters = sortedCharacterSlots
         
@@ -77,8 +74,8 @@ struct CharDexView: View {
         let addableCount = max(0, unlockCount - hasCharacters.count)
         
         // "plus" 슬롯 추가
-        let plusCharacters = (0..<addableCount).map { _ in
-            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "plus", birthDate: Date(), createdAt: Date())
+        let plusCharacters = (0..<addableCount).map { index in
+            GRCharacter(id: "plus-\(index)", species: .Undefined, name: "", imageName: "plus", birthDate: Date(), createdAt: Date())
         }
         
         // 현재까지 채워진 슬롯 수 = 캐릭터 + plus
@@ -86,8 +83,8 @@ struct CharDexView: View {
         
         // 나머지 잠금 슬롯 수
         let lockedCount = max(0, maxDexCount - filledCount)
-        let lockedCharacters = (0..<lockedCount).map { _ in
-            GRCharacter(species: PetSpecies.Undefined, name: "", imageName: "lock.fill", birthDate: Date(), createdAt: Date())
+        let lockedCharacters = (0..<lockedCount).map { index in
+            GRCharacter(id: "lock-\(index)", species: .Undefined, name: "", imageName: "lock.fill", birthDate: Date(), createdAt: Date())
         }
         
         return hasCharacters + plusCharacters + lockedCharacters
@@ -96,60 +93,66 @@ struct CharDexView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                HStack {
-                    Text("\(garaCharacters.count)")
-                        .foregroundStyle(.yellow)
-                    Text("/ \(maxDexCount) 수집")
+                if !characterDexViewModel.isLoading {
+                    HStack {
+                        Text("\(garaCharacters.count)")
+                            .foregroundStyle(.yellow)
+                        Text("/ \(maxDexCount) 수집")
+                    }
+                    .frame(maxWidth: 180)
+                    .font(.title)
+                    .background(alignment: .center) {
+                        Capsule()
+                            .fill(Color.brown.opacity(0.5))
+                    }
                     
-                }
-                .frame(maxWidth: 180)
-                .font(.title)
-                .background(alignment: .center, content: {
-                    Capsule()
-                        .fill(Color.brown.opacity(0.5))
-                })
-                
-                HStack {
-                    if unlockTicketCount <= 0 {
-                        ZStack {
+                    // 티켓 수량 표시
+                    HStack {
+                        if unlockTicketCount <= 0 {
+                            ZStack {
+                                Image(systemName: "ticket")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(.top, 8)
+                                    .frame(width: 30, height: 30)
+                                    .foregroundStyle(Color.brown.opacity(0.5))
+                                Image(systemName: "xmark")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(.top, 8)
+                                    .frame(width: 30, height: 30)
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                        ForEach(0..<unlockTicketCount, id: \.self) { _ in
                             Image(systemName: "ticket")
                                 .resizable()
                                 .scaledToFit()
                                 .padding(.top, 8)
                                 .frame(width: 30, height: 30)
                                 .foregroundStyle(Color.brown.opacity(0.5))
-                            Image(systemName: "xmark")
-                                .resizable()
-                                .scaledToFit()
-                                .padding(.top, 8)
-                                .frame(width: 30, height: 30)
-                                .foregroundStyle(.red)
                         }
                     }
-                    ForEach(0..<unlockTicketCount, id: \.self) { _ in
-                        Image(systemName: "ticket")
-                            .resizable()
-                            .scaledToFit()
-                            .padding(.top, 8)
-                            .frame(width: 30, height: 30)
-                            .foregroundStyle(Color.brown.opacity(0.5))
-                    }
-                }
-                
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(Array(characterSlots.enumerated()), id: \.element.id) { index, character in
-                        if character.imageName == "lock.fill" {
-                            lockSlot(at: index)
-                        } else if character.imageName == "plus" {
-                            addSlot
-                        } else {
-                            NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
-                                characterSlot(character)
+                    
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(Array(characterSlots.enumerated()), id: \.offset) { index, character in
+                            if character.imageName == "lock.fill" {
+                                lockSlot(at: index)
+                            } else if character.imageName == "plus" {
+                                addSlot
+                            } else {
+                                NavigationLink(destination: {
+                                    CharacterDetailView(characterUUID: character.id)
+                                }) {
+                                    characterSlot(character)
+                                }
                             }
                         }
                     }
+                    .padding()
+                } else {
+                    ProgressView("데이터 로딩중...")
                 }
-                .padding()
             }
             .navigationTitle("캐릭터 동산")
             .toolbar {
@@ -189,39 +192,77 @@ struct CharDexView: View {
                     }
                 }
             }
+            // 슬롯 해제 Alert
             .alert("슬롯을 해제합니다.", isPresented: $showingUnlockAlert) {
                 Button("해제", role: .destructive) {
                     if unlockTicketCount <= 0 {
                         showingNotEnoughTicketAlert = true
                     } else {
                         if unlockCount < maxDexCount {
-                            unlockCount += 1
-                            unlockTicketCount -= 1
+                            if let item = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                                unlockCount += 1
+                                unlockTicketCount -= 1
+                                characterDexViewModel.updateCharDex(
+                                    userId: realUserId,
+                                    unlockCount: unlockCount,
+                                    unlockTicketCount: unlockTicketCount,
+                                    selectedLockedIndex: selectedLockedIndex
+                                )
+                                userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: unlockTicketCount)
+                            } else {
+                                showingErrorAlert = true
+                            }
                         }
                     }
-                    
                 }
                 Button("취소", role: .cancel) {}
             }
+            // 캐릭터 슬롯이 부족한 경우 Alert
             .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
                 Button("확인", role: .cancel) {
                     firstAlert = false
                 }
             }
+            // 티켓 부족 Alert
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
             }
+            // 에러 Alert
             .alert("에러 발생", isPresented: $showingErrorAlert) {
-                Button("확인", role: .cancel) {}
+                Button("확인", role: .cancel) {
+                    dismiss()
+                }
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
             }
             .onAppear {
-                if unlockCount == garaCharacters.count && firstAlert {
-                    showingNotEnoughAlert = true
-                }
-                if garaCharacters.count > unlockCount {
-                    showingErrorAlert = true
+                Task {
+                    // 유저 Id 가져오기
+                    realUserId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
+                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
+                    // 동산 데이터 가져오기
+                    if !characterDexViewModel.isLoading {
+                        try await characterDexViewModel.fetchCharDex(userId: realUserId)
+                        
+                        // 인벤토리에서 티켓 갯수 가져와서 저장 후 불러오기
+                        if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                            characterDexViewModel.updateCharDex(userId: realUserId, unlockCount: characterDexViewModel.unlockCount, unlockTicketCount: ticket.userItemQuantity, selectedLockedIndex: characterDexViewModel.selectedLockedIndex)
+                            try await characterDexViewModel.fetchCharDex(userId: realUserId)
+                        }
+                        unlockTicketCount = characterDexViewModel.unlockTicketCount
+                        unlockCount = characterDexViewModel.unlockCount
+                        selectedLockedIndex = characterDexViewModel.selectedLockedIndex
+                    }
+                    
+                    // 캐릭터 수와 해제 슬롯 수가 같은 경우 안내
+                    if unlockCount == garaCharacters.count && firstAlert {
+                        showingNotEnoughAlert = true
+                    }
+                    
+                    // 캐릭터 수가 해제 슬롯 수보다 많으면 에러
+                    if garaCharacters.count > unlockCount {
+                        showingErrorAlert = true
+                    }
                 }
             }
         }
@@ -232,7 +273,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             VStack(alignment: .center) {
                 ZStack {
                     Image(systemName: character.imageName)
@@ -240,7 +281,7 @@ struct CharDexView: View {
                         .frame(width: 100, height: 100)
                         .aspectRatio(contentMode: .fit)
                         .foregroundStyle(.black)
-
+                    
                     if character.status.address == "space" {
                         // xmark가 도감에서 보이면 안됨!!
                         // 우주로 돌려보냄(삭제)
@@ -251,7 +292,7 @@ struct CharDexView: View {
                             .offset(x: 60, y: -40)
                             .foregroundStyle(.red)
                     } else {
-                        Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                        Image(systemName: character.status.address == "userHome" ? "house" : "mountain.2")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 20, height: 20)
@@ -259,13 +300,13 @@ struct CharDexView: View {
                             .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
                     }
                 }
-
+                
                 Text(character.name)
                     .foregroundStyle(.black)
                     .bold()
                     .lineLimit(1)
                     .frame(maxWidth: .infinity)
-
+                
                 Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
                     .foregroundStyle(.gray)
                     .font(.caption)
@@ -287,7 +328,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             Button {
                 selectedLockedIndex = index
                 showingUnlockAlert = true
@@ -301,7 +342,6 @@ struct CharDexView: View {
                         .frame(maxWidth: .infinity)
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(20)
-                        .foregroundColor(.gray)
                 }
                 .padding(.bottom, 16)
                 .offset(y: yOffset)
@@ -316,7 +356,7 @@ struct CharDexView: View {
         GeometryReader { geo in
             let yPosition = geo.frame(in: .global).minY
             let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-
+            
             VStack {
                 Image(systemName: "plus")
                     .scaledToFit()
@@ -353,8 +393,4 @@ func calculateAge(_ birthDate: Date) -> Int {
     }
     
     return age
-}
-
-#Preview {
-    CharDexView()
 }

@@ -113,7 +113,8 @@ class UserInventoryViewModel: ObservableObject {
             }
             
             await MainActor.run {
-                self.inventories = fetchedInventories
+                // 나중에 구매한게 맨 위로 오게
+                self.inventories = fetchedInventories.sorted { $0.purchasedAt > $1.purchasedAt }
             }
             print("[조회완료] 총 \(fetchedInventories.count)개 아이템 로드 완료")
         } catch {
@@ -139,11 +140,17 @@ class UserInventoryViewModel: ObservableObject {
                     self.errorMessage = error.localizedDescription
                     print("❌ 수량 업데이트 실패: \(error.localizedDescription)")
                 } else {
-                    // 로컬 배열 업데이트
-                    if let index = self.inventories.firstIndex(where: { $0.userItemNumber == item.userItemNumber }) {
-                        self.inventories[index].userItemQuantity = newQuantity
+                    if newQuantity == 0 {
+                        // ✅ 수량이 0이면 아이템 삭제
+                        print("⚠️ 수량 0, 아이템 삭제 처리 중: \(item.userItemName)")
+                        self.deleteItem(userId: userId, item: item)
+                    } else {
+                        // ✅ 로컬 배열 업데이트
+                        if let index = self.inventories.firstIndex(where: { $0.userItemNumber == item.userItemNumber }) {
+                            self.inventories[index].userItemQuantity = newQuantity
+                        }
+                        print("✅ 수량 업데이트 성공")
                     }
-                    print("✅ 수량 업데이트 성공")
                 }
             }
         }
