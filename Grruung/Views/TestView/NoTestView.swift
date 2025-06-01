@@ -10,7 +10,7 @@ import SwiftUI
 struct NoTestView: View {
     
     let charUUID: String = "CF6NXxcH5HgGjzVE0nVE"
-    
+    let userID: String = "uCMGt4DjgiPPpyd2p9Di"
     var body: some View {
         NavigationStack {
             NavigationLink(destination: CharacterDetailView(characterUUID: charUUID)) { // 임시 더미 characterUUID
@@ -19,6 +19,10 @@ struct NoTestView: View {
             
             NavigationLink(destination: WriteStoryView(currentMode: .create, characterUUID: charUUID)) {
                 Text("Go to WriteStory Create")
+            }
+            
+            NavigationLink(destination: WriteStoryStartView(characterUUID: charUUID)) {
+                Text("Go to WriteStory Start")
             }
         }
     }

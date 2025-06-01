@@ -68,6 +68,7 @@ struct HomeView: View {
                         currentMode: .create,
                         characterUUID: character.id
                     )
+                    .environmentObject(authService)
                 }
             }
         }
