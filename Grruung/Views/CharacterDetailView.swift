@@ -160,6 +160,12 @@ struct CharacterDetailView: View {
                         .padding()
                 }
                 .padding()
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .padding()
             }
             
             VStack(alignment: .leading) {
@@ -319,6 +325,12 @@ struct CharacterDetailView: View {
                                             .frame(width: 60, height: 60)
                                             .padding(10)
                                     }
+                                }  else {
+                                    Image(systemName: "photo")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 60, height: 60)
+                                        .padding(10)
                                 }
                                 VStack(alignment: .leading) {
                                     Text(viewModel.posts[index].postTitle)
@@ -418,7 +430,7 @@ struct CharacterDetailView: View {
                     } else {
                         viewModel.updateAddress(characterUUID: characterUUID, newAddress: destination)
                     }
-                },
+                }
             )
         }
     }
