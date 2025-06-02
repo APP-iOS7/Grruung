@@ -295,7 +295,7 @@ struct CharDexView: View {
                             .offset(x: 60, y: -40)
                             .foregroundStyle(.red)
                     } else {
-                        Image(systemName: character.status.address == "userHome" ? "house" : "mountain.2")
+                        Image(systemName: character.status.address == "usersHome" ? "house" : "mountain.2")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 20, height: 20)

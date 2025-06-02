@@ -18,7 +18,9 @@ struct FirebaseImageView: View {
                 Image(uiImage: image)
                     .resizable()
             } else {
-                ProgressView() // 로딩 표시
+                Image("CatLion")
+                    .resizable()
+//                ProgressView() // 로딩 표시
             }
         }
         .onAppear {
