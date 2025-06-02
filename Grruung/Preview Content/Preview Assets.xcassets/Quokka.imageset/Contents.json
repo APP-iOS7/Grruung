@@ -1,9 +1,13 @@
 {
   "images" : [
     {
-      "filename" : "CATLION.jpg",
       "idiom" : "universal",
       "scale" : "1x"
+    },
+    {
+      "filename" : "QUOKKA.jpg",
+      "idiom" : "universal",
+      "scale" : "2x"
     },
     {
       "idiom" : "universal",

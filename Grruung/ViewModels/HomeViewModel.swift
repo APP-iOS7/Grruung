@@ -252,9 +252,9 @@ class HomeViewModel: ObservableObject {
         )
         
         let newCharacter = GRCharacter(
-            species: .CatLion,
+            species: .quokka,
             name: "냥냥이",
-            imageName: "CatLion",
+            imageName: "Quokka",
             birthDate: Date(),
             createdAt: Date(),
             status: status
@@ -304,9 +304,9 @@ class HomeViewModel: ObservableObject {
         )
         
         let newCharacter = GRCharacter(
-            species: .CatLion,
+            species: .quokka,
             name: "냥냥이",
-            imageName: "CatLion",
+            imageName: "Quokka",
             birthDate: Date(),
             status: status
         )

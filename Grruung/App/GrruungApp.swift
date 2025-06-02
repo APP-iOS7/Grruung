@@ -49,7 +49,7 @@ struct GrruungApp: App {
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            //GRAnimationMetadata.self,
+            GRAnimationMetadata.self,
             ImageTestModel.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
