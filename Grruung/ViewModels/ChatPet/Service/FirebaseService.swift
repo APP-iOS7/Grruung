@@ -1009,8 +1009,8 @@ class FirebaseService: ObservableObject {
         setAsMain: Bool = true,
         completion: @escaping (String?, Error?) -> Void
     ) {
-        // 먼저 캐릭터를 저장
-        saveCharacter(character) { [weak self] error in
+        // 먼저 같은 address를 가진 캐릭터가 있는지 확인
+        findCharactersByAddress(address: "userHome") { [weak self] existingCharacters, error in
             guard let self = self else { return }
             
             if let error = error {
@@ -1018,20 +1018,132 @@ class FirebaseService: ObservableObject {
                 return
             }
             
-            // 메인 캐릭터로 설정할지 확인
-            if setAsMain {
-                self.setMainCharacter(characterID: character.id) { error in
-                    if let error = error {
-                        completion(nil, error)
-                    } else {
-                        completion(character.id, nil)
+            // 이미 userHome 주소를 가진 캐릭터가 있는 경우
+            if let existingCharacters = existingCharacters, !existingCharacters.isEmpty {
+                // 이미 있는 캐릭터를 메인으로 설정
+                if setAsMain {
+                    self.setMainCharacter(characterID: existingCharacters[0].id) { error in
+                        if let error = error {
+                            completion(nil, error)
+                        } else {
+                            completion(existingCharacters[0].id, nil)
+                        }
                     }
+                } else {
+                    completion(existingCharacters[0].id, nil)
                 }
-            } else {
-                completion(character.id, nil)
+                return
+            }
+            
+            // 없으면 새 캐릭터 저장
+            self.saveCharacter(character) { [weak self] error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                
+                // 메인 캐릭터로 설정할지 확인
+                if setAsMain {
+                    self.setMainCharacter(characterID: character.id) { error in
+                        if let error = error {
+                            completion(nil, error)
+                        } else {
+                            completion(character.id, nil)
+                        }
+                    }
+                } else {
+                    completion(character.id, nil)
+                }
             }
         }
     }
-    // MARK: End - HomeViewModel Character 연결을 위한 메서드 정의
+    // End - HomeViewModel Character 연결을 위한 메서드 정의
 
+    // MARK: - 캐릭터 중복 생성 방지를 위한 함수 추가
+
+    // 특정 address에 있는 캐릭터 찾기
+    func findCharactersByAddress(address: String, completion: @escaping ([GRCharacter]?, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(nil, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        db.collection("users").document(userID).collection("characters")
+            .whereField("status.address", isEqualTo: address)
+            .getDocuments { (snapshot, error) in
+                if let error = error {
+                    completion(nil, error)
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    completion([], nil)
+                    return
+                }
+                
+                var characters: [GRCharacter] = []
+                
+                for document in documents {
+                    let data = document.data()
+                    
+                    let id = document.documentID
+                    let speciesRaw = data["species"] as? String ?? ""
+                    let species = PetSpecies(rawValue: speciesRaw) ?? .CatLion
+                    let name = data["name"] as? String ?? "이름 없음"
+                    let imageName = data["image"] as? String ?? ""
+                    
+                    // 상태 정보 파싱
+                    let statusData = data["status"] as? [String: Any] ?? [:]
+                    let level = statusData["level"] as? Int ?? 1
+                    let exp = statusData["exp"] as? Int ?? 0
+                    let expToNextLevel = statusData["expToNextLevel"] as? Int ?? 100
+                    let phaseRaw = statusData["phase"] as? String ?? ""
+                    let phase = CharacterPhase(rawValue: phaseRaw) ?? .infant
+                    let satiety = statusData["satiety"] as? Int ?? 50
+                    let stamina = statusData["stamina"] as? Int ?? 50
+                    let activity = statusData["activity"] as? Int ?? 50
+                    let affection = statusData["affection"] as? Int ?? 50
+                    let healthy = statusData["healthy"] as? Int ?? 50
+                    let clean = statusData["clean"] as? Int ?? 50
+                    let address = statusData["address"] as? String ?? "usersHome"
+                    let birthDateTimestamp = statusData["birthDate"] as? Timestamp
+                    let birthDate = birthDateTimestamp?.dateValue() ?? Date()
+                    let createdAtTimestamp = statusData["createdAt"] as? Timestamp
+                    let createdAt = createdAtTimestamp?.dateValue() ?? Date()
+                    let appearance = statusData["appearance"] as? [String: String] ?? [:]
+                    
+                    let status = GRCharacterStatus(
+                        level: level,
+                        exp: exp,
+                        expToNextLevel: expToNextLevel,
+                        phase: phase,
+                        satiety: satiety,
+                        stamina: stamina,
+                        activity: activity,
+                        affection: affection,
+                        healthy: healthy,
+                        clean: clean,
+                        address: address,
+                        birthDate: birthDate,
+                        appearance: appearance
+                    )
+                    
+                    let character = GRCharacter(
+                        id: id,
+                        species: species,
+                        name: name,
+                        imageName: imageName,
+                        birthDate: birthDate,
+                        createdAt: createdAt,
+                        status: status
+                    )
+                    
+                    characters.append(character)
+                }
+                
+                completion(characters, nil)
+            }
+    }
 }
