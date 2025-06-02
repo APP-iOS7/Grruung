@@ -28,140 +28,176 @@ struct ProfileDetailView: View {
     @State private var selectedImageData: Data? = nil
     @State private var profileImage: Image? = nil
     
-    @State private var isEditingName = false
     @State private var username = "Quaqqa"
-    @State private var tempName = ""
-
+    @State private var newName = ""
+    @State private var isShowingNameEditorPopup = false
+    
     // 설정 항목 데이터
     let settingSections: [SettingSection] = [
         SettingSection(items: [
-            .init(title: "청구서", iconName: "doc.text"),
-            .init(title: "기프트 카드 또는 코드", iconName: "gift")
+            .init(title: "결제내역", iconName: "doc.text"),
+            .init(title: "선물함", iconName: "gift")
         ]),
         SettingSection(items: [
-            .init(title: "연결된 계정을 변경하기", iconName: "link"),
-            .init(title: "기기 데이터 마이그레이션", iconName: "arrow.triangle.2.circlepath")
+            .init(title: "연결된 계정 변경", iconName: "link"),
+            .init(title: "연결된 기기 변경", iconName: "arrow.triangle.2.circlepath")
         ]),
         SettingSection(items: [
             .init(title: "로그아웃", iconName: "rectangle.portrait.and.arrow.right")
         ])
     ]
-
+    
+    // MARK: - 프로필 섹션
     var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-                // MARK: - 프로필 섹션
-                VStack(spacing: 20) {
-                    ZStack(alignment: .bottomTrailing) {
-                        PhotosPicker(selection: $selectedItem,
-                                     matching: .images,
-                                     photoLibrary: .shared()) {
-                            Group {
-                                if let profileImage {
-                                    profileImage
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 120, height: 120)
-                                        .clipShape(Circle())
-                                } else {
-                                    Image("CatLion")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 120, height: 120)
-                                        .clipShape(Circle())
+        ZStack {
+            ScrollView {
+                VStack(spacing: 30) {
+                    
+                    VStack(spacing: 20) {
+                        ZStack(alignment: .bottomTrailing) {
+                            PhotosPicker(selection: $selectedItem,
+                                         matching: .images,
+                                         photoLibrary: .shared()) {
+                                Group {
+                                    if let profileImage {
+                                        profileImage
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 120, height: 120)
+                                            .clipShape(Circle())
+                                    } else {
+                                        Image("CatLion")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 120, height: 120)
+                                            .clipShape(Circle())
+                                    }
                                 }
+                                .overlay(Circle().stroke(Color.white, lineWidth: 4))
+                                .background(Circle().fill(Color(.systemBackground)))
                             }
-                            .overlay(Circle().stroke(Color.white, lineWidth: 4))
-                            .background(Circle().fill(Color(.systemBackground)))
+                                         .onChange(of: selectedItem) { newItem in
+                                             Task {
+                                                 if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                                     selectedImageData = data
+                                                     if let uiImage = UIImage(data: data) {
+                                                         profileImage = Image(uiImage: uiImage)
+                                                     }
+                                                 }
+                                             }
+                                         }
+                            
+                            Image(systemName: "camera.fill")
+                                .foregroundColor(.white)
+                                .padding(6)
+                                .background(Circle().fill(Color.gray))
+                                .offset(x: 3, y: 3)
                         }
-                        .onChange(of: selectedItem) { newItem in
-                            Task {
-                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                    selectedImageData = data
-                                    if let uiImage = UIImage(data: data) {
-                                        profileImage = Image(uiImage: uiImage)
+                        .padding(.top, 20)
+                        
+                        Button {
+                            newName = username
+                            isShowingNameEditorPopup = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(username)
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(.black)
+                                
+                                Image(systemName: "pencil.line")        .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.black)
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 25))
+                    .padding(.horizontal)
+                    
+                    // MARK: - 설정 섹션
+                    
+                    VStack(spacing: 30) {
+                        ForEach(settingSections) { section in
+                            VStack(spacing: 0) {
+                                ForEach(section.items.indices, id: \ .self) { index in
+                                    let item = section.items[index]
+                                    SettingRow(icon: item.iconName, text: item.title)
+                                    if index < section.items.count - 1 {
+                                        Divider()
                                     }
                                 }
                             }
+                            .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
                         }
-
-                        // 카메라 아이콘
-                        Image(systemName: "camera.fill")
-                            .foregroundColor(.white)
-                            .padding(6)
-                            .background(Circle().fill(Color.green))
-                            .offset(x: 5, y: 5)
-                    }
-                    .padding(.top, 20)
-
-                    HStack(spacing: 6) {
-                        if isEditingName {
-                            TextField("닉네임", text: $tempName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 160)
-                            Button("완료") {
-                                username = tempName
-                                isEditingName = false
+                        
+                        Button {
+                            print("계정 삭제")
+                        } label: {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("계정 삭제")
                             }
-                        } else {
-                            Text(username)
-                                .font(.system(size: 22, weight: .semibold))
-
-                            Button {
-                                tempName = username
-                                isEditingName = true
-                            } label: {
-                                Image(systemName: "pencil.fill")
-                                    .resizable()
-                                    .frame(width: 14, height: 14)
-                                    .foregroundColor(.gray)
-                            }
+                            .foregroundColor(.red)
+                            .padding(.top)
                         }
                     }
-                    .padding()
-                    .frame(width: 260)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 15))
+                    .padding(.horizontal)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 25))
-                .padding(.horizontal)
-
-                // MARK: - 설정 섹션
-                VStack(spacing: 30) {
-                    ForEach(settingSections) { section in
-                        VStack(spacing: 0) {
-                            ForEach(section.items.indices, id: \.self) { index in
-                                let item = section.items[index]
-                                SettingRow(icon: item.iconName, text: item.title)
-                                if index < section.items.count - 1 {
-                                    Divider()
-                                }
-                            }
-                        }
-                        .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
-                    }
-
-                    // 계정 삭제 버튼
-                    Button {
-                        print("계정 삭제")
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                            Text("계정 삭제")
-                        }
-                        .foregroundColor(.red)
-                        .padding(.top)
-                    }
-                }
-                .padding(.horizontal)
+                .padding(.bottom, 50)
             }
-            .padding(.bottom, 50)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            
+            if isShowingNameEditorPopup {
+                Color.black.opacity(0.4).ignoresSafeArea()
+                
+                VStack(spacing: 20) {
+                    HStack {
+                        Spacer()
+
+                        Button {
+                            isShowingNameEditorPopup = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .foregroundColor(.gray)
+                                .padding(8)
+                        }
+                    }
+                    .frame(height: 40)
+                    .overlay(
+                        Text("닉네임")
+                            .font(.headline)
+                    )
+                    
+                    TextField("닉네임을 입력하세요", text: $newName)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .frame(maxWidth: .infinity)
+                        .cornerRadius(10)
+                    
+                    Button {
+                        username = newName
+                        isShowingNameEditorPopup = false
+                    } label: {
+                        Text("완료")
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding()
+                .frame(width: 300)
+                .background(Color.white)
+                .cornerRadius(20)
+                .shadow(radius: 20)
+            }
         }
-        .background(Color(.systemGroupedBackground)
-            .ignoresSafeArea())
     }
 }
 
@@ -170,18 +206,18 @@ struct ProfileDetailView: View {
 struct SettingRow: View {
     let icon: String
     let text: String
-
+    
     var body: some View {
         HStack {
             Image(systemName: icon)
                 .frame(width: 24)
                 .foregroundColor(.primary)
                 .frame(maxHeight: .infinity, alignment: .center)
-
+            
             Text(text)
                 .foregroundColor(.primary)
                 .frame(maxHeight: .infinity, alignment: .center)
-
+            
             Spacer()
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
@@ -190,6 +226,7 @@ struct SettingRow: View {
         .padding(.horizontal, 15)
     }
 }
+
 
 // MARK: - Preview
 #Preview {
