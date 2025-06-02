@@ -49,6 +49,19 @@ struct HomeView: View {
                 actionButtonsGrid
             }
             .padding()
+            .scrollContentBackground(.hidden) // 기본 배경 숨기기
+            .background(
+                // 배경 이미지 설정
+                Image("forest1")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 200)
+                    .scaleEffect(1.1) // 줌인 줌아웃
+                    .offset(x: -10, y: -165) // 위치 조정
+
+                    // .clipped() // 넘치는 부분 잘라내기
+                    //.ignoresSafeArea(.all)
+            )
             .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
             .onAppear {
                 viewModel.loadCharacter()
@@ -150,30 +163,10 @@ struct HomeView: View {
             Spacer()
             
             // 캐릭터 이미지
-            ZStack {
-                Image(viewModel.character?.imageName ?? "CatLion")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 200)
-                    .scaleEffect(viewModel.isSleeping ? 0.95 : 1.0)
-                // TODO: TODO 0 애니메이션 및 디플리케이티드 수정
-                    .animation(
-                        viewModel.isSleeping ?
-                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-                                .default,
-                        value: viewModel.isSleeping
-                    )
-                
-                
-                // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
-                if viewModel.isSleeping {
-                    VStack {
-                        Text("💤")
-                            .font(.largeTitle)
-                            .offset(x: 50, y: -50)
-                    }
-                }
-            }
+            ScreenView(
+                character: viewModel.character,
+                isSleeping: viewModel.isSleeping
+            )
             
             Spacer()
             
@@ -263,10 +256,10 @@ struct HomeView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .frame(width: 60, height: 60)
-                    .foregroundColor(Color.gray.opacity(0.05))
+                    .foregroundColor(Color.gray.opacity(0.6))
                 
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.gray)
+                    .foregroundColor(.white)
             }
         } else {
             if systemName == "cart.fill" {
@@ -274,10 +267,10 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.2))
+                            .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.white)
                     }
                 }
             } else if systemName == "backpack.fill" {
@@ -285,10 +278,10 @@ struct HomeView: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: 60, height: 60)
-                                .foregroundColor(Color.gray.opacity(0.2))
+                                .foregroundColor(Color.gray.opacity(0.6))
                             Image(systemName: systemName)
                                 .font(.system(size: 24))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.white)
                         }
                     }
             } else if systemName == "mountain.2.fill" {
@@ -296,10 +289,10 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.2))
+                            .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.white)
                     }
                 }
             } else {
@@ -309,11 +302,11 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.05) : Color.gray.opacity(0.2))
+                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.1) : Color.gray.opacity(0.6))
                         
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                            .foregroundColor(viewModel.isSleeping ? .black : .white)
                     }
                 }
                 .disabled(viewModel.isSleeping)
