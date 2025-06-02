@@ -57,7 +57,7 @@ struct HomeView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 200)
                     .scaleEffect(1.1) // 줌인 줌아웃
-                    .offset(x: -10, y: -165) // 위치 조정
+                    .offset(x: -10, y: -145) // 위치 조정
 
                     // .clipped() // 넘치는 부분 잘라내기
                     //.ignoresSafeArea(.all)
