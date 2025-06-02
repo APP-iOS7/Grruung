@@ -16,6 +16,9 @@ struct ScreenView: View {
     // 애니메이션 컨트롤러 추가
     @StateObject private var eggControl = EggControl()
     
+    // 이펙트 제어 상태
+    @State private var currentEffect: EffectType = .none
+    
     var body: some View {
         ZStack {
             Color.clear
@@ -35,6 +38,9 @@ struct ScreenView: View {
                 defaultView
             }
             
+            // 탭 이펙트 레이어
+            // tapEffectLayer
+            
             // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
             if isSleeping {
                 sleepingIndicator
@@ -51,6 +57,7 @@ struct ScreenView: View {
         }
         .onTapGesture {
             handleTap()
+            // handleTapWithEffect() // 이펙트 탭
         }
     }
     
@@ -122,6 +129,55 @@ struct ScreenView: View {
         }
     }
     
+    // 이펙트 레이어
+    @ViewBuilder
+    private var tapEffectLayer: some View {
+        ZStack {
+            // 현재 이펙트에 따라 다른 이펙트 표시
+            switch currentEffect {
+            case .none:
+                EmptyView()
+            case .cleaning:
+                CleaningEffect(isActive: .constant(true))
+            case .sparkle:
+                SparkleEffect.magical(isActive: .constant(true))
+            case .pulse:
+                PulseEffect.healing(isActive: .constant(true))
+            case .healing:
+                // 여러 이펙트 조합도 가능
+                ZStack {
+                    CleaningEffect(isActive: .constant(true))
+                    SparkleEffect.golden(isActive: .constant(true))
+                }
+            }
+        }
+        .onChange(of: currentEffect) { oldValue, newValue in
+            if newValue != .none {
+                // 이펙트가 끝나면 자동으로 .none으로 리셋
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    currentEffect = .none
+                }
+            }
+        }
+    }
+    
+    // 이펙트 탭 처리
+    private func handleTapWithEffect() {
+        // 기존 로직
+        if character?.status.phase == .egg || character == nil {
+            eggControl.toggleAnimation()
+            print("🥚 운석 애니메이션 토글: \(eggControl.isAnimating ? "재생" : "정지")")
+        }
+        
+        // 🎯 이펙트 타입 설정 (다양한 이펙트 선택 가능)
+        currentEffect = .cleaning
+        
+        // 또는 랜덤 이펙트
+        // currentEffect = [.cleaning, .sparkle, .pulse].randomElement() ?? .cleaning
+        
+        print("✨ \(currentEffect) 이펙트 실행!")
+    }
+    
     // MARK: - 헬퍼 메서드
     
     // 적절한 애니메이션 시작
@@ -153,3 +209,6 @@ struct ScreenView: View {
     )
     .padding()
 }
+
+
+
