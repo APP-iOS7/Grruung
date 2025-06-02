@@ -15,6 +15,7 @@ struct WriteStoryStartView: View {
     @State private var currentViewMode: ViewMode = .create
     @State private var navigateToWriteView = false
     @State private var showNoCountAlert = false
+    @State private var showStoryListModal = false // 모달 표시 상태 추가
     
     var characterUUID: String
     
@@ -63,31 +64,37 @@ struct WriteStoryStartView: View {
             // 하단 플로팅 버튼
             VStack {
                 Spacer()
-                Button {
-                    if let count = writingCountVM.userWritingCount?.totalAvailableCount, count > 0 {
-                        // 글쓰기 횟수가 남아있으면 이동
-                        navigateToWriteView = true
-                    } else {
-                        // 글쓰기 횟수가 없으면 알림 표시
-                        showNoCountAlert = true
+                
+                HStack(spacing: 24) {
+                    Button {
+                        showStoryListModal = true // 모달 표시
+                    } label: {
+                        Image(systemName: "list.bullet")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.blue)
+                            .clipShape(Circle())
+                            .shadow(radius: 4)
                     }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                    // 글쓰기 횟수의 남은 횟수에 따라 버튼 색상 변경 글쓰기 가능: 파랑, 불가능: 회색
-                        .background((writingCountVM.userWritingCount?.totalAvailableCount ?? 0) > 0 ? Color.blue : Color.gray)
-                        .clipShape(Circle())
-                        .shadow(radius: 4)
-                    
-                    
+                                
+                    Button {
+                        if let count = writingCountVM.userWritingCount?.totalAvailableCount, count > 0 {
+                            navigateToWriteView = true
+                        } else {
+                            showNoCountAlert = true
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 56, height: 56)
+                            .background((writingCountVM.userWritingCount?.totalAvailableCount ?? 0) > 0 ? Color.blue : Color.gray)
+                            .clipShape(Circle())
+                            .shadow(radius: 4)
+                    }
                 }
                 .padding(.bottom, 16)
-            }
-            .navigationDestination(isPresented: $navigateToWriteView) {
-                WriteStoryView(currentMode: currentViewMode, characterUUID: characterUUID)
-                    .environmentObject(authService)
             }
         }
         .navigationTitle("이야기 들려주기")
@@ -101,8 +108,15 @@ struct WriteStoryStartView: View {
             }
         }
         .onAppear {
-            // 화면이 나타날 때마다 글쓰기 횟수 새로 로드
             writingCountVM.initialize(with: authService)
+        }
+        .navigationDestination(isPresented: $navigateToWriteView) {
+            WriteStoryView(currentMode: currentViewMode, characterUUID: characterUUID)
+                .environmentObject(authService)
+        }
+        // 모달 시트 추가
+        .sheet(isPresented: $showStoryListModal) {
+            WriteStoryListView(characterUUID: characterUUID)
         }
         .alert("글쓰기 횟수 부족", isPresented: $showNoCountAlert) {
             Button("확인", role: .cancel) { }
