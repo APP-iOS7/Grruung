@@ -20,6 +20,7 @@ struct HomeView: View {
     @State private var isShowingWriteStory = false
     @State private var isShowingChatPet = false
     @State private var isShowingSettings = false
+    @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     
     // MARK: - Body
     var body: some View {
@@ -32,6 +33,12 @@ struct HomeView: View {
                 characterSection
                 
                 Spacer()
+                
+                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                if let character = viewModel.character,
+                   character.status.evolutionStatus.needsEvolution {
+                    evolutionButton
+                }
                 
                 // 상태 바 섹션
                 statsSection
@@ -98,6 +105,55 @@ struct HomeView: View {
         }
         .sheet(isPresented: $isShowingSettings) {
             //            SettingsSheetView()
+        }
+        // 진화 화면 시트
+        .sheet(isPresented: $showEvolutionScreen) {
+            if let character = viewModel.character {
+                EvolutionView(character: character)
+            }
+        }
+        // 부화 팝업 오버레이
+        .overlay {
+            if viewModel.showEvolutionPopup {
+                EvolutionPopupView(
+                    isPresented: $viewModel.showEvolutionPopup,
+                    onEvolutionStart: {
+                        // 부화 버튼을 눌렀을 때 진화 화면 표시
+                        showEvolutionScreen = true
+                        print("🥚 부화 시작 - 진화 화면으로 이동")
+                    },
+                    onEvolutionDelay: {
+                        // 보류 버튼을 눌렀을 때는 아무것도 하지 않음
+                        print("⏸️ 부화 보류 - 나중에 다시 시도 가능")
+                    }
+                )
+            }
+        }
+    }
+    
+    // 부화 진행 버튼
+    private var evolutionButton: some View {
+        Button(action: {
+            showEvolutionScreen = true
+        }) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16))
+                Text("부화 진행")
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [Color.orange, Color.red],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
         }
     }
     
