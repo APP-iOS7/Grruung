@@ -305,7 +305,7 @@ class HomeViewModel: ObservableObject {
         let newCharacter = GRCharacter(
             species: .quokka,
             name: "냥냥이",
-            imageName: "Quokka",
+            imageName: "quokka",
             birthDate: Date(),
             createdAt: Date(),
             status: status

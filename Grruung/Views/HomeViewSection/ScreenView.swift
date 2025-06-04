@@ -125,7 +125,7 @@ struct ScreenView: View {
                 )
         } else {
             // QuokkaController가 로드되지 않았을 때 기본 이미지
-            Image("Quokka")
+            Image("quokka")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 180)
