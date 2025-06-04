@@ -22,6 +22,8 @@ struct ScreenView: View {
     // 이펙트 제어 상태
     @State private var currentEffect: EffectType = .none
     
+    let onCreateCharacterTapped: (() -> Void)? //온보딩 콜백
+    
     var body: some View {
         ZStack {
             Color.clear
@@ -38,8 +40,10 @@ struct ScreenView: View {
                     quokkaAnimationView
                 }
             } else {
-                // 캐릭터가 없을 때 기본 이미지
-                defaultView
+                //// 캐릭터가 없을 때 기본 이미지
+                //defaultView
+                // 캐릭터가 없을 때 플러스 아이콘 표시
+                defaultViewWithCreateButton
             }
             
             // 탭 이펙트 레이어
@@ -72,6 +76,26 @@ struct ScreenView: View {
     }
     
     // MARK: - 상태별 뷰
+    
+    // 캐릭터 생성 버튼이 포함된 기본 뷰
+    @ViewBuilder
+    private var defaultViewWithCreateButton: some View {
+        Button(action: {
+            onCreateCharacterTapped?() // 콜백 호출
+        }) {
+            VStack(spacing: 10) {
+                Image(systemName: "plus.circle")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 80)
+                    .foregroundColor(.gray)
+                
+                Text("캐릭터 생성")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
     
     // 운석 애니메이션 뷰
      @ViewBuilder
@@ -295,7 +319,10 @@ struct ScreenView: View {
             imageName: "CatLion",
             birthDate: Date()
         ),
-        isSleeping: false
+        isSleeping: false,
+        onCreateCharacterTapped: {
+            print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
+        }
     )
     .padding()
 }
