@@ -469,16 +469,4 @@ class ChatPetViewModel: ObservableObject {
             }
         }
     }
-    
-    // 음성 인식 시작
-    func startListening() {
-        isListening = true
-        // 실제 음성 인식 로직은 구현하지 않음 (VoiceChatViewModel에서 구현)
-    }
-    
-    // 음성 인식 중지
-    func stopListening() {
-        isListening = false
-        // 실제 음성 인식 로직은 구현하지 않음 (VoiceChatViewModel에서 구현)
-    }
 }

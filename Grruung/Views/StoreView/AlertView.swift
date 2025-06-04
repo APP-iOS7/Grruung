@@ -10,20 +10,24 @@ import Foundation
 import StoreKit
 
 struct AlertView: View {
-    @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
-    @EnvironmentObject var userViewModel: UserViewModel
-    @EnvironmentObject var authService: AuthService
-    @StateObject var fetcher = StoreItemFetcher()
+    @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var authService: AuthService
+    @StateObject private var fetcher = StoreItemFetcher()
     @State private var isProcessing = false
     @State var realUserId = ""
     @State private var updatedGold: Int = 0
     @State private var updatedDiamond: Int = 0
     @State private var notEnoughCurrencyAmount: Int = 0
-    @State var purchaseStatus: String = ""
+    @State private var purchaseStatus: String = ""
+    // 파이어베이스에 저장할지 여부
+    @State private var isStored: Bool = true
     let product: GRStoreItem
     var quantity: Int
     private let diamondToGold: Int = 1000
     @State private var showNotEnoughMoneyAlert = false
+    @State private var showPurchaseSuccessAlert = false
+    @State private var showPurchaseCancelAlert = false
     @Binding var isPresented: Bool // 팝업 제어용
     
     var body: some View {
@@ -39,9 +43,8 @@ struct AlertView: View {
                     .overlay(
                         Image(product.itemImage)
                             .resizable()
-                            .frame(width: 70, height: 70)
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.white)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
                     )
                 
                 // 제목
@@ -132,6 +135,20 @@ struct AlertView: View {
                 isPresented = false
             }
         }
+        .alert("구매 완료", isPresented: $showPurchaseSuccessAlert) {
+            Button("확인", role: .cancel) {
+                isPresented = false
+            }
+        } message: {
+            Text("아이템이 성공적으로 구매되었습니다.")
+        }
+        .alert("구매 취소", isPresented: $showPurchaseCancelAlert) {
+            Button("확인", role: .cancel) {
+                isPresented = false
+            }
+        } message: {
+            Text("결제가 취소되었습니다.")
+        }
     }
     
     // MARK: - 구매 처리 메서드
@@ -154,8 +171,10 @@ struct AlertView: View {
         }
         
         let totalPrice = product.itemPrice * quantity
+        updatedGold = user.gold
+        updatedDiamond = user.diamond
         
-        // 상품이 골드인지 다이아인지
+        // 상품이 골드인지 다이아인지 또는 원화인지 확인
         let hasEnoughCurrency: Bool
         switch product.itemCurrencyType {
         case .gold:
@@ -166,6 +185,7 @@ struct AlertView: View {
             hasEnoughCurrency = true
         }
         
+        // 재화 부족 시 알림
         guard hasEnoughCurrency else {
             notEnoughCurrencyAmount = abs((product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? user.diamond : user.gold) - totalPrice)
             print("❌ 잔액 부족: 구매 금액 \(totalPrice), 보유 금액 \(product.itemCurrencyType == .gold ? user.gold : user.diamond)")
@@ -177,27 +197,52 @@ struct AlertView: View {
             isProcessing = false
             return
         }
+        
+        if product.itemImage.contains("diamond_") || product.itemName == "다이아 → 골드" {
+            print("파이어베이스에 저장되지 않는 아이템입니다.")
+            isStored = false
+        }
+        
+        // 골드/다이아인 경우에는 내부 처리만 진행
         if product.itemCurrencyType != .won {
             updatedGold = product.itemCurrencyType == .gold ? user.gold - totalPrice : user.gold
             updatedDiamond = product.itemCurrencyType == .diamond ? user.diamond - totalPrice : user.diamond
+            
+            // 내부 가상 재화 처리 분리
+            await completePurchaseWithoutStoreKit(user: user, totalPrice: totalPrice, isStored: isStored)
+            return
+        }
+        // 아이템 불러오기
+        guard let storeProducts = fetcher.products else {
+            purchaseStatus = "❌ 불러올 아이템이 없음"
+            print(purchaseStatus)
+            isProcessing = false
+            return
         }
         
-        if let product = fetcher.product {
-            let success = await purchase(product: product)
-            
-            guard success else {
-                purchaseStatus = "❌ 구매 실패 또는 취소됨."
-                print(purchaseStatus)
-                isProcessing = false
-                return
-            }
-            print("✅ 결제 완료. 아이템 저장 시작.")
-        } else {
+        guard let storeProduct = storeProducts.first(where: {$0.id == "com.smallearedcat.grruung.\(product.itemImage)"}) else {
             purchaseStatus = "❌ 상품 정보 없음"
             print(purchaseStatus)
             isProcessing = false
             return
         }
+        
+
+        let success = await purchase(product: storeProduct)
+        guard success else {
+            purchaseStatus = "❌ 구매 실패 또는 취소됨."
+            print(purchaseStatus)
+            await MainActor.run {
+                showPurchaseCancelAlert = true
+            }
+            return
+        }
+        
+        print("✅ StoreKit 결제 완료. 아이템 저장 시작.")
+        await completePurchaseWithoutStoreKit(user: user, totalPrice: totalPrice, isStored: isStored)
+    }
+    
+    private func completePurchaseWithoutStoreKit(user: GRUser, totalPrice: Int, isStored: Bool) async {
         // 재빌드시 아이템 넘버가 바뀌면서(UUID) 이전 구매 아이템과 아이템 넘버가 달라서 계속 새로 구매되는 오류 발생!
         // 반드시 아이템의 이름들이 고유해야함! -> 같으면 또 다시 에러남...
         let beforeItemNumber = userInventoryViewModel.inventories.first(where: { $0.userItemName == product.itemName })?.userItemNumber ?? product.itemNumber
@@ -211,13 +256,11 @@ struct AlertView: View {
                 userIteamQuantity: quantity,
                 userItemDescription: product.itemDescription,
                 userItemEffectDescription: product.itemEffectDescription,
-                userItemCategory: product.itemCategory,
+                userItemCategory: product.itemCategory
             )
             
-            // 다이아에서 골드로 바꾸는 경우에는 파이어베이스에 저장하지 않고 재화만 업데이트함.
-            if buyItem.userItemName == "다이아 → 골드" {
-                updatedGold += totalPrice * (diamondToGold / 10)
-            } else {
+            // 예) 다이아에서 골드로 바꾸는 경우에는 파이어베이스에 저장하지 않고 재화만 업데이트함.
+            if isStored {
                 // 이미 로드된 인벤토리에서 기존 아이템 확인 (즉시 확인)
                 if let existingItem = userInventoryViewModel.inventories.first(where: {
                     $0.userItemNumber == buyItem.userItemNumber
@@ -241,8 +284,28 @@ struct AlertView: View {
                         inventory: buyItem
                     )
                 }
+            } else {
+                if buyItem.userItemName == "다이아 → 골드" {
+                    updatedGold += totalPrice * (diamondToGold / 10)
+                } else {
+                    // 다이아 구매 아이템 부분을 구분
+                    let pattern = #"^(\d+)\s*다이아$"#
+                    let regex = try! NSRegularExpression(pattern: pattern)
+                    
+                    let text = buyItem.userItemName
+                    let range = NSRange(text.startIndex..<text.endIndex, in: text)
+                    
+                    if let match = regex.firstMatch(in: text, options: [], range: range),
+                       let numberRange = Range(match.range(at: 1), in: text) {
+                        let numberString = String(text[numberRange])
+                        if let number = Int(numberString) {
+                            updatedDiamond += number
+                        }
+                    }
+                }
             }
             
+            // 유저 재화 업데이트
             userViewModel.updateCurrency(userId: realUserId, gold: updatedGold, diamond: updatedDiamond)
             print("🛒 [구매완료] 처리 완료!")
             
@@ -250,14 +313,13 @@ struct AlertView: View {
             // 일부러 delay 1초를 줌.
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             
-            isProcessing = false
-            
             await MainActor.run {
-                isPresented = false
+                showPurchaseSuccessAlert = true
             }
         } catch {
             print("❌ 구매 처리 중 오류: \(error)")
         }
+        
         isProcessing = false
     }
     

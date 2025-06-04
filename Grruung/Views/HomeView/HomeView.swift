@@ -21,11 +21,14 @@ struct HomeView: View {
     @State private var isShowingChatPet = false
     @State private var isShowingSettings = false
     @State private var showEvolutionScreen = false // 진화 화면 표시 여부
-    
+    @State private var isShowingOnboarding = false
+
     // MARK: - Body
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
+                Spacer()
+                
                 // 레벨 프로그레스 바
                 levelProgressBar
                 
@@ -45,10 +48,11 @@ struct HomeView: View {
                 
                 // 캐릭터 상태 메시지
                 Text(viewModel.statusMessage)
-                    .font(.headline)
+                    .font(viewModel.character?.status.phase == .egg ? .system(.headline, design: .monospaced) : .headline)
+                    .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
                     .multilineTextAlignment(.center)
                     .padding(.vertical, 5)
-                    .foregroundColor(getMessageColor()) // 이것만 추가
+                    .foregroundColor(getMessageColor())
                 
                 Spacer()
                 
@@ -69,7 +73,8 @@ struct HomeView: View {
                     // .clipped() // 넘치는 부분 잘라내기
                     //.ignoresSafeArea(.all)
             )
-            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
+//            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
+            .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
             }
@@ -114,6 +119,10 @@ struct HomeView: View {
                     homeViewModel: viewModel
                 )
             }
+        }
+        // 온보딩 화면 시트
+        .sheet(isPresented: $isShowingOnboarding) {
+            OnboardingView()
         }
         // 부화 팝업 오버레이
         .overlay {
@@ -296,10 +305,14 @@ struct HomeView: View {
     // 액션 버튼 그리드
     private var actionButtonsGrid: some View {
         HStack(spacing: 15) {
-            // FIXME: ForEach에서 RandomAccessCollection 에러 해결
             ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
                 Button(action: {
-                    viewModel.performAction(at: index)
+                    if action.icon == "plus.circle" {
+                        // 캐릭터 생성 버튼인 경우 온보딩 화면으로 이동
+                        isShowingOnboarding = true
+                    } else {
+                        viewModel.performAction(at: index)
+                    }
                 }) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
@@ -311,20 +324,18 @@ struct HomeView: View {
                                 .foregroundColor(.gray)
                         } else {
                             VStack(spacing: 5) {
-                                // 자고 있을 때 재우기 버튼의 아이콘 변경
-                                
                                 Image(systemName: action.icon)
                                     .font(.system(size: 24))
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? .gray : .primary)
                                 
                                 Text(action.name)
                                     .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" ? .gray : .primary)
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? .gray : .primary)
                             }
                         }
                     }
                 }
-                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double"))
+                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
             }
         }
     }
@@ -351,20 +362,20 @@ struct HomeView: View {
                             .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black) // 회색에서 검은색으로 변경
                     }
                 }
             } else if systemName == "backpack.fill" {
                 NavigationLink(destination: UserInventoryView()) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .frame(width: 60, height: 60)
-                                .foregroundColor(Color.gray.opacity(0.6))
-                            Image(systemName: systemName)
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
-                        }
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .frame(width: 60, height: 60)
+                            .foregroundColor(Color.gray.opacity(0.2))
+                        Image(systemName: systemName)
+                            .font(.system(size: 24))
+                            .foregroundColor(.black) // 회색에서 검은색으로 변경
                     }
+                }
             } else if systemName == "mountain.2.fill" {
                 NavigationLink(destination: CharDexView()) {
                     ZStack {
@@ -373,7 +384,7 @@ struct HomeView: View {
                             .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black) // 회색에서 검은색으로 변경
                     }
                 }
             } else {
@@ -387,7 +398,7 @@ struct HomeView: View {
                         
                         Image(systemName: systemName)
                             .font(.system(size: 24))
-                            .foregroundColor(viewModel.isSleeping ? .black : .white)
+                            .foregroundColor(viewModel.isSleeping ? .gray : .black) // .primary에서 .black으로 변경
                     }
                 }
                 .disabled(viewModel.isSleeping)

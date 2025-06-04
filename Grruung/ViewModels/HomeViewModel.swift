@@ -200,6 +200,12 @@ class HomeViewModel: ObservableObject {
 
     // Firestore에서 메인 캐릭터를 로드
     private func loadMainCharacterFromFirebase() {
+        isLoadingFromFirebase = true
+        firebaseError = nil
+        
+        print("🔥 Firebase 연동 초기화 시작")
+        
+        // 메인 캐릭터 로드
         firebaseService.loadMainCharacter { [weak self] character, error in
             guard let self = self else { return }
             
@@ -209,9 +215,6 @@ class HomeViewModel: ObservableObject {
                 if let error = error {
                     self.firebaseError = "캐릭터 로드 실패: \(error.localizedDescription)"
                     print("❌ Firebase 캐릭터 로드 실패: \(error.localizedDescription)")
-                    
-                    // 오류 시 기본 캐릭터 생성
-                    self.createAndSaveDefaultCharacter()
                     return
                 }
                 
@@ -225,12 +228,60 @@ class HomeViewModel: ObservableObject {
                     
                     print("✅ Firebase에서 캐릭터 로드 완료: \(character.name)")
                 } else {
-                    // 캐릭터가 없으면 새로 생성
-                    print("📝 메인 캐릭터가 없습니다. 새로 생성합니다.")
-                    self.createAndSaveDefaultCharacter()
+                    // 캐릭터가 없는 경우는 처리하지 않음 (온보딩에서 생성하기 때문)
+                    print("📝 메인 캐릭터가 없습니다.")
+                    self.character = nil
+                    
+                    // 캐릭터가 없을 때 UI 업데이트
+                    self.updateEmptyCharacterUI()
                 }
             }
         }
+    }
+    
+    // 빈 캐릭터 UI 업데이트 메서드 추가
+    private func updateEmptyCharacterUI() {
+        // 빈 상태의 UI로 업데이트
+        level = 0
+        expValue = 0
+        expMaxValue = 0
+        expPercent = 0.0
+        
+        satietyValue = 0
+        staminaValue = 0
+        activityValue = 0
+        
+        satietyPercent = 0.0
+        staminaPercent = 0.0
+        activityPercent = 0.0
+        
+        // 스탯 바 비활성화
+        stats = [
+            ("fork.knife", Color.gray, Color.gray, 0.0),
+            ("figure.run", Color.gray, Color.gray, 0.0),
+            ("bolt.fill", Color.gray, Color.gray, 0.0)
+        ]
+        
+        // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
+        actionButtons = [
+            ("plus.circle", true, "캐릭터 생성"),
+            ("gamecontroller.fill", false, "놀아주기"),
+            ("shower.fill", false, "씻기기"),
+            ("bed.double", false, "재우기")
+        ]
+        
+        // 사이드 버튼 비활성화
+        sideButtons = [
+            ("backpack.fill", true, "인벤토리"),
+            ("cart.fill", true, "상점"),
+            ("mountain.2.fill", true, "동산"),
+            ("book.fill", false, "일기"),
+            ("microphone.fill", false, "채팅"),
+            ("gearshape.fill", true, "설정")
+        ]
+        
+        // 상태 메시지 업데이트
+        statusMessage = "아직 펫이 없어요. 새로운 친구를 만나보세요!"
     }
     
     // 기본 캐릭터를 생성하고 Firebase에 저장
@@ -286,6 +337,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // 기본 캐릭터를 생성하고 Firebase에 저장
+    /*
     private func createDefaultCharacter() {
         print("🆕 기본 캐릭터 생성 중...")
         
@@ -331,7 +383,7 @@ class HomeViewModel: ObservableObject {
                 }
             }
         }
-    }
+    }*/
     
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
@@ -871,6 +923,26 @@ class HomeViewModel: ObservableObject {
     
     // 캐릭터 상태에 따른 메시지를 업데이트
     private func updateStatusMessage() {
+        guard let character = character else {
+            statusMessage = "안녕하세요!"
+            return
+        }
+        
+        // 운석 상태인 경우 특별한 메시지 표시
+        if character.status.phase == .egg {
+            // 운석 상태일 때는 랜덤으로 다양한 미묘한 메시지 표시
+            let eggMessages = [
+                "*흔들흔들*",
+                "*따뜻해...*",
+                "*미세한 움직임*",
+                "*두근두근*",
+                "*콩닥콩닥*",
+                "*똑똑*"
+            ]
+            statusMessage = eggMessages.randomElement() ?? "..."
+            return
+        }
+        
         if isSleeping {
             statusMessage = "쿨쿨... 잠을 자고 있어요."
             return

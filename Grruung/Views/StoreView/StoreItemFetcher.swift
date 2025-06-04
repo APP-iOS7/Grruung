@@ -8,23 +8,29 @@
 import StoreKit
 
 class StoreItemFetcher: ObservableObject {
-    @Published var product: Product?
+    @Published var products: [Product]?
 
-    let productID = "com.smallearedcat.grruung.charDex_unlock_ticket"
+    let productIDs = [
+        "com.smallearedcat.grruung.charDex_unlock_ticket",
+        "com.smallearedcat.grruung.diamond_5",
+        "com.smallearedcat.grruung.diamond_12",
+        "com.smallearedcat.grruung.diamond_30",
+        "com.smallearedcat.grruung.diamond_65",
+        "com.smallearedcat.grruung.diamond_140",
+        "com.smallearedcat.grruung.diamond_300",
+    ]
 
     init() {
         Task {
-            await loadProduct()
+            await loadProducts()
         }
     }
 
-    func loadProduct() async {
+    func loadProducts() async {
         do {
-            let products = try await Product.products(for: [productID])
-            if let first = products.first {
-                await MainActor.run {
-                    self.product = first
-                }
+            let fetchedProducts = try await Product.products(for: productIDs)
+            await MainActor.run {
+                self.products = fetchedProducts
             }
         } catch {
             print("상품 로딩 실패: \(error)")
