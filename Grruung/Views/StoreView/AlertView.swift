@@ -43,9 +43,8 @@ struct AlertView: View {
                     .overlay(
                         Image(product.itemImage)
                             .resizable()
-                            .frame(width: 70, height: 70)
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.white)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
                     )
                 
                 // 제목

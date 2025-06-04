@@ -89,7 +89,7 @@ enum ItemCurrencyType: String, CaseIterable {
 let products = [
     GRStoreItem(itemName: "다이아 → 골드",
                itemType: .consumable,
-               itemImage: "DiamondToGold",
+               itemImage: "diamondToGold",
                itemQuantity: 1,
                limitedQuantity: 10,
                purchasedQuantity: 0,
@@ -574,7 +574,7 @@ let ticketProducts = [
                bgColor: .cyan.opacity(0.4)),
     GRStoreItem(itemName: "동산 잠금해제x1",
                itemType: .permanent,
-               itemImage: "ticket.fill",
+               itemImage: "charDex_unlock_ticket",
                itemQuantity: 1,
                limitedQuantity: 10,
                purchasedQuantity: 0,
