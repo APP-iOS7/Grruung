@@ -60,6 +60,11 @@ struct ScreenView: View {
             // 뷰가 사라질 때 애니메이션 정리
             cleanupControllers()
         }
+        .onChange(of: character?.status.evolutionStatus) { oldValue, newValue in
+            // 진화 상태가 변경되면 애니메이션 다시 설정
+            setupControllers()
+            startAppropriateAnimation()
+        }
         .onTapGesture {
             handleTap()
             // handleTapWithEffect() // 이펙트 탭

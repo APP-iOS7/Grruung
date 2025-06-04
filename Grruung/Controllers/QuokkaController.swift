@@ -202,6 +202,7 @@ class QuokkaController: ObservableObject {
     
     // MARK: - 정리 함수
     func cleanup() {
+        stopAnimation()
         isAnimating = false
         animationFrames.removeAll()
         currentFrame = nil
