@@ -1,11 +1,11 @@
 {
   "images" : [
     {
+      "filename" : "QUOKKA.jpg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "QUOKKA.jpg",
       "idiom" : "universal",
       "scale" : "2x"
     },

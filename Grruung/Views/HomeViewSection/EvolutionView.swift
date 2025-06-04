@@ -11,13 +11,15 @@ struct EvolutionView: View {
     // 전달받은 캐릭터 정보
     let character: GRCharacter
     
-    // 화면 닫기용
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     // 진화 상태 관리
     @State private var evolutionStep: EvolutionStep = .preparing
-    @State private var downloadProgress: Double = 0.0
     @State private var statusMessage: String = ""
+    
+    // 컨트롤러 연결
+    @StateObject private var quokkaController = QuokkaController()
     
     // 진화 단계 열거형
     enum EvolutionStep {
@@ -45,8 +47,8 @@ struct EvolutionView: View {
                 // 진행률 표시 영역
                 progressSection
                 
-                // 상태 메시지
-                Text(statusMessage)
+                // 상태 메시지 (QuokkaController 메시지 우선 사용)
+                Text(quokkaController.downloadMessage.isEmpty ? statusMessage : quokkaController.downloadMessage)
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -60,6 +62,7 @@ struct EvolutionView: View {
             .padding()
             .onAppear {
                 setupInitialState()
+                quokkaController.setModelContext(modelContext) // SwiftData 컨텍스트 설정
             }
             .navigationTitle("진화")
             .navigationBarTitleDisplayMode(.inline)
@@ -76,17 +79,26 @@ struct EvolutionView: View {
                 .fill(Color.gray.opacity(0.1))
                 .frame(width: 200, height: 200)
             
-            // 캐릭터 이미지 (일단 임시 이미지)
-            if evolutionStep == .completed {
-                // 완료되면 부화된 캐릭터 표시 (다음 단계에서 구현)
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.red)
+            // 캐릭터 이미지
+            // QuokkaController에서 현재 프레임 가져오기
+            if let currentFrame = quokkaController.currentFrame {
+                Image(uiImage: currentFrame)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
             } else {
-                // 진행 중에는 알 이미지 표시
-                Image(systemName: "oval.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(.brown)
+                // 기본 이미지 (프레임이 없을 때)
+                if evolutionStep == .completed {
+                    // 완료됐을 때 기본 이미지
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.red)
+                } else {
+                    // 진행 중에는 알 이미지 표시
+                    Image(systemName: "oval.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.brown)
+                }
             }
         }
     }
@@ -94,14 +106,14 @@ struct EvolutionView: View {
     private var progressSection: some View {
         VStack(spacing: 15) {
             if evolutionStep == .downloading || evolutionStep == .hatching {
-                // 진행률 바
-                ProgressView(value: downloadProgress)
+                // 진행률 바 (QuokkaController에서 진행률 가져오기)
+                ProgressView(value: quokkaController.downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
                     .frame(height: 10)
                     .scaleEffect(x: 1, y: 2, anchor: .center)
                 
                 // 퍼센트 표시
-                Text("\(Int(downloadProgress * 100))%")
+                Text("\(Int(quokkaController.downloadProgress * 100))%")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.blue)
@@ -172,31 +184,20 @@ struct EvolutionView: View {
         
         // 1단계: 다운로드 시작
         evolutionStep = .downloading
-        statusMessage = "부화에 필요한 데이터를 받아오는 중..."
+        statusMessage = "부화 시작!"
         
-        // 임시로 진행률 시뮬레이션 (다음 단계에서 실제 다운로드로 교체)
-        simulateProgress()
-    }
-    
-    // 임시 진행률 시뮬레이션 (다음 단계에서 실제 다운로드로 교체)
-    private func simulateProgress() {
-        downloadProgress = 0.0
-        
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            downloadProgress += 0.02
+        // 2단계: 다운로드 실행
+        Task {
+            await quokkaController.downloadInfantData()
             
-            if downloadProgress >= 0.5 && evolutionStep == .downloading {
-                evolutionStep = .hatching
-                statusMessage = "곧 부화가 완료됩니다..."
-            }
-            
-            if downloadProgress >= 1.0 {
-                timer.invalidate()
+            // 다운로드 완료 후 처리
+            await MainActor.run {
                 evolutionStep = .completed
-                statusMessage = "부화가 완료되었습니다! 귀여운 쿼카가 태어났어요!"
+                statusMessage = "부화 완료!"
             }
         }
     }
+    
 }
 
 // MARK: - 프리뷰
