@@ -25,6 +25,9 @@ class QuokkaController: ObservableObject {
     
     // MARK: - 비공개 프로퍼티들
     private var animationFrames: [UIImage] = []         // 로드된 애니메이션 프레임들
+    private var animationTimer: Timer?                  // 애니메이션 타이머
+    private var isReversing: Bool = false               // 역순 재생 중인지
+    
     private let storage = Storage.storage()             // Firebase Storage
     private var modelContext: ModelContext?             // SwiftData 컨텍스트
     private let frameRate: Double = 24.0                // 초당 프레임 수
@@ -114,6 +117,50 @@ class QuokkaController: ObservableObject {
         }
         
         return image
+    }
+    
+    // 전체 애니메이션 프레임 로드 (노멀 상태)
+    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String = "normal") {
+        guard let context = modelContext else {
+            print("❌ SwiftData 컨텍스트가 없음")
+            return
+        }
+        
+        let phaseString = phase.toEnglishString()
+        
+        // 모든 프레임 조회 (frameIndex로 정렬)
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == "quokka" &&
+                metadata.phase == phaseString &&
+                metadata.animationType == animationType
+            },
+            sortBy: [SortDescriptor(\.frameIndex)]
+        )
+        
+        do {
+            let metadataList = try context.fetch(descriptor)
+            print("📥 \(metadataList.count)개 프레임 메타데이터 발견")
+            
+            // 프레임들을 순서대로 로드
+            var loadedFrames: [UIImage] = []
+            for metadata in metadataList {
+                if let image = loadImageFromPath(metadata.filePath) {
+                    loadedFrames.append(image)
+                }
+            }
+            
+            animationFrames = loadedFrames
+            
+            if !animationFrames.isEmpty {
+                currentFrame = animationFrames[0]
+                currentFrameIndex = 0
+                print("✅ \(animationFrames.count)개 애니메이션 프레임 로드 완료")
+            }
+            
+        } catch {
+            print("❌ 애니메이션 프레임 로드 실패: \(error)")
+        }
     }
     
     // MARK: - 다운로드 상태 확인
@@ -328,6 +375,82 @@ extension QuokkaController {
         isDownloading = false
         
         print("🎉 진화 완료 - Infant 단계로 전환")
+    }
+    
+    
+    // MARK: - 애니메이션 재생
+    // 핑퐁 애니메이션 시작
+    func startPingPongAnimation() {
+        guard !animationFrames.isEmpty, !isAnimating else {
+            print("❌ 애니메이션 시작 불가: 프레임(\(animationFrames.count)), 재생중(\(isAnimating))")
+            return
+        }
+        
+        isAnimating = true
+        isReversing = false
+        currentFrameIndex = 0
+        
+        print("🎬 핑퐁 애니메이션 시작 - \(animationFrames.count)개 프레임")
+        
+        // 타이머 시작 (24fps = 약 0.042초 간격)
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
+            self?.updatePingPongFrame()
+        }
+    }
+    
+    // 핑퐁 애니메이션 정지
+    func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        isAnimating = false
+        isReversing = false
+        
+        print("⏹️ 애니메이션 정지")
+    }
+    
+    // 핑퐁 프레임 업데이트
+    private func updatePingPongFrame() {
+        guard !animationFrames.isEmpty else { return }
+        
+        // 현재 프레임 이미지 업데이트
+        currentFrame = animationFrames[currentFrameIndex]
+        
+        // 다음 프레임 인덱스 계산
+        if isReversing {
+            // 역순 재생 중 (122 → 1)
+            currentFrameIndex -= 1
+            
+            // 첫 번째 프레임에 도달하면 정순으로 전환
+            if currentFrameIndex <= 0 {
+                currentFrameIndex = 0
+                isReversing = false
+                print("🔄 정순 재생으로 전환")
+            }
+        } else {
+            // 정순 재생 중 (1 → 122)
+            currentFrameIndex += 1
+            
+            // 마지막 프레임에 도달하면 역순으로 전환
+            if currentFrameIndex >= animationFrames.count - 1 {
+                currentFrameIndex = animationFrames.count - 1
+                isReversing = true
+                print("🔄 역순 재생으로 전환")
+            }
+        }
+        
+        // 디버깅용 로그 (매 30프레임마다)
+        if currentFrameIndex % 30 == 0 {
+            print("🎬 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
+        }
+    }
+    
+    // 애니메이션 토글 (재생/정지)
+    func toggleAnimation() {
+        if isAnimating {
+            stopAnimation()
+        } else {
+            startPingPongAnimation()
+        }
     }
 }
 
