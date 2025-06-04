@@ -31,8 +31,45 @@ struct GRColorInfo: Identifiable, Hashable {
 // .tint(GRColor.pointColor)
 
 struct GRColor {
-    // 색상 테마1 (예시)
-    static let mainColor = Color(hex: "055A7F")
+    // 메인 색상 테마
+    // _1: 연한색
+    // _2: 진한색
+    static let mainColor1_1 = Color(hex: "FFF6EE")
+    static let mainColor1_2 = Color(hex: "FEE3CF")
+    
+    static let mainColor2_1 = Color(hex: "FEF9EA")
+    static let mainColor2_2 = Color(hex: "FEEFC6")
+    
+    static let mainColor3_1 = Color(hex: "FFF5D2")
+    static let mainColor3_2 = Color(hex: "FFE38B")
+    
+    static let mainColor4_1 = Color(hex: "F2D79F")
+    static let mainColor4_2 = Color(hex: "EFC56F")
+    
+    static let mainColor5_1 = Color(hex: "FFF7E8")
+    static let mainColor5_2 = Color(hex: "FCDFB3")
+    
+    static let mainColor6_1 = Color(hex: "F3BFA3")
+    static let mainColor6_2 = Color(hex: "D87F4E")
+    
+    static let mainColor7_1 = Color(hex: "FFEBB7")
+    static let mainColor7_2 = Color(hex: "FFE28A")
+    
+    static let mainColor8_1 = Color(hex: "EEDAB6")
+    static let mainColor8_2 = Color(hex: "D8A250")
+    
+    static let mainColor9_1 = Color(hex: "EFDFC4")
+    static let mainColor9_2 = Color(hex: "D2BD98")
+    
+    static let mainColor10_1 = Color(hex: "F1CD91")
+    static let mainColor10_2 = Color(hex: "D8A14D")
+    
+    // 버튼 색상
+    // _1: 연한색
+    // _2: 진한색
+    static let buttonColor_1 = Color(hex: "FFB778")
+    static let buttonColor_2 = Color(hex: "FFA04D")
+    
     static let subColorOne = Color(hex: "B1926F")
     static let subColorTwo = Color(hex: "BAA78E")
     static let pointColor = Color(hex: "0C96D1")
