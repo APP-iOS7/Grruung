@@ -17,15 +17,16 @@ enum ViewMode {
 struct WriteStoryView: View {
     
     @StateObject private var viewModel = WriteStoryViewModel()
+    @StateObject private var writingCountVM = WritingCountViewModel()
+    @EnvironmentObject private var authService: AuthService
+    
     @Environment(\.dismiss) var dismiss
     
     var currentMode: ViewMode
     var characterUUID: String
     var postID: String?
     
-    
     @State private var currentPost: GRPost? = nil
-    
     @State private var postBody: String = ""
     @State private var postTitle: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
@@ -43,6 +44,9 @@ struct WriteStoryView: View {
     private var currentDateString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy년 MM월 dd일"
+        if currentMode == .edit || currentMode == .read {
+            return formatter.string(from: currentPost?.createdAt ?? Date())
+        }
         return formatter.string(from: Date())
     }
     
@@ -64,6 +68,12 @@ struct WriteStoryView: View {
         case .edit, .create:
             return "저장"
         }
+    }
+    
+    init(currentMode: ViewMode, characterUUID: String, postID: String? = nil) {
+        self.currentMode = currentMode
+        self.characterUUID = characterUUID
+        self.postID = postID
     }
     
     var body: some View {
@@ -206,12 +216,19 @@ struct WriteStoryView: View {
                             print("우측 상단 button tapped!")
                             
                             if currentMode == .create {
-                                let _ =  try await viewModel.createPost(
-                                    characterUUID: characterUUID,
-                                    postTitle: postTitle,
-                                    postBody: postBody,
-                                    imageData: selectedImageData
-                                )
+                                // 글쓰기 횟수 확인 후 처리
+                                if writingCountVM.tryToWrite() {
+                                    let _ =  try await viewModel.createPost(
+                                        characterUUID: characterUUID,
+                                        postTitle: postTitle,
+                                        postBody: postBody,
+                                        imageData: selectedImageData
+                                    )
+                                    dismiss()
+                                } else {
+                                    print("글쓰기 횟수가 부족합니다")
+                                    
+                                }
                             } else if currentMode == .edit {
                                 try await viewModel.editPost(
                                     postID: currentPost?.postID ?? "",
@@ -239,6 +256,7 @@ struct WriteStoryView: View {
         .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onAppear {
             setupViewforCurrentMode()
+            writingCountVM.initialize(with: authService)
         }
     }
     
@@ -328,22 +346,22 @@ struct WriteStoryView: View {
 } // end of WriteStoryView
 
 
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-    }
-}
-
-
-#Preview {
-    NavigationStack {
-        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "vlW4ySOc0E7frCnpNniZ")
-    }
-}
-
 //#Preview {
 //    NavigationStack {
-//        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "eW0tG0WuoZ1mr7Ft4Mec")
+//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+//    }
+//}
+//
+//
+//#Preview {
+//    NavigationStack {
+//        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
 //    }
 //}
 
+#Preview {
+    NavigationStack {
+        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")//, userID: "uCMGt4DjgiPPpyd2p9Di")
+            .environmentObject(AuthService())
+    }
+}

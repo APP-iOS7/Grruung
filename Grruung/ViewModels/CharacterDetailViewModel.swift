@@ -16,6 +16,8 @@ class CharacterDetailViewModel: ObservableObject {
     @Published var characterStatus: GRCharacterStatus = GRCharacterStatus()
     @Published var user: GRUser
     @Published var posts: [GRPost] = []
+    @Published var growthStages: [GrowthStage] = []
+    private let storageService = GrowthStageService()
     
     // 로딩 상태 추적을 위한 플래그
     @Published var isLoading  = false
@@ -30,6 +32,7 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage() // Firebase Storage (이미지 업로드용)
     
     init(characterUUID: String = "") {
+//        storageService.clearImageCache()
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
@@ -55,6 +58,29 @@ class CharacterDetailViewModel: ObservableObject {
             self.loadPost(characterUUID: characterUUID, searchDate: Date())
             self.loadUser(characterUUID: characterUUID)
         }
+        
+     
+    }
+    
+    func loadGrowthStages() {
+        Task {
+            // 종에 따라 폴더명 결정
+            let folderName: String
+            switch character.species {
+            case .CatLion:
+                folderName = "catlion_growth_stages"
+            case .quokka:
+                folderName = "quokka_growth_stages"
+            default:
+                folderName = "growth_stages"
+            }
+            
+            // 간단하게 폴더명만 전달
+            let stages = await storageService.fetchGrowthStageImages(folderName: folderName)
+            await MainActor.run {
+                self.growthStages = stages
+            }
+        }
     }
     
     func loadCharacter(characterUUID: String) {
@@ -76,16 +102,41 @@ class CharacterDetailViewModel: ObservableObject {
             let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             
-            // 데이터 파싱 및 GRCharacterStatus 생성
-            let level = data["level"] as? Int ?? 1
-            let exp = data["exp"] as? Int ?? 0
-            let expToNextLevel = data["expToNextLevel"] as? Int ?? 100
-            let phase = CharacterPhase(rawValue: data["phase"] as? String ?? "") ?? .egg
-            let address = data["address"] as? String ?? "동산"
+            // status 맵에서 캐릭터 상태 정보 가져오기
+            var level = 1
+            var exp = 0
+            var expToNextLevel = 100
+            var phase: CharacterPhase = .egg
+            var address = "동산"
             
-            let status = GRCharacterStatus() // 기본 상태로 초기화
+            if let statusMap = data["status"] as? [String: Any] {
+                level = statusMap["level"] as? Int ?? 1
+                exp = statusMap["exp"] as? Int ?? 0
+                expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
+                phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
+                address = statusMap["address"] as? String ?? "동산"
+                
+                print("status 맵에서 가져온 phase 값: \(statusMap["phase"] as? String ?? "값 없음")")
+            }
+            
+            print("변환된 phase 값: \(phase)")
+            
+            let status = GRCharacterStatus(
+                level: level,
+                exp: exp,
+                expToNextLevel: expToNextLevel,
+                phase: phase,
+                address: address
+            ) // 기본 상태로 초기화
             
             DispatchQueue.main.async {
+                self.characterStatus = GRCharacterStatus(
+                    level: level,
+                    exp: exp,
+                    expToNextLevel: expToNextLevel,
+                    phase: phase,
+                    address: address
+                )
                 self.character = GRCharacter(
                     id: characterUUID,
                     species: species,
@@ -96,14 +147,12 @@ class CharacterDetailViewModel: ObservableObject {
                     status: status
                 )
                 
-                self.characterStatus = GRCharacterStatus(
-                    level: level,
-                    exp: exp,
-                    expToNextLevel: expToNextLevel,
-                    phase: phase,
-                    address: address
-                )
+                self.loadGrowthStages()
             }
+            
+            // 캐릭터 정보 로드 후 성장 단계 이미지 로드
+            print("Firebase에서 가져온 phase 값: \(data["phase"] as? String ?? "값 없음")")
+            print("변환된 phase 값: \(phase)")
             // 로딩 완료 후 플래그 해제
             self.isLoadingCharacter = false
             self.checkLoadingComplete()

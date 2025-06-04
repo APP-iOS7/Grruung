@@ -26,15 +26,19 @@ class GRAnimationMetadata {
     // 관리 정보
     var isDownloaded: Bool          // 다운로드 완료 여부
     
-    init(characterType: String, animationType: String, frameIndex: Int, filePath: String, fileSize: Int = 0) {
+    // 성장 단계
+    var phase: String
+    
+    init(characterType: String, phase: CharacterPhase = .egg, animationType: String, frameIndex: Int, filePath: String, fileSize: Int = 0, isDownloaded: Bool = true) {
         self.characterType = characterType
+        self.phase = phase.rawValue
         self.animationType = animationType
         self.frameIndex = frameIndex
         self.filePath = filePath
         self.fileSize = fileSize
         self.downloadDate = Date()
         self.lastAccessed = Date()
-        self.isDownloaded = true
+        self.isDownloaded = isDownloaded
     }
 }
 

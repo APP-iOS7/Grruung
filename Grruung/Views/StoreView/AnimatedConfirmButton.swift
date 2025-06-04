@@ -9,70 +9,38 @@ import SwiftUI
 
 struct AnimatedConfirmButton: View {
     var onConfirm: () -> Void
-    
-    @State private var tap = false
-    @State private var press = false
-    @State private var alterState = false
+    @State private var isPressed = false
     
     var body: some View {
-        ZStack {
-            Circle()
-                .stroke(lineWidth: alterState ? 20 : 0)
-                .frame(width: alterState ? 500 : 0, height: alterState ? 500 : 0)
-                .foregroundColor(Color.green)
-                .blur(radius: alterState ? 5 : 20)
-                .opacity(alterState ? 0 : 1)
-            
+        Button(action: {
+            // 즉시 실행
+            onConfirm()
+        }) {
             Text("Yes")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundColor(alterState ? .clear : (tap ? Color.blue : .white))
-                .frame(width: 130, height: alterState ? 130 : 50)
+                .foregroundColor(.white)
+                .frame(width: 130, height: 50)
                 .background(
-                    ZStack {
-                        Color.blue.opacity(0.7)
-                        RoundedRectangle(cornerRadius: alterState ? 100 : 16)
-                            .foregroundColor(.white)
-                            .blur(radius: 2)
-                            .offset(x: -2, y: -2)
-                        RoundedRectangle(cornerRadius: alterState ? 100 : 16)
-                            .fill(
-                                LinearGradient(
-                                    colors: alterState ? [.cyan, .green] : [.blue.opacity(0.6), .blue],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .padding(2)
-                            .blur(radius: 2)
-                            .offset(x: 2, y: 2)
-                    }
+                    LinearGradient(
+                        colors: [.blue.opacity(0.6), .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: alterState ? 100 : 16))
-                .scaleEffect(alterState ? 0 : (tap ? 0.92 : 1))
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in
-                            if press { press = false }
-                            tap = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                if tap {
-                                    press = true
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        alterState = true
-                                        onConfirm()
-                                    }
-                                }
-                            }
-                        }
-                        .onEnded { _ in
-                            if press == false {
-                                tap = false
-                            }
-                        }
-                )
-                .opacity(alterState ? 0 : 1)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .scaleEffect(isPressed ? 0.92 : 1.0)
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.5), value: alterState)
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(
+            minimumDuration: 0,
+            maximumDistance: .infinity,
+            pressing: { pressing in
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isPressed = pressing
+                }
+            },
+            perform: {}
+        )
     }
 }
 

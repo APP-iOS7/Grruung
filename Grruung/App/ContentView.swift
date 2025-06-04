@@ -9,74 +9,68 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
+    @State private var showOnboarding = false
+    @State private var isFirstLogin = false
     
     var body: some View {
         Group {
             if authService.authenticationState == .authenticated {
-                // 로그인된 상태 = 홈 화면 표시
-                MainTabView()
+                if isFirstLogin {
+                    // 첫 로그인 시 온보딩 화면 표시
+                    OnboardingView()
+                } else {
+                    // 로그인된 상태 = 홈 화면 표시
+                    MainTabView()
+                }
             } else {
                 // 비로그인 상태 = 로그인 화면 표시
                 LoginView()
             }
         }
         .onAppear {
-            // 앱 시작 시 자동으로 로그인 상태 확인
-            authService.checkAuthState()
-            
-            // TODO: 이미 로그인된 상태라면 캐릭터 정보 로드
+            Task {
+                // 앱 시작 시 자동으로 로그인 상태 확인
+                authService.checkAuthState()
+                
+                // UID가 세팅됐다고 가정하고 사용
+                if authService.currentUserUID != "" {
+                    await characterDexViewModel.initialize(userId: authService.currentUserUID)
+                } else {
+                    print("❌ 로그인된 사용자 없음, 동산뷰 초기화 안 됨")
+                }
+            }
         }
         .onChange(of: authService.authenticationState) { oldState, newState in
             if oldState == .unauthenticated && newState == .authenticated {
                 // 로그인 성공 시
                 if let userId = authService.user?.uid {
                     print("로그인 \(Bool(!userId.isEmpty) ? "성공" : "실패")")
-                    // TODO: 사용자 정보 로드
-                    // TODO: 캐릭터 정보 로드
+                    // 첫 로그인인지 확인
+                    checkIfFirstLogin(userId: userId)
                 }
             } else if oldState == .authenticated && newState == .unauthenticated {
                 // 로그아웃 시
-                // TODO: 사용자정보 리셋
+                isFirstLogin = false
             }
         }
     }
-}
-
-// 메인 탭 뷰 (HomeView를 대체)
-struct MainTabView: View {
-    // @State private var selectedTab: Tab = .home
-    @State private var selectedTab = 0
     
-    // 탭 아이템 정의
-//    enum Tab {
-//        case home, test, character, shop, myPage
-//    }
-    
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            // 홈 탭
-            Tab("홈", systemImage: "house.fill", value: 0) {
-                HomeView()
-            }
-            
-            // 테스트 탭
-            Tab("테스트", systemImage: "house.fill", value: 1) {
-                HomeTestView()
-            }
-            
-            // 캐릭터 도감 탭
-            Tab("캐릭터", systemImage: "teddybear.fill", value: 2) {
-                CharDexView()
-            }
-            
-            // 상점 탭
-            Tab("상점", systemImage: "cart.fill", value: 3) {
-                StoreView()
-            }
-            
-            // 마이페이지 탭
-            Tab("마이페이지", systemImage: "person.circle.fill", value: 4) {
-                SettingView()
+    // 첫 로그인인지 확인하는 함수
+    private func checkIfFirstLogin(userId: String) {
+        FirebaseService.shared.findCharactersByAddress(address: "userHome") { characters, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ 캐릭터 조회 실패: \(error.localizedDescription)")
+                    return
+                }
+                
+                // 캐릭터가 없으면 첫 로그인으로 판단
+                if let characters = characters, characters.isEmpty {
+                    isFirstLogin = true
+                } else {
+                    isFirstLogin = false
+                }
             }
         }
     }
