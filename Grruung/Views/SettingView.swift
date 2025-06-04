@@ -13,7 +13,7 @@ struct SettingView: View {
     var body: some View {
         NavigationStack {
             List {
-                NavigationLink(destination: AnimationTestView()) {
+                NavigationLink(destination: SwiftDataTestView()) {
                     Text("고지용 테스트 뷰")
                         .foregroundStyle(.blue)
                 }
