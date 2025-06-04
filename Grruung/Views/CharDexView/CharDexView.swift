@@ -45,6 +45,12 @@ struct CharDexView: View {
         GridItem(.flexible(), spacing: 16)
     ]
     
+    // 임시 데이터(테스트 용)
+    @State private var garaCharacters: [GRCharacter] = [
+        GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
+                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome"))
+    ].filter { !($0.status.address == "space") }
+    
     // 캐릭터 데이터
     @State private var realCharacters: [GRCharacter] = []
         .filter { !($0.status.address == "space") }
@@ -513,7 +519,7 @@ struct CharDexView: View {
             print("[CharDexView] 총 \(allCharacters.count)개 캐릭터 로드 완료 (Home: \(userHome.count), Paradise: \(paradise.count))")
             
             await MainActor.run {
-                self.garaCharacters = allCharacters.filter { !($0.status.address == "space") }
+                self.realCharacters = allCharacters.filter { !($0.status.address == "space") }
                 self.isLoading = false
             }
         } catch {
