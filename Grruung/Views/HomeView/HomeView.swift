@@ -257,6 +257,60 @@ struct HomeView: View {
                 character: viewModel.character,
                 isSleeping: viewModel.isSleeping
             )
+            ZStack {
+                if let character = viewModel.character {
+                    // 조건부 로직을 직접 Image 생성에 적용
+                    Group {
+                        if character.status.phase == .egg {
+                            // 운석 단계일 경우 이미지 사용
+                            Image("egg")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 200)
+                        } else {
+                            // 그 외 단계에서는 species에 따라 이미지 결정
+                            if character.species == .quokka {
+                                Image("quokka")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 200)
+                            } else {
+                                Image("CatLion")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: 200)
+                            }
+                        }
+                    }
+                    .scaleEffect(viewModel.isSleeping ? 0.95 : 1.0)
+                    .animation(
+                        viewModel.isSleeping ?
+                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
+                                .default,
+                        value: viewModel.isSleeping
+                    )
+                } else {
+                    // 캐릭터가 없는 경우 플러스 아이콘 표시
+                    Button(action: {
+                        isShowingOnboarding = true
+                    }) {
+                        Image(systemName: "plus.circle")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 100)
+                            .foregroundColor(.gray)
+                    }
+                }
+                
+                // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
+                if viewModel.isSleeping, viewModel.character != nil {
+                    VStack {
+                        Text("💤")
+                            .font(.largeTitle)
+                            .offset(x: 50, y: -50)
+                    }
+                }
+            }
             
             Spacer()
             

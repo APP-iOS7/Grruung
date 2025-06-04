@@ -160,6 +160,22 @@ class HomeViewModel: ObservableObject {
         setupFirebaseIntegration()
         setupAppStateObservers()
         startStatDecreaseTimers()
+        
+        // 캐릭터 주소 변경 이벤트 구독
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCharacterAddressChanged(_:)),
+            name: NSNotification.Name("CharacterAddressChanged"),
+            object: nil
+        )
+        
+        // 캐릭터 이름 변경 이벤트 구독
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCharacterNameChanged(_:)),
+            name: NSNotification.Name("CharacterNameChanged"),
+            object: nil
+        )
 #if DEBUG
         print("🚀 HomeViewModel 초기화 완료")
         print("🚀 디버그 모드 활성화!")
@@ -181,6 +197,7 @@ class HomeViewModel: ObservableObject {
         // 메인 캐릭터 로드
         loadMainCharacterFromFirebase()
     }
+    
     private func setupAppStateObservers() {
         NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
             .sink { [weak self] _ in
@@ -193,8 +210,33 @@ class HomeViewModel: ObservableObject {
                 self?.handleAppDidBecomeActive()
             }
             .store(in: &cancellables)
+        
+        // 캐릭터 위치 변경 이벤트 구독 개선
+        NotificationCenter.default.publisher(for: NSNotification.Name("CharacterAddressChanged"))
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                guard let characterUUID = notification.userInfo?["characterUUID"] as? String,
+                      let addressRaw = notification.userInfo?["address"] as? String else {
+                    return
+                }
+                
+                // 현재 보고 있는 캐릭터가 변경된 캐릭터와 같은지 확인
+                if let character = self.character, character.id == characterUUID {
+                    // 주소가 userHome이 아니거나 space인 경우 새 메인 캐릭터 로드
+                    if addressRaw != "userHome" || addressRaw == "space" {
+                        DispatchQueue.main.async {
+                            self.loadMainCharacterFromFirebase()
+                        }
+                    }
+                } else {
+                    // 다른 캐릭터가 메인으로 설정된 경우를 대비해 메인 캐릭터 다시 로드
+                    DispatchQueue.main.async {
+                        self.loadMainCharacterFromFirebase()
+                    }
+                }
+            }
+            .store(in: &cancellables)
     }
-    
     
     // MARK: - Firebase Integration
 
@@ -1547,5 +1589,34 @@ class HomeViewModel: ObservableObject {
         print("🧹 모든 리소스 정리 완료")
     }
     
-    
+    @objc private func handleCharacterAddressChanged(_ notification: Notification) {
+        guard let characterUUID = notification.userInfo?["characterUUID"] as? String,
+              let addressRaw = notification.userInfo?["address"] as? String else {
+            return
+        }
+        
+        // 현재 보고 있는 캐릭터가 변경된 캐릭터와 같은지 확인
+        if let character = self.character, character.id == characterUUID {
+            // 주소가 userHome이 아니거나 space인 경우 새 메인 캐릭터 로드
+            if addressRaw != "userHome" || addressRaw == "space" {
+                loadMainCharacterFromFirebase()
+            }
+        } else {
+            // 다른 캐릭터가 메인으로 설정된 경우를 대비해 메인 캐릭터 다시 로드
+            loadMainCharacterFromFirebase()
+        }
+    }
+
+    @objc private func handleCharacterNameChanged(_ notification: Notification) {
+        guard let characterUUID = notification.userInfo?["characterUUID"] as? String,
+              let newName = notification.userInfo?["name"] as? String else {
+            return
+        }
+        
+        // 현재 보고 있는 캐릭터가 변경된 캐릭터와 같은지 확인
+        if var character = self.character, character.id == characterUUID {
+            character.name = newName
+            self.character = character
+        }
+    }
 }

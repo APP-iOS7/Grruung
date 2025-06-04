@@ -158,8 +158,32 @@ class FirebaseService: ObservableObject {
             return
         }
         
-        db.collection("users").document(userID).collection("characters").document(id).delete { error in
-            completion(error)
+        // 먼저 캐릭터가 메인인지 확인
+        getMainCharacterID { [weak self] mainCharacterID, error in
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            // 캐릭터 삭제
+            self?.db.collection("users").document(userID).collection("characters").document(id).delete { error in
+                if let error = error {
+                    completion(error)
+                    return
+                }
+                
+                // 삭제된 캐릭터가 메인이었다면 메인 캐릭터 초기화
+                if mainCharacterID == id {
+                    self?.db.collection("users").document(userID).updateData([
+                        "chosenCharacterUUID": "",
+                        "lastUpdatedAt": Timestamp(date: Date())
+                    ]) { error in
+                        completion(error)
+                    }
+                } else {
+                    completion(nil)
+                }
+            }
         }
     }
     
