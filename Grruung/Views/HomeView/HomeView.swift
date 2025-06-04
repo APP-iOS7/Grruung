@@ -192,11 +192,15 @@ struct HomeView: View {
                     )
                 } else {
                     // 캐릭터가 없는 경우 플러스 아이콘 표시
-                    Image(systemName: "plus.circle")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(height: 100)
-                        .foregroundColor(.gray)
+                    Button(action: {
+                        isShowingOnboarding = true
+                    }) {
+                        Image(systemName: "plus.circle")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 100)
+                            .foregroundColor(.gray)
+                    }
                 }
                 
                 // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
