@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct CheonTestView: View {
+struct MyPageView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -15,8 +15,8 @@ struct CheonTestView: View {
                     // 사용자 정보
                     ProfileSection()
                     
-                    // 추천 섹션
-                    RecommendedGrid()
+                    // 서비스 섹션
+                    SeviceGrid()
                     
                     // 설정 섹션
                     SettingsSection()
@@ -56,14 +56,14 @@ struct ProfileSection: View {
 
 // MARK: - 서비스 섹션
 
-struct RecommendedItem: Identifiable {
+struct SeviceItem: Identifiable {
     let id = UUID()
     let title: String
     let iconName: String
 }
 
-struct RecommendedGrid: View {
-    let items: [RecommendedItem] = [
+struct SeviceGrid: View {
+    let items: [SeviceItem] = [
         .init(title: "상점", iconName: "storefront.fill"),
         .init(title: "애완동물", iconName: "pawprint.fill"),
         .init(title: "동산", iconName: "leaf.fill"),
@@ -83,7 +83,7 @@ struct RecommendedGrid: View {
             LazyVGrid(columns: columns, spacing: 15) {
                 ForEach(items) { item in
                     NavigationLink {
-                        recommendedDestination(for: item)
+                        SeviceDestination(for: item)
                     } label: {
                         VStack {
                             Image(systemName: item.iconName)
@@ -100,19 +100,24 @@ struct RecommendedGrid: View {
                     }
                 }
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
-    
     }
 }
 // MARK: - 액션 처리 메서드
 
 @ViewBuilder
-private func recommendedDestination(for item: RecommendedItem) -> some View {
+private func SeviceDestination(for item: SeviceItem) -> some View {
     switch item.title {
     case "상점":
         StoreView()
     case "애완동물":
         HomeView()
+    case "동산":
+        CharDexView()
     default:
         Text("준비 중")
     }
@@ -176,7 +181,7 @@ struct SettingsSection: View {
 private func settingsDestination(for item: SettingsItem) -> some View {
     switch item.title {
     case "알림":
-        Text("알림 설정 화면")
+        MyPageAlarmView()
     case "인증 관리":
         Text("인증 관리 화면")
     case "질문&피드백":
@@ -193,5 +198,5 @@ private func settingsDestination(for item: SettingsItem) -> some View {
 // MARK: - Preview
 
 #Preview {
-    CheonTestView()
+    MyPageView()
 }

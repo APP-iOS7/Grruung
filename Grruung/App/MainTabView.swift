@@ -56,7 +56,7 @@ struct MainTabView: View {
                 .tag(2)
             
             // 마이페이지 탭
-            CheonTestView()
+            MyPageView()
                 .tabItem {
                     Label(TabItem.myPage.rawValue, systemImage: TabItem.myPage.icon)
                 }
