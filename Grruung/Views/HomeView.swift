@@ -109,7 +109,10 @@ struct HomeView: View {
         // 진화 화면 시트
         .sheet(isPresented: $showEvolutionScreen) {
             if let character = viewModel.character {
-                EvolutionView(character: character)
+                EvolutionView(
+                    character: character,
+                    homeViewModel: viewModel
+                )
             }
         }
         // 부화 팝업 오버레이
@@ -139,7 +142,9 @@ struct HomeView: View {
             HStack {
                 Image(systemName: "sparkles")
                     .font(.system(size: 16))
-                Text("부화 진행")
+                
+                // 진화 상태에 따라 버튼 텍스트 변경
+                Text(getEvolutionButtonText())
                     .font(.body)
                     .fontWeight(.medium)
             }
@@ -154,6 +159,26 @@ struct HomeView: View {
                 )
             )
             .cornerRadius(20)
+        }
+    }
+    
+    // 진화 상태에 따른 버튼 텍스트 반환
+    private func getEvolutionButtonText() -> String {
+        guard let character = viewModel.character else { return "부화 진행" }
+        
+        switch character.status.evolutionStatus {
+        case .toInfant:
+            return "부화 진행"
+        case .toChild:
+            return "소아기 진화"
+        case .toAdolescent:
+            return "청년기 진화"
+        case .toAdult:
+            return "성년기 진화"
+        case .toElder:
+            return "노년기 진화"
+        default:
+            return "진화 진행"
         }
     }
     

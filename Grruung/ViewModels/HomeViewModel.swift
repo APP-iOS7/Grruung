@@ -1101,6 +1101,26 @@ class HomeViewModel: ObservableObject {
     // 부화 팝업 표시 여부 (다음 단계에서 사용)
     @Published var showEvolutionPopup: Bool = false
     
+    // 진화 완료 메서드
+    func completeEvolution(to phase: CharacterPhase) {
+        guard var character = character else { return }
+        
+        // 진화 상태를 완료로 변경
+        switch phase {
+        case .infant:
+            character.status.evolutionStatus = .completeInfant
+        case .child:
+            character.status.evolutionStatus = .completeChild
+        // ... 다른 단계들
+        default:
+            break
+        }
+        
+        // 캐릭터 업데이트
+        self.character = character
+        updateCharacterStatus()
+    }
+    
     // MARK: - Action System
     
     // 액션 버튼을 현재 상태에 맞게 갱신

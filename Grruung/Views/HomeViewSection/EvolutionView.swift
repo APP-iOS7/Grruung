@@ -14,6 +14,8 @@ struct EvolutionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
+    @ObservedObject var homeViewModel: HomeViewModel
+    
     // 진화 상태 관리
     @State private var evolutionStep: EvolutionStep = .preparing
     @State private var statusMessage: String = ""
@@ -194,6 +196,9 @@ struct EvolutionView: View {
             await MainActor.run {
                 evolutionStep = .completed
                 statusMessage = "부화 완료!"
+                
+                // HomeViewModel에 진화 완료 알림
+                homeViewModel.completeEvolution(to: .infant)
             }
         }
     }
@@ -201,13 +206,4 @@ struct EvolutionView: View {
 }
 
 // MARK: - 프리뷰
-#Preview {
-    let sampleCharacter = GRCharacter(
-        species: .quokka,
-        name: "테스트쿼카",
-        imageName: "Quokka",
-        birthDate: Date()
-    )
-    
-    return EvolutionView(character: sampleCharacter)
-}
+//
