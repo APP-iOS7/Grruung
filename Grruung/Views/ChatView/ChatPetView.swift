@@ -11,8 +11,8 @@ struct ChatPetView: View {
     @StateObject private var viewModel: ChatPetViewModel
     @Environment(\.presentationMode) var presentationMode
     @FocusState private var isInputFocused: Bool
-    @State private var showVoiceChatLive = false
-    
+    @State private var showUpdateAlert = false // 업데이트 알림 표시 여부
+
     // 캐릭터와 프롬프트 직접 저장
     let character: GRCharacter
     let prompt: String
@@ -33,6 +33,7 @@ struct ChatPetView: View {
                     chatMessagesArea
                     
                     messageInputArea
+//                        .ignoresSafeArea(.keyboard, edges: .bottom)
                 }
                 
                 if viewModel.isLoading {
@@ -50,6 +51,18 @@ struct ChatPetView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
+                
+                // 키보드 툴바
+                /*
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button(action: {
+                        isInputFocused = false
+                    }) {
+                        Image(systemName: "keyboard.chevron.compact.down")
+                            .foregroundColor(.primary)
+                    }
+                }*/
             }
             .alert(item: Binding<AlertItem?>(
                 get: {
@@ -67,11 +80,16 @@ struct ChatPetView: View {
                     dismissButton: .default(Text("확인"))
                 )
             }
-            .sheet(isPresented: $showVoiceChatLive) {
-                VoiceChatLiveView(
-                    character: character,
-                    prompt: prompt
-                )
+            .alert("음성 대화 모드", isPresented: $showUpdateAlert) {
+                Button("확인", role: .cancel) { }
+            } message: {
+                Text("추후 음성 대화 모드 업데이트 예정입니다.")
+            }
+            .onTapGesture {
+                // 배경 탭 시 키보드 숨기기
+                if isInputFocused {
+                    isInputFocused = false
+                }
             }
         }
     }
@@ -90,7 +108,7 @@ struct ChatPetView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 8)
                 // 새 메시지가 추가될 때마다 스크롤
-                .onChange(of: viewModel.messages.count) { _ in
+                .onChange(of: viewModel.messages.count) {
                     if let lastMessage = viewModel.messages.last {
                         withAnimation {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
@@ -112,6 +130,12 @@ struct ChatPetView: View {
                         .background(Color(UIColor.systemGray6))
                         .cornerRadius(20)
                         .focused($isInputFocused)
+                        // 엔터키로 메시지 보내기
+                        /*.onSubmit {
+                            if !viewModel.inputText.isEmpty {
+                                viewModel.sendMessage()
+                            }
+                        }*/
                 } else {
                     Text("음성 변환 중...")
                         .foregroundStyle(.secondary)
@@ -121,13 +145,13 @@ struct ChatPetView: View {
                         .cornerRadius(20)
                 }
                 
-                // 음성 대화 모드
+                // 음성 대화 모드 버튼 - 클릭 시 업데이트 예정 알림
                 Button(action: {
-                        showVoiceChatLive = true
+                    showUpdateAlert = true
                 }) {
-                    Image(systemName: viewModel.isListening ? "mic.fill" : "mic")
+                    Image(systemName: "mic")
                         .font(.system(size: 20))
-                        .foregroundStyle(viewModel.isListening ? .red : .primary)
+                        .foregroundStyle(.primary)
                         .padding(8)
                         .background(Color(UIColor.systemGray5))
                         .clipShape(Circle())
@@ -229,3 +253,4 @@ struct MessageBubble: View {
         return formatter.string(from: date)
     }
 }
+

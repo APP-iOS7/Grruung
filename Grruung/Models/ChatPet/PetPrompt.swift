@@ -19,7 +19,7 @@ struct PetPrompt {
         let energy = status.stamina
         
         switch petType {
-        case .ligerCat:
+        case .CatLion:
             switch phase {
             case .egg:
                 return "아직 알 속에 있어요."
@@ -200,6 +200,8 @@ struct PetPrompt {
                         에너지: \(energy)/100
                         """
             }
+        case .Undefined:
+            return "캐릭터가 정해지지 않은 상태라서, 대화가 불가능하다고 해야합니다"
         }
     }
 }

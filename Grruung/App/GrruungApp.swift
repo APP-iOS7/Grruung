@@ -10,6 +10,7 @@ import Firebase
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseAppCheck // App Check 추가
+import StoreKit // 유료 구매를 위해서 추가
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -25,7 +26,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         
         // Firestore 설정
         let settings = FirestoreSettings()
-        settings.isPersistenceEnabled = true
+        settings.cacheSettings = PersistentCacheSettings()
         Firestore.firestore().settings = settings
         
         return true
@@ -36,11 +37,24 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct GrruungApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authService = AuthService()
+    // 구매 여부 확인
+    @StateObject private var transactionObserver = TransactionObserver()
+    // 유저 정보
+    @StateObject private var userViewModel = UserViewModel()
+    // 동산 정보
+    @StateObject private var characterDexViewModel = CharacterDexViewModel()
+    // 인벤토리 정보
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authService)
+                .environmentObject(transactionObserver)
+                .environmentObject(userViewModel)
+                .environmentObject(characterDexViewModel)
+                .environmentObject(userInventoryViewModel)
         }
+        .modelContainer(for: [GRAnimationMetadata.self])
     }
 }
