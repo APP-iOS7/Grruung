@@ -93,7 +93,7 @@ struct OnboardingView: View {
                         .frame(height: 250)
                         .padding()
                         .background(
-                            RoundedRectangle(cornerRadius: 15)
+                            RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.gray.opacity(0.1))
                                 .frame(width: 300, height: 300)
                         )
@@ -116,13 +116,14 @@ struct OnboardingView: View {
                         .italic()
                         .padding()
                         .background(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 12)
                                 .fill(
                                     LinearGradient(colors: [Color(hex: "#FFB778"), Color(hex: "FFA04D")], startPoint: .leading, endPoint: .trailing)
                                 )
                     )
                         .padding(.horizontal, 20)
                         .padding(.top, 10)
+                        .foregroundColor(.white)
                     
                     Spacer()
                     

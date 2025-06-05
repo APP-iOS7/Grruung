@@ -23,6 +23,10 @@ struct MyPageView: View {
                 }
                 .padding()
             }
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
         }
     }
 }
@@ -102,7 +106,7 @@ struct SeviceGrid: View {
             }
             .padding()
             .background(
-                RoundedRectangle(cornerRadius: 15)
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
     }
@@ -169,7 +173,7 @@ struct SettingsSection: View {
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 15)
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
     }

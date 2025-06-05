@@ -71,7 +71,7 @@ struct PetNameSelectionView: View {
                         TextField("이름을 입력하세요", text: $petName)
                             .padding()
                             .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                            .cornerRadius(12)
                             .disabled(isLoading)
                     }
                     .padding(.horizontal, 30)
@@ -87,7 +87,7 @@ struct PetNameSelectionView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(petName.isEmpty ? Color.gray : Color.orange)
-                            .cornerRadius(10)
+                            .cornerRadius(12)
                     }
                     .disabled(petName.isEmpty || isLoading)
                     .padding(.horizontal, 30)

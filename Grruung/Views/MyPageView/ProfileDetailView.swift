@@ -89,7 +89,7 @@ struct ProfileDetailView: View {
                             Image(systemName: "camera.fill")
                                 .foregroundColor(.white)
                                 .padding(6)
-                                .background(Circle().fill(Color.gray))
+                                .background(Circle().fill(Color.orange))
                                 .offset(x: 3, y: 3)
                         }
                         .padding(.top, 20)
@@ -101,15 +101,15 @@ struct ProfileDetailView: View {
                             HStack(spacing: 6) {
                                 Text(username)
                                     .font(.system(size: 22, weight: .semibold))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.white)
                                 
                                 Image(systemName: "pencil.line")        .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.white)
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.gray)
+                        .background(Color.orange)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .frame(maxWidth: .infinity)
@@ -187,7 +187,7 @@ struct ProfileDetailView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(Color.orange)
                             .cornerRadius(12)
                     }
                 }
@@ -226,6 +226,7 @@ struct SettingRow: View {
         .padding(.horizontal, 20)
     }
 }
+
 
 
 // MARK: - Preview
