@@ -26,8 +26,16 @@ struct ChatPetView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(UIColor.systemBackground)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    colors: [
+                        Color(GRColor.mainColor1_1),
+                        Color(GRColor.mainColor1_2)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     chatMessagesArea
