@@ -14,11 +14,13 @@
 		A9CBE3862DD1B0B3002FD21B /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3852DD1B0B3002FD21B /* FirebaseStorage */; };
 		A9CBE3882DD1B0C3002FD21B /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3872DD1B0C3002FD21B /* FirebaseAppCheck */; };
 		A9CBE38A2DD1B0D2002FD21B /* FirebaseVertexAI in Frameworks */ = {isa = PBXBuildFile; productRef = A9CBE3892DD1B0D2002FD21B /* FirebaseVertexAI */; };
+		A9D5CCE82DF170B40026DE93 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A9D5CCE72DF170B40026DE93 /* GoogleService-Info.plist */; };
 		A9FF5C0E2DE96C5800E07AC9 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9FF5C0D2DE96C5800E07AC9 /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8A02B20E2DC1FEEE0064A296 /* Grruung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Grruung.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9D5CCE72DF170B40026DE93 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A9FF5C0D2DE96C5800E07AC9 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -55,6 +57,7 @@
 				8A02B2102DC1FEEE0064A296 /* Grruung */,
 				A9CBE3842DD1B0B3002FD21B /* Frameworks */,
 				8A02B20F2DC1FEEE0064A296 /* Products */,
+				A9D5CCE72DF170B40026DE93 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -148,6 +151,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A9D5CCE82DF170B40026DE93 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
