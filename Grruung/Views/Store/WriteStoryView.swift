@@ -35,6 +35,8 @@ struct WriteStoryView: View {
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
     @State private var showDeleteAlert = false
     
+    @State private var showNoWritingCountAlert = false
+    
     @State private var isImageLoading = false
     @State private var isUploading = false
     
@@ -161,6 +163,15 @@ struct WriteStoryView: View {
         } message: {
             Text("삭제된 이야기는 복구할 수 없습니다.")
         }
+        .alert("글쓰기 횟수 부족", isPresented: $showNoWritingCountAlert) {
+             Button("취소", role: .cancel) {}
+             Button("구매하기") {
+                 // TODO : 상점으로 이동하는 로직 추가
+                 print("상점으로 이동")
+             }
+         } message: {
+             Text("글쓰기 횟수가 부족합니다. 내일 작성하거나 상점에서 아이템을 구매해주세요.")
+         }
     }
     
     // MARK: - UI Components
@@ -437,6 +448,7 @@ struct WriteStoryView: View {
                             dismiss()
                         } else {
                             isUploading = false
+                            showNoWritingCountAlert = true
                             print("글쓰기 횟수가 부족합니다")
                         }
                     } else if currentMode == .edit {
