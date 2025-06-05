@@ -77,197 +77,358 @@ struct WriteStoryView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                if currentMode == .read {
-                    if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
-                            .padding(.leading)
-                        
-                    } else if let displayedImage = displayedImage {
-                        Image(uiImage: displayedImage)
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
-                            .padding(.leading)
-                    }
-                } else {
-                    PhotosPicker(
-                        selection: $selectedPhotoItem,
-                        matching: .images,
-                        photoLibrary: .shared()
-                    ){
-                        Group {
-                            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
-                                // 사용자가 새로 선택한 이미지가 있으면 표시
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
-                                    .padding(.leading)
-                                
-                            } else if let existingImage = displayedImage {
-                                // 새로 선택한 이미지는 없지만, 기존에 로드된 이미지가 있으면 표시
-                                Image(uiImage: existingImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
-                                    .padding(.leading)
-                            }
-                            
-                            else {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 100, height: 100)
-                                    .rotationEffect(.degrees(-15))
-                                    .foregroundColor(.gray)
-                                    .padding(.leading)
-                            }
-                        }
-                    }
-                    .onChange(of: selectedPhotoItem) { _,newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                selectedImageData = data
-                            } else {
-                                print("이미지 로딩 중 오류 발생")
-                                selectedImageData = nil
-                            }
-                        }
-                    }
-                    .padding(.leading, 20)
+        ScrollView {
+            VStack(spacing: 0) {
+                // 날짜 헤더
+                dateHeaderView
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 20)
+                
+                // 메인 일기 카드
+                VStack(spacing: 0) {
+                    // 이미지 섹션
+                    imageSection
                     
+                    // 텍스트 컨텐츠 섹션
+                    contentSection
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 24)
                 }
-                Spacer()
-                
-                Text(currentDateString)
-                    .font(.title2)
-                    .fontWeight(.medium)
-                    .padding(.trailing)
-                
-                Spacer()
+                .background(Color.white)
+                .cornerRadius(UIConstants.cornerRadius)
+                .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 4)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
-            .padding(.top)
-            
-            
-            if currentMode == .read {
-                // 읽기 모드에서는 제목과 내용을 표시만 함
-                Text(currentPost?.postTitle ?? "")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.horizontal)
-                
-                Text(currentPost?.postBody ?? "")
-                    .padding(.horizontal)
-                    .padding(.bottom, 10)
-            }
-            else {
-                // 제목 입력 필드
-                ZStack(alignment: .topLeading) {
-                    TextField("", text: $postTitle)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .padding()
-                        .background(Color(UIColor.systemBackground))
-                        .cornerRadius(UIConstants.cornerRadius)
-                    
-                    if isTitlePlaceholderVisible {
-                        Text("제목을 입력해주세요")
-                            .foregroundColor(Color(UIColor.placeholderText))
-                            .font(.title2)
-                            .padding()
-                            .allowsHitTesting(false)
-                    }
-                }
-                .padding(.horizontal)
-                
-                // 내용 입력 필드
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $postBody)
-                        .frame(minHeight: 150)
-                        .border(Color.clear)
-                        .background(Color(UIColor.systemBackground))
-                        .cornerRadius(UIConstants.cornerRadius)
-                    
-                    if isPlaceholderVisible {
-                        Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
-                            .foregroundColor(Color(UIColor.placeholderText))
-                            .padding(.top, 8)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            
-            Spacer()
         }
-        .scrollContentBackground(.hidden) // 기본 배경을 숨기고Add commentMore actions
-                  .background(
-                      LinearGradient(colors: [
-                          Color(GRColor.mainColor5_1),
-                          Color(GRColor.mainColor5_2)
-                      ],
-                                     startPoint: .top, endPoint: .bottom)
-                  ) // 원하는 색상 지정
+        .scrollContentBackground(.hidden)
+        .background(
+            LinearGradient(colors: [
+                Color(GRColor.mainColor5_1),
+                Color(GRColor.mainColor5_2),
+                Color(.systemBackground)
+            ],
+                           startPoint: .top, endPoint: .bottom)
+        )
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(
-            trailing:
-                Button("\(buttonTitle)") {
-                    Task {
-                        do {
-                            print("우측 상단 button tapped!")
-                            
-                            if currentMode == .create {
-                                // 글쓰기 횟수 확인 후 처리
-                                if writingCountVM.tryToWrite() {
-                                    let _ =  try await viewModel.createPost(
-                                        characterUUID: characterUUID,
-                                        postTitle: postTitle,
-                                        postBody: postBody,
-                                        imageData: selectedImageData
-                                    )
-                                    dismiss()
-                                } else {
-                                    print("글쓰기 횟수가 부족합니다")
-                                    
-                                }
-                            } else if currentMode == .edit {
-                                try await viewModel.editPost(
-                                    postID: currentPost?.postID ?? "",
-                                    postTitle: postTitle,
-                                    postBody: postBody,
-                                    newImageData: selectedImageData,
-                                    existingImageUrl: currentPost?.postImage ?? ""
-                                )
-                            }
-                            dismiss()
-                        } catch {
-                            print("Error saving post: \(error)")
-                        }
-                    }
-                    
-                    if let imageData = selectedImageData {
-                        print("Image data size: \(imageData.count) bytes")
-                    } else {
-                        print("No image selected.")
-                    }
-                }
-                .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
-                .opacity(postBody.isEmpty ? 0.5 : 1)
+            trailing: saveButton
         )
-        .background(Color(UIColor.systemGray6).ignoresSafeArea())
         .onAppear {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
         }
     }
     
+    // MARK: - UI Components
+    
+    private var dateHeaderView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar.circle.fill")
+                        .foregroundColor(Color(GRColor.mainColor5_1))
+                        .font(.title3)
+                    
+                    Text(currentDateString)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+            }
+            Spacer()
+        }
+    }
+    
+    private var imageSection: some View {
+        Group {
+            if currentMode == .read {
+                readModeImageView
+            } else {
+                editModeImageView
+            }
+        }
+    }
+    
+    private var readModeImageView: some View {
+        Group {
+            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                diaryImageView(uiImage: uiImage)
+            } else if let displayedImage = displayedImage {
+                diaryImageView(uiImage: displayedImage)
+            }
+        }
+    }
+    
+    private var editModeImageView: some View {
+        VStack(spacing: 0) {
+            PhotosPicker(
+                selection: $selectedPhotoItem,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                    diaryImageView(uiImage: uiImage)
+                        .overlay(
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        selectedImageData = nil
+                                        displayedImage = nil
+                                        selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                    }
+                                    .padding(16)
+                                }
+                                Spacer()
+                            }
+                        )
+                } else if let existingImage = displayedImage {
+                    diaryImageView(uiImage: existingImage)
+                        .overlay(
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        selectedImageData = nil
+                                        displayedImage = nil
+                                        selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                    }
+                                    .padding(16)
+                                }
+                                Spacer()
+                            }
+                        )
+                } else {
+                    imagePickerPlaceholder
+                }
+            }
+            .onChange(of: selectedPhotoItem) { _, newItem in
+                Task {
+                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                        selectedImageData = data
+                    } else {
+                        print("이미지 로딩 중 오류 발생")
+                        selectedImageData = nil
+                    }
+                }
+            }
+        }
+    }
+    
+    private func diaryImageView(uiImage: UIImage) -> some View {
+        Image(uiImage: uiImage)
+            .resizable()
+            .scaledToFill()
+            .frame(height: 200)
+            .clipped()
+            .cornerRadius(UIConstants.cornerRadius)
+            .padding()
+    }
+    
+    private var imagePickerPlaceholder: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "camera.circle")
+                .font(.system(size: 50))
+                .foregroundColor(Color(GRColor.buttonColor_1))
+            
+            VStack(spacing: 4) {
+                Text("사진 보여주기")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text("사진을 추가하여 쿼카에게 들려줄 이야기를 더 풍성하게 만들어보세요!")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(height: 160)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius, style: .continuous)
+                .fill(Color(GRColor.mainColor5_1).opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius, style: .continuous)
+                        .stroke(Color(GRColor.mainColor5_1).opacity(0.2), style: StrokeStyle(lineWidth: 2, dash: [8, 4]))
+                )
+        )
+        .cornerRadius(UIConstants.cornerRadius)
+    }
+    
+    private var contentSection: some View {
+        VStack(spacing: 20) {
+            if currentMode == .read {
+                readModeContent
+            } else {
+                editModeContent
+            }
+        }
+    }
+    
+    private var readModeContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // 제목
+            Text(currentPost?.postTitle ?? "")
+                .font(.title2)
+                .fontWeight(.bold)
+                .lineLimit(nil)
+                .foregroundColor(.primary)
+            
+            // 구분선
+            Rectangle()
+                .fill(Color(GRColor.mainColor5_1).opacity(0.2))
+                .frame(height: 1)
+            
+            // 내용
+            Text(currentPost?.postBody ?? "")
+                .font(.body)
+                .lineSpacing(6)
+                .lineLimit(nil)
+                .foregroundColor(.primary)
+        }
+    }
+    
+    private var editModeContent: some View {
+        VStack(spacing: 20) {
+            // 제목 입력
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundColor(Color(GRColor.buttonColor_1))
+                    Text("제목")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+                
+                ZStack(alignment: .topLeading) {
+                    TextField("", text: $postTitle)
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                .fill(Color(.systemGray6))
+                        )
+                    
+                    if isTitlePlaceholderVisible {
+                        Text("오늘의 제목을 적어주세요")
+                            .foregroundColor(Color(.placeholderText))
+                            .font(.title3)
+                            .padding(16)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+            
+            // 내용 입력
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "heart.circle.fill")
+                        .foregroundColor(Color(GRColor.buttonColor_1))
+                    Text("이야기")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+                
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $postBody)
+                        .font(.body)
+                        .lineSpacing(4)
+                        .padding(12)
+                        .frame(minHeight: 180)
+                        .background(
+                            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                .fill(Color(.systemGray6))
+                        )
+                        .scrollContentBackground(.hidden)
+                    
+                    if isPlaceholderVisible {
+                        Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기를 써보세요.\n\n어떤 일이 있었나요? 어떤 기분이었나요?\n소소한 일상도 좋아요 ✨")
+                            .foregroundColor(Color(.placeholderText))
+                            .font(.body)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 20)
+                            .allowsHitTesting(false)
+                    }
+                }
+            }
+        }
+    }
+    
+    private var saveButton: some View {
+        Button(buttonTitle) {
+            Task {
+                do {
+                    print("우측 상단 button tapped!")
+                    
+                    if currentMode == .create {
+                        // 글쓰기 횟수 확인 후 처리
+                        if writingCountVM.tryToWrite() {
+                            let _ = try await viewModel.createPost(
+                                characterUUID: characterUUID,
+                                postTitle: postTitle,
+                                postBody: postBody,
+                                imageData: selectedImageData
+                            )
+                            dismiss()
+                        } else {
+                            print("글쓰기 횟수가 부족합니다")
+                        }
+                    } else if currentMode == .edit {
+                        try await viewModel.editPost(
+                            postID: currentPost?.postID ?? "",
+                            postTitle: postTitle,
+                            postBody: postBody,
+                            newImageData: selectedImageData,
+                            existingImageUrl: currentPost?.postImage ?? ""
+                        )
+                    }
+                    dismiss()
+                } catch {
+                    print("Error saving post: \(error)")
+                }
+            }
+            
+            if let imageData = selectedImageData {
+                print("Image data size: \(imageData.count) bytes")
+            } else {
+                print("No image selected.")
+            }
+        }
+        .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
+        .font(.headline)
+        .fontWeight(.semibold)
+        .foregroundColor(.white)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(
+            Capsule()
+                .fill(
+                    currentMode == .read ? Color(GRColor.buttonColor_2) :
+                        (postBody.isEmpty || postTitle.isEmpty) ? Color.gray.opacity(0.5) : Color(GRColor.buttonColor_2)
+                )
+        )
+        .scaleEffect((currentMode != .read && (postBody.isEmpty || postTitle.isEmpty)) ? 0.95 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: postBody.isEmpty || postTitle.isEmpty)
+    }
+    
+    // MARK: - Original Methods (유지)
     
     private func setupViewforCurrentMode() {
         if currentMode == .create {
@@ -351,27 +512,13 @@ struct WriteStoryView: View {
             }
         }
     }
-} // end of WriteStoryView
-
-
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .create , characterUUID: "CF6NXxcH5HgGjzVE0nVE")
-//    }
-//}
-//
-//
-//#Preview {
-//    NavigationStack {
-//        WriteStoryView(currentMode: .edit, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")
-//    }
-//}
+}
 
 #Preview {
     NavigationStack {
         WriteStoryView(currentMode: .read, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8"
-, postID: "fq2ry1aZ1CiiSgq6XhaH"
-)//, userID: "uCMGt4DjgiPPpyd2p9Di")
-            .environmentObject(AuthService())
+                       , postID: "fq2ry1aZ1CiiSgq6XhaH"
+        )
+        .environmentObject(AuthService())
     }
 }

@@ -750,6 +750,6 @@ extension UIDevice {
 
 #Preview {
     NavigationStack {
-        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+        CharacterDetailView(characterUUID: "2DADAC52-1E6D-4934-9F82-E5610E8C9492")
     }
 }
