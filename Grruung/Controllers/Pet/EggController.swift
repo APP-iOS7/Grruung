@@ -89,14 +89,13 @@ class EggController: ObservableObject {
     
     // MARK: - 애니메이션 정지 함수
     func stopAnimation() {
-        print("애니메이션 정지")
-        
         // 타이머 중지 및 해제
         animationTimer?.invalidate()
         animationTimer = nil
         
         // 재생 상태 해제
         isAnimating = false
+        print("⏹️ EggController 애니메이션 정지")
     }
     
     // MARK: - 프레임 업데이트 함수 (타이머에 의해 호출됨)

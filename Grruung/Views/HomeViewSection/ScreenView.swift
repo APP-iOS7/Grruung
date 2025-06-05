@@ -63,6 +63,7 @@ struct ScreenView: View {
             cleanupControllers()
         }
         .onChange(of: character?.status.evolutionStatus) { oldValue, newValue in
+            print("🔄 진화 상태 변경: \(oldValue?.rawValue ?? "nil") → \(newValue?.rawValue ?? "nil")")
             // 진화 상태가 변경되면 애니메이션 다시 설정
             setupControllers()
             startAppropriateAnimation()
@@ -264,6 +265,9 @@ struct ScreenView: View {
     private func startAppropriateAnimation() {
         guard let character = character else { return }
         
+        // 먼저 모든 애니메이션 정지
+        stopAllAnimations()
+        
         if character.status.phase == .egg {
             // 운석 단계 - EggController 애니메이션 시작
             eggController.startAnimation()
@@ -277,8 +281,17 @@ struct ScreenView: View {
         }
     }
     
+    // 모든 애니메이션 정지 메서드 추가
+    private func stopAllAnimations() {
+        eggController.stopAnimation()
+        quokkaController.stopAnimation()
+        print("⏹️ 모든 애니메이션 정지")
+    }
+    
     // 컨트롤러들 정리
     private func cleanupControllers() {
+        stopAllAnimations() // 정지 먼저 하고
+        
         eggController.cleanup()
         quokkaController.cleanup()
         print("모든 컨트롤러 정리 완료")
