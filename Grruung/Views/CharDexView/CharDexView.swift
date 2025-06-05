@@ -11,44 +11,45 @@ import FirebaseFirestore
 import FirebaseStorage
 
 struct CharDexView: View {
+    // MARK: - Properties
+    
     // 생성 가능한 최대 캐릭터 수
     private let maxDexCount: Int = 10
-    // 초기 생성 가능한 캐릭터 수
-    @State private var unlockCount: Int = 0
-    // 정렬 타입 변수
+    
+    // 캐릭터 관련 상태
+    @State private var characters: [GRCharacter] = []
+    @State private var isLoading: Bool = true
+    @State private var errorMessage: String? = nil
+    
+    // 정렬 옵션
     @State private var sortType: SortType = .original
-    // 언락 티켓 갯수
+    
+    // 슬롯 관련 상태
+    @State private var unlockCount: Int = 2  // 기본값 2개 슬롯 해금
     @State private var unlockTicketCount: Int = 0
-    // 잠금 그리드 클릭 위치
     @State private var selectedLockedIndex: Int = -1
-    @State private var realUserId: String = ""
+    
+    // 알림창 상태
+    @State private var showingUnlockAlert = false
+    @State private var showingNotEnoughAlert = false
+    @State private var showingNotEnoughTicketAlert = false
+    @State private var showingErrorAlert = false
+    @State private var firstAlert = true
+    
+    // Environment Objects
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
-    @EnvironmentObject private var characterDetailViewModel: CharacterDetailViewModel
-    // 잠금해제 alert 변수
-    @State private var showingUnlockAlert = false
-    // 생성 가능한 캐릭터 수가 부족한 경우 alert 변수
-    @State private var showingNotEnoughAlert = false
-    // 잠금 해제 티켓의 수가 부족한 경우 alert 변수
-    @State private var showingNotEnoughTicketAlert = false
-    // 초기 슬롯 해제 alert
-    @State private var firstAlert = true
-    // 알 수 없는 에러 alert
-    @State private var showingErrorAlert = false
-    @Environment(\.dismiss) var dismiss
-
-    @State private var isLoading: Bool = false
-
+    
+    // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
     
-    // 캐릭터 데이터
-    @State private var realCharacters: [GRCharacter] = []
-        .filter { !($0.status.address == "space") }
+    // MARK: - Computed Properties
     
+    // 정렬 타입 정의
     private enum SortType {
         case original
         case createdAscending
@@ -56,249 +57,209 @@ struct CharDexView: View {
         case alphabet
     }
     
-    // 현재 캐릭터 슬롯 정렬 프로퍼티
-    private var sortedCharacterSlots: [GRCharacter] {
+    // 정렬된 캐릭터 목록
+    private var sortedCharacters: [GRCharacter] {
+        let visibleCharacters = characters.filter { $0.status.address != "space" }
+        
         switch sortType {
         case .original:
-            return realCharacters
+            return visibleCharacters
         case .createdAscending:
-            return realCharacters.sorted { $0.birthDate > $1.birthDate }
+            return visibleCharacters.sorted { $0.birthDate > $1.birthDate }
         case .createdDescending:
-            return realCharacters.sorted { $0.birthDate < $1.birthDate }
+            return visibleCharacters.sorted { $0.birthDate < $1.birthDate }
         case .alphabet:
-            return realCharacters.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            return visibleCharacters.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         }
     }
     
-    // 전체 슬롯 계산 (캐릭터 + 추가 가능한 슬롯 + 잠금 슬롯)
-    private var characterSlots: [GRCharacter] {
-        let hasCharacters = sortedCharacterSlots
+    // 표시할 슬롯(캐릭터 + 추가 가능 슬롯 + 잠금 슬롯)
+    private var displaySlots: [SlotItem] {
+        // 1. 실제 캐릭터 슬롯
+        let characterSlots = sortedCharacters.map { SlotItem.character($0) }
         
-        // 생성 가능한 슬롯 수 = unlockCount - 현재 캐릭터 수
-        let addableCount = max(0, unlockCount - hasCharacters.count)
+        // 2. 추가 가능한 슬롯 ('플러스' 슬롯)
+        let addableCount = max(0, unlockCount - characterSlots.count)
+        let addSlots = (0..<addableCount).map { _ in SlotItem.add }
         
-        // "plus" 슬롯 추가
-        let plusCharacters = (0..<addableCount).map { index in
-            GRCharacter(id: "plus-\(index)", species: .Undefined, name: "", imageName: "plus", birthDate: Date(), createdAt: Date())
-        }
-        
-        // 현재까지 채워진 슬롯 수 = 캐릭터 + plus
-        let filledCount = hasCharacters.count + plusCharacters.count
-        
-        // 나머지 잠금 슬롯 수
+        // 3. 잠금 슬롯
+        let filledCount = characterSlots.count + addSlots.count
         let lockedCount = max(0, maxDexCount - filledCount)
-        let lockedCharacters = (0..<lockedCount).map { index in
-            GRCharacter(id: "lock-\(index)", species: .Undefined, name: "", imageName: "lock.fill", birthDate: Date(), createdAt: Date())
-        }
+        let lockSlots = (0..<lockedCount).map { idx in SlotItem.locked(index: idx) }
         
-        return hasCharacters + plusCharacters + lockedCharacters
+        return characterSlots + addSlots + lockSlots
     }
+    
+    // 현재 유저 ID
+    private var currentUserId: String {
+        authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
+    }
+    
+    // MARK: - Body
     
     var body: some View {
         NavigationStack {
             ScrollView {
-                if !characterDexViewModel.isLoading {
-                    HStack {
-                        Text("\(realCharacters.count)")
-                            .foregroundStyle(.yellow)
-                        Text("/ \(maxDexCount) 수집")
+                if isLoading {
+                    VStack {
+                        ProgressView("데이터 로딩 중...")
+                            .padding(.top, 100)
                     }
-                    .frame(maxWidth: 180)
-                    .font(.title)
-                    .background(alignment: .center) {
-                        Capsule()
-                            .fill(Color.brown.opacity(0.5))
-                    }
-                    
-                    // 티켓 수량 표시
-                    HStack {
-                        if unlockTicketCount <= 0 {
-                            ZStack {
-                                Image(systemName: "ticket")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(.top, 8)
-                                    .frame(width: 30, height: 30)
-                                    .foregroundStyle(Color.brown.opacity(0.5))
-                                Image(systemName: "xmark")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(.top, 8)
-                                    .frame(width: 30, height: 30)
-                                    .foregroundStyle(.red)
-                            }
+                } else {
+                    VStack(spacing: 20) {
+                        // 수집 현황 정보
+                        HStack {
+                            Text("\(sortedCharacters.count)")
+                                .foregroundStyle(.yellow)
+                            Text("/ \(maxDexCount) 수집")
                         }
-                        ForEach(0..<unlockTicketCount, id: \.self) { _ in
-                            Image(systemName: "ticket")
-                                .resizable()
-                                .scaledToFit()
-                                .padding(.top, 8)
-                                .frame(width: 30, height: 30)
-                                .foregroundStyle(Color.brown.opacity(0.5))
+                        .frame(maxWidth: 180)
+                        .font(.title)
+                        .background(alignment: .center) {
+                            Capsule()
+                                .fill(Color.brown.opacity(0.5))
                         }
-                    }
-                    
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(Array(characterSlots.enumerated()), id: \.offset) { index, character in
-                            if character.imageName == "lock.fill" {
-                                lockSlot(at: index)
-                            } else if character.imageName == "plus" {
-                                addSlot
-                            } else {
-                                NavigationLink(destination: {
-                                    CharacterDetailView(characterUUID: character.id)
-                                }) {
-                                    characterSlot(character)
+                        
+                        // 티켓 수량 표시
+                        ticketCountView
+                        
+                        // 캐릭터 그리드
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(Array(displaySlots.enumerated()), id: \.offset) { index, slot in
+                                switch slot {
+                                case .character(let character):
+                                    NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
+                                        characterSlot(character)
+                                    }
+                                case .add:
+                                    NavigationLink(destination: OnboardingView()) {
+                                        addSlot
+                                    }
+                                case .locked(let index):
+                                    lockSlot(index: index)
                                 }
                             }
                         }
+                        .padding()
                     }
-                    .padding()
-                } else {
-                    ProgressView("데이터 로딩중...")
                 }
             }
-//            .navigationTitle("캐릭터 동산")
+            .navigationTitle("캐릭터 동산")
             .toolbar {
+                // 검색 버튼
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: CharDexSearchView(searchCharacters: realCharacters)) {
+                    NavigationLink(destination: CharDexSearchView(searchCharacters: sortedCharacters)) {
                         Image(systemName: "magnifyingglass")
                     }
                 }
+                
+                // 정렬 옵션 메뉴
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button {
-                            sortType = .original
-                        } label: {
-                            Label("기본", systemImage: sortType == .original ? "checkmark" : "")
-                        }
-                        
-                        Button {
-                            sortType = .alphabet
-                        } label: {
-                            Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
-                        }
-                        
-                        Button {
-                            sortType = .createdAscending
-                        } label: {
-                            Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
-                        }
-                        
-                        Button {
-                            sortType = .createdDescending
-                        } label: {
-                            Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
-                        }
-                        
-                    } label: {
-                        Label("정렬", systemImage: "line.3.horizontal")
-                    }
+                    sortOptionsMenu
                 }
             }
-            // 슬롯 해제 Alert
+            .onAppear {
+                loadData()
+                
+                // 알림 리스너 설정
+                setupNotificationObservers()
+            }
+            .onDisappear {
+                // 알림 리스너 제거
+                NotificationCenter.default.removeObserver(self)
+            }
+            
+            // MARK: - Alert Modifiers
             .alert("슬롯을 해제합니다.", isPresented: $showingUnlockAlert) {
                 Button("해제", role: .destructive) {
-                    if unlockTicketCount <= 0 {
-                        showingNotEnoughTicketAlert = true
-                    } else {
-                        if unlockCount < maxDexCount {
-                            if let item = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
-                                unlockCount += 1
-                                unlockTicketCount -= 1
-                                characterDexViewModel.updateCharDex(
-                                    userId: realUserId,
-                                    unlockCount: unlockCount,
-                                    unlockTicketCount: unlockTicketCount,
-                                    selectedLockedIndex: selectedLockedIndex
-                                )
-                                userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: unlockTicketCount)
-                            } else {
-                                showingErrorAlert = true
-                            }
-                        }
-                    }
+                    unlockSlot()
                 }
                 Button("취소", role: .cancel) {}
             }
-            // 캐릭터 슬롯이 부족한 경우 Alert
             .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
                 Button("확인", role: .cancel) {
                     firstAlert = false
                 }
             }
-            // 티켓 부족 Alert
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
             }
-            // 에러 Alert
             .alert("에러 발생", isPresented: $showingErrorAlert) {
-                Button("확인", role: .cancel) {
-                    dismiss()
-                }
+                Button("확인", role: .cancel) {}
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
-            }
-            .onAppear {
-                Task {
-                    // 유저 Id 가져오기
-                    realUserId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
-                    // 캐릭터 데이터 가져오기
-                    await fetchCharacters(userId: realUserId)
-                    // 인벤토리 데이터 가져오기
-                    try await userInventoryViewModel.fetchInventories(userId: realUserId)
-                    // 동산 데이터 가져오기
-                    if !characterDexViewModel.isLoading {
-                        try await characterDexViewModel.fetchCharDex(userId: realUserId)
-                        
-                        // 인벤토리에서 티켓 갯수 가져와서 저장 후 불러오기
-                        if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
-                            characterDexViewModel.updateCharDex(userId: realUserId, unlockCount: characterDexViewModel.unlockCount, unlockTicketCount: ticket.userItemQuantity, selectedLockedIndex: characterDexViewModel.selectedLockedIndex)
-                            try await characterDexViewModel.fetchCharDex(userId: realUserId)
-                        }
-                        unlockTicketCount = characterDexViewModel.unlockTicketCount
-                        unlockCount = characterDexViewModel.unlockCount
-                        selectedLockedIndex = characterDexViewModel.selectedLockedIndex
-                        
-                        // 캐릭터 목록 업데이트 - 매번 새로고침
-                        await loadCharacters()
-                    }
-                    
-                    // 캐릭터 수와 해제 슬롯 수가 같은 경우 안내
-                    if unlockCount == realCharacters.count && firstAlert {
-                        showingNotEnoughAlert = true
-                    }
-                    
-                    // 캐릭터 수가 해제 슬롯 수보다 많으면 에러
-                    if realCharacters.count > unlockCount {
-                        showingErrorAlert = true
-                    }
-                }
-                
-                // 알림 리스너 설정
-                NotificationCenter.default.addObserver(
-                    forName: NSNotification.Name("CharacterAddressChanged"),
-                    object: nil,
-                    queue: .main
-                ) { notification in
-                    Task {
-                        // 캐릭터 목록 새로고침
-                        await self.loadCharacters()
-                    }
-                }
-            }
-            // 뷰가 사라질 때 알림 리스너 제거
-            .onDisappear {
-                NotificationCenter.default.removeObserver(self)
             }
         }
     }
     
-    // 캐릭터 슬롯
-    fileprivate func characterSlot(_ character: GRCharacter) -> some View {
+    // MARK: - UI Components
+    
+    // 티켓 수량 표시 뷰
+    private var ticketCountView: some View {
+        HStack {
+            if unlockTicketCount <= 0 {
+                ZStack {
+                    Image(systemName: "ticket")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(.top, 8)
+                        .frame(width: 30, height: 30)
+                        .foregroundStyle(Color.brown.opacity(0.5))
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(.top, 8)
+                        .frame(width: 30, height: 30)
+                        .foregroundStyle(.red)
+                }
+            }
+            ForEach(0..<unlockTicketCount, id: \.self) { _ in
+                Image(systemName: "ticket")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(.top, 8)
+                    .frame(width: 30, height: 30)
+                    .foregroundStyle(Color.brown.opacity(0.5))
+            }
+        }
+    }
+    
+    // 정렬 옵션 메뉴
+    private var sortOptionsMenu: some View {
+        Menu {
+            Button {
+                sortType = .original
+            } label: {
+                Label("기본", systemImage: sortType == .original ? "checkmark" : "")
+            }
+            
+            Button {
+                sortType = .alphabet
+            } label: {
+                Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
+            }
+            
+            Button {
+                sortType = .createdAscending
+            } label: {
+                Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
+            }
+            
+            Button {
+                sortType = .createdDescending
+            } label: {
+                Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
+            }
+        } label: {
+            Label("정렬", systemImage: "line.3.horizontal")
+        }
+    }
+    
+    // 캐릭터 슬롯 뷰
+    private func characterSlot(_ character: GRCharacter) -> some View {
         VStack(alignment: .center) {
             ZStack {
-                // 이미지 부분 수정
+                // 이미지 부분
                 Group {
                     if character.status.phase == .egg {
                         // 운석 단계일 경우 이미지 사용
@@ -360,242 +321,245 @@ struct CharDexView: View {
     }
     
     // 잠겨있는 슬롯
-    private func lockSlot(at index: Int) -> some View {
-        GeometryReader { geo in
-            let yPosition = geo.frame(in: .global).minY
-            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-            
-            Button {
-                selectedLockedIndex = index
-                showingUnlockAlert = true
-            } label: {
-                VStack {
-                    Image(systemName: "lock.fill")
-                        .scaledToFit()
-                        .font(.system(size: 60))
-                        .foregroundStyle(.black)
-                        .frame(height: 180)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(20)
-                }
-                .padding(.bottom, 16)
-                .offset(y: yOffset)
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(height: 180)
-    }
-    
-    // 추가할 수 있는 슬롯(남은 슬롯 표시)
-    private var addSlot: some View {
-        GeometryReader { geo in
-            let yPosition = geo.frame(in: .global).minY
-            let yOffset = -abs((yPosition.truncatingRemainder(dividingBy: 120)) - 60) / 5
-            
+    private func lockSlot(index: Int) -> some View {
+        Button {
+            selectedLockedIndex = index
+            showingUnlockAlert = true
+        } label: {
             VStack {
-                Image(systemName: "plus")
+                Image(systemName: "lock.fill")
                     .scaledToFit()
                     .font(.system(size: 60))
+                    .foregroundStyle(.black)
                     .frame(height: 180)
                     .frame(maxWidth: .infinity)
-                    .background(Color.brown.opacity(0.5))
+                    .background(Color.black.opacity(0.5))
                     .cornerRadius(20)
             }
             .padding(.bottom, 16)
-            .offset(y: yOffset)
         }
-        .frame(height: 180)
+        .buttonStyle(.plain)
     }
     
-    func fetchCharacters(userId: String) async {
-        let db = Firestore.firestore()
-        
-        do {
-            // 먼저 userHome 주소의 캐릭터 검색
-            let userHomeSnapshot = try await db.collection("users")
-                .document(userId)
-                .collection("characters")
-                .whereField("status.address", isEqualTo: "userHome")
-                .getDocuments()
-            
-            // 그 다음 동산 주소의 캐릭터 검색
-            let paradiseSnapshot = try await db.collection("users")
-                .document(userId)
-                .collection("characters")
-                .whereField("status.address", isEqualTo: "동산")
-                .getDocuments()
-            
-            var tempCharacters: [GRCharacter] = []
-            
-            // userHome 캐릭터 처리
-            for document in userHomeSnapshot.documents {
-                if let character = parseCharacterFromDocument(document) {
-                    tempCharacters.append(character)
-                }
-            }
-            
-            // 동산 캐릭터 처리
-            for document in paradiseSnapshot.documents {
-                if let character = parseCharacterFromDocument(document) {
-                    tempCharacters.append(character)
-                }
-            }
-            
-            print("[CharDexView] 총 \(tempCharacters.count)개 캐릭터 로드 완료 (Home: \(userHomeSnapshot.documents.count), Paradise: \(paradiseSnapshot.documents.count))")
-            
-            // UI 업데이트는 메인 스레드에서!
-            await MainActor.run {
-                self.realCharacters = tempCharacters
-            }
-        } catch {
-            print("문서 불러오기 실패: \(error.localizedDescription)")
+    // 추가할 수 있는 슬롯
+    private var addSlot: some View {
+        VStack {
+            Image(systemName: "plus")
+                .scaledToFit()
+                .font(.system(size: 60))
+                .frame(height: 180)
+                .frame(maxWidth: .infinity)
+                .background(Color.brown.opacity(0.5))
+                .cornerRadius(20)
         }
+        .padding(.bottom, 16)
     }
     
-    // 문서 파싱 헬퍼 함수
-    private func parseCharacterFromDocument(_ document: QueryDocumentSnapshot) -> GRCharacter? {
-        let data = document.data()
-        
-        // 기본값 정의
-        let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
-        let name = data["name"] as? String ?? "이름 없음"
-        let imageName = data["image"] as? String ?? ""
-        
-        // status 맵 파싱
-        guard let statusMap = data["status"] as? [String: Any] else {
-            print("❌ status 맵 누락: \(document.documentID)")
-            return nil
-        }
-        
-        let level = statusMap["level"] as? Int ?? 1
-        let exp = statusMap["exp"] as? Int ?? 0
-        let expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
-        let phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
-        let address = statusMap["address"] as? String ?? "동산"
-        let satiety = statusMap["satiety"] as? Int ?? 100
-        let stamina = statusMap["stamina"] as? Int ?? 100
-        let activity = statusMap["activity"] as? Int ?? 100
-        let affection = statusMap["affection"] as? Int ?? 0
-        let affectionCycle = statusMap["affectionCycle"] as? Int ?? 0
-        let healthy = statusMap["healthy"] as? Int ?? 50
-        let clean = statusMap["clean"] as? Int ?? 50
-        let appearance = statusMap["appearance"] as? [String: String] ?? [:]
-        let birthDate = (statusMap["birthDate"] as? Timestamp)?.dateValue() ?? Date()
-        
-        print("✅ 캐릭터 파싱 성공: \(name), 주소: \(address)")
-        
-        let status = GRCharacterStatus(
-            level: level,
-            exp: exp,
-            expToNextLevel: expToNextLevel,
-            phase: phase,
-            satiety: satiety,
-            stamina: stamina,
-            activity: activity,
-            affection: affection,
-            affectionCycle: affectionCycle,
-            healthy: healthy,
-            clean: clean,
-            address: address,
-            birthDate: birthDate,
-            appearance: appearance
-        )
-        
-        return GRCharacter(
-            id: document.documentID,
-            species: species,
-            name: name,
-            imageName: imageName,
-            birthDate: birthDate,
-            status: status
-        )
-    }
+    // MARK: - Methods
     
-    private func loadCharacters() async {
-        print("[CharDexView] 캐릭터 목록 로드 시작")
-        await MainActor.run {
+    /// 초기 데이터 로딩
+    private func loadData() {
+        Task {
             isLoading = true
-        }
-        
-        // Firebase에서 현재 사용자의 캐릭터 목록 가져오기
-        do {
-            // 모든 주소의 캐릭터를 한 번에 가져오기
-            let userHome = await fetchCharactersWithAddress(address: "userHome")
-            let paradise = await fetchCharactersWithAddress(address: "paradise")
             
-            // 모든 캐릭터 통합 (space는 제외)
-            let allCharacters = userHome + paradise
+            // 1. 캐릭터 데이터 로드
+            await loadCharacters()
             
-            print("[CharDexView] 총 \(allCharacters.count)개 캐릭터 로드 완료 (Home: \(userHome.count), Paradise: \(paradise.count))")
-            
-            await MainActor.run {
-                // 이 시점에서 먼저 필터링 - space 상태인 캐릭터는 제외
-                self.realCharacters = allCharacters.filter { $0.status.address != "space" }
-                self.isLoading = false
+            // 2. 인벤토리 데이터 로드
+            do {
+                try await userInventoryViewModel.fetchInventories(userId: currentUserId)
+            } catch {
+                print("❌ 인벤토리 로드 실패: \(error.localizedDescription)")
             }
-        } catch {
-            print("[CharDexView] 캐릭터 로드 중 오류 발생: \(error)")
-            await MainActor.run {
-                self.isLoading = false
+            
+            // 3. 동산 정보 로드
+            do {
+                try await characterDexViewModel.fetchCharDex(userId: currentUserId)
+                
+                // 상태 업데이트
+                unlockCount = characterDexViewModel.unlockCount
+                unlockTicketCount = characterDexViewModel.unlockTicketCount
+                selectedLockedIndex = characterDexViewModel.selectedLockedIndex
+                
+                // 티켓 수량 확인 및 업데이트
+                if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                    unlockTicketCount = ticket.userItemQuantity
+                    await updateCharDexData()
+                }
+                
+                // 캐릭터 수와 해제 슬롯 수 체크
+                if unlockCount == sortedCharacters.count && firstAlert {
+                    showingNotEnoughAlert = true
+                }
+                
+                if sortedCharacters.count > unlockCount {
+                    showingErrorAlert = true
+                }
+            } catch {
+                print("❌ 동산 데이터 로드 실패: \(error.localizedDescription)")
             }
+            
+            isLoading = false
         }
     }
-
+    
+    /// 캐릭터 데이터 로드
+    private func loadCharacters() async {
+        print("📱 캐릭터 데이터 로드 시작")
+        
+        // 1. 메인 캐릭터 로드
+        let userHomeCharacters = await fetchCharactersWithAddress(address: "userHome")
+        
+        // 2. 동산 캐릭터 로드
+        let paradiseCharacters = await fetchCharactersWithAddress(address: "paradise")
+        
+        // 3. 전체 캐릭터 통합
+        let allCharacters = userHomeCharacters + paradiseCharacters
+        
+        print("📱 총 \(allCharacters.count)개 캐릭터 로드 (Home: \(userHomeCharacters.count), Paradise: \(paradiseCharacters.count))")
+        
+        // UI 업데이트
+        await MainActor.run {
+            self.characters = allCharacters
+        }
+    }
+    
+    /// 특정 주소에 있는 캐릭터 로드
     private func fetchCharactersWithAddress(address: String) async -> [GRCharacter] {
+        let displayAddress: String
+        
+        // 주소 변환 (영문 -> 한글)
+        switch address {
+        case "paradise":
+            displayAddress = "paradise"
+        case "userHome":
+            displayAddress = "userHome"
+        default:
+            displayAddress = address
+        }
+        
         return await withCheckedContinuation { continuation in
-            let actualAddress: String
-            // 주소 변환 (한글 -> 영문)
-            if address == "paradise" {
-                actualAddress = "동산"
-            } else if address == "userHome" {
-                actualAddress = "userHome" // 또는 실제 저장된 값
-            } else {
-                actualAddress = address
-            }
-            
-            FirebaseService.shared.findCharactersByAddress(address: actualAddress) { characters, error in
+            FirebaseService.shared.findCharactersByAddress(address: displayAddress) { characters, error in
                 if let error = error {
-                    print("[CharDexView] 주소 \(address)로 캐릭터 검색 실패: \(error.localizedDescription)")
+                    print("❌ 주소 \(address) 캐릭터 로드 실패: \(error.localizedDescription)")
                     continuation.resume(returning: [])
                 } else {
-                    print("[CharDexView] 주소 \(address)(\(actualAddress))로 \(characters?.count ?? 0)개 캐릭터 검색됨")
+                    print("✅ 주소 \(address)에서 \(characters?.count ?? 0)개 캐릭터 로드")
                     continuation.resume(returning: characters ?? [])
                 }
             }
         }
     }
-
+    
+    /// 동산 데이터 업데이트
+    private func updateCharDexData() async {
+        characterDexViewModel.updateCharDex(
+            userId: currentUserId,
+            unlockCount: unlockCount,
+            unlockTicketCount: unlockTicketCount,
+            selectedLockedIndex: selectedLockedIndex
+        )
+    }
+    
+    /// 슬롯 해금
+    private func unlockSlot() {
+        if unlockTicketCount <= 0 {
+            showingNotEnoughTicketAlert = true
+            return
+        }
+        
+        if unlockCount < maxDexCount {
+            if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
+                // 슬롯 해금
+                unlockCount += 1
+                unlockTicketCount -= 1
+                
+                // Firebase 업데이트
+                characterDexViewModel.updateCharDex(
+                    userId: currentUserId,
+                    unlockCount: unlockCount,
+                    unlockTicketCount: unlockTicketCount,
+                    selectedLockedIndex: selectedLockedIndex
+                )
+                
+                // 인벤토리 아이템 수량 업데이트
+                userInventoryViewModel.updateItemQuantity(
+                    userId: currentUserId,
+                    item: ticket,
+                    newQuantity: unlockTicketCount
+                )
+            } else {
+                showingErrorAlert = true
+            }
+        }
+    }
+    
+    /// 알림 리스너 설정
+    private func setupNotificationObservers() {
+        // 캐릭터 주소 변경 리스너
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("CharacterAddressChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await self.loadCharacters()
+            }
+        }
+        
+        // 캐릭터 이름 변경 리스너
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("CharacterNameChanged"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await self.loadCharacters()
+            }
+        }
+        
+        // 메인 캐릭터 설정 리스너
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("CharacterSetAsMain"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task {
+                await self.loadCharacters()
+            }
+        }
+    }
 }
 
-// 날짜 -> 00월 00일 포맷으로 변경 함수
+// MARK: - Helper Types
+
+/// 슬롯 아이템 타입
+enum SlotItem {
+    case character(GRCharacter)
+    case add
+    case locked(index: Int)
+}
+
+// MARK: - Helper Functions
+
+/// 날짜를 MM월 DD일 형식으로 변환
 func formatToMonthDay(_ date: Date) -> String {
     let formatter = DateFormatter()
     formatter.dateFormat = "MM월 dd일"
     return formatter.string(from: date)
 }
 
-// 나이 계산 함수
+/// 나이 계산 함수
 func calculateAge(_ birthDate: Date) -> Int {
     let calendar = Calendar.current
-    let now = Date()
-    
-    let age = calendar.dateComponents([.year], from: birthDate, to: now).year ?? 0
-    
-    if let birthdayThisYear = calendar.date(bySetting: .year, value: calendar.component(.year, from: now), of: birthDate),
-       now < birthdayThisYear {
-        return age - 1
-    }
-    
-    return age
+    let ageComponents = calendar.dateComponents([.year], from: birthDate, to: Date())
+    return ageComponents.year ?? 0
 }
 
-
-
+// MARK: - Preview
 #Preview {
     CharDexView()
         .environmentObject(CharacterDexViewModel())
-        .environmentObject(CharacterDetailViewModel())
         .environmentObject(UserInventoryViewModel())
         .environmentObject(AuthService())
 }
