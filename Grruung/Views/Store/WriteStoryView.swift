@@ -84,14 +84,14 @@ struct WriteStoryView: View {
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
                             .padding(.leading)
                         
                     } else if let displayedImage = displayedImage {
                         Image(uiImage: displayedImage)
                             .resizable()
                             .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
                             .padding(.leading)
                     }
                 } else {
@@ -106,7 +106,7 @@ struct WriteStoryView: View {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFit()
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
                                     .padding(.leading)
                                 
                             } else if let existingImage = displayedImage {
@@ -114,7 +114,7 @@ struct WriteStoryView: View {
                                 Image(uiImage: existingImage)
                                     .resizable()
                                     .scaledToFit()
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
                                     .padding(.leading)
                             }
                             
@@ -173,7 +173,7 @@ struct WriteStoryView: View {
                         .fontWeight(.bold)
                         .padding()
                         .background(Color(UIColor.systemBackground))
-                        .cornerRadius(8)
+                        .cornerRadius(UIConstants.cornerRadius)
                     
                     if isTitlePlaceholderVisible {
                         Text("제목을 입력해주세요")
@@ -191,7 +191,7 @@ struct WriteStoryView: View {
                         .frame(minHeight: 150)
                         .border(Color.clear)
                         .background(Color(UIColor.systemBackground))
-                        .cornerRadius(8)
+                        .cornerRadius(UIConstants.cornerRadius)
                     
                     if isPlaceholderVisible {
                         Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기가 있나요?")
@@ -206,6 +206,14 @@ struct WriteStoryView: View {
             
             Spacer()
         }
+        .scrollContentBackground(.hidden) // 기본 배경을 숨기고Add commentMore actions
+                  .background(
+                      LinearGradient(colors: [
+                          Color(GRColor.mainColor5_1),
+                          Color(GRColor.mainColor5_2)
+                      ],
+                                     startPoint: .top, endPoint: .bottom)
+                  ) // 원하는 색상 지정
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(
@@ -361,7 +369,9 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "CF6NXxcH5HgGjzVE0nVE", postID: "2Ba1NrZq6GDuKmFcCs0E")//, userID: "uCMGt4DjgiPPpyd2p9Di")
+        WriteStoryView(currentMode: .read, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8"
+, postID: "fq2ry1aZ1CiiSgq6XhaH"
+)//, userID: "uCMGt4DjgiPPpyd2p9Di")
             .environmentObject(AuthService())
     }
 }
