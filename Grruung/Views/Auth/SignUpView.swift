@@ -74,7 +74,8 @@ struct SignUpView: View {
                                 .overlay(
                                     Rectangle()
                                         .frame(height: 1)
-                                        .foregroundColor(!isValidEmail && !email.isEmpty ? .red : .black), alignment: .bottom
+                                        .foregroundStyle(focusedField == .email ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                        .foregroundColor(!isValidEmail && !email.isEmpty ? .red : GRColor.mainColor4_2), alignment: .bottom
                                 )
                                 .padding(.bottom, 8)
                                 .focused($focusedField, equals: .email)
@@ -109,7 +110,8 @@ struct SignUpView: View {
                                 .overlay(
                                     Rectangle()
                                         .frame(height: 1)
-                                        .foregroundColor(!isValidUserName && !userName.isEmpty ? .red : .black), alignment: .bottom
+                                        .foregroundStyle(focusedField == .userName ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                        .foregroundColor(!isValidUserName && !userName.isEmpty ? .red : GRColor.mainColor4_2), alignment: .bottom
                                 )
                                 .padding(.bottom, 8)
                                 .focused($focusedField, equals: .userName)
@@ -143,7 +145,8 @@ struct SignUpView: View {
                                 .overlay(
                                     Rectangle()
                                         .frame(height: 1)
-                                        .foregroundColor(!isValidPassword && !password.isEmpty ? .red : .black), alignment: .bottom
+                                        .foregroundStyle(focusedField == .password ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                        .foregroundColor(!isValidPassword && !password.isEmpty ? .red : GRColor.mainColor4_2), alignment: .bottom
                                 )
                                 .padding(.bottom, 8)
                                 .focused($focusedField, equals: .password)
@@ -176,7 +179,8 @@ struct SignUpView: View {
                                 .overlay(
                                     Rectangle()
                                         .frame(height: 1)
-                                        .foregroundColor(password != passwordCheck && !passwordCheck.isEmpty ? .red : .black), alignment: .bottom
+                                        .foregroundStyle(focusedField == .passwordCheck ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                        .foregroundColor(password != passwordCheck && !passwordCheck.isEmpty ? .red : GRColor.mainColor4_2), alignment: .bottom
                                 )
                                 .padding(.bottom, 8)
                                 .focused($focusedField, equals: .passwordCheck)

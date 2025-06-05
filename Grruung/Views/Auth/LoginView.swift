@@ -58,10 +58,10 @@ struct LoginView: View {
                         }
                         .overlay(
                             Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(emailFieldIsFocused ? .black : .gray.opacity(0.3))
+                                .frame(height: 2)
+                                .foregroundColor(emailFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
                                 .animation(.easeInOut(duration: 0.3), value: emailFieldIsFocused),
-                                                    alignment: .bottom
+                            alignment: .bottom
                         )
                         .padding(.bottom, 8)
                         .textInputAutocapitalization(.never) // 자동 대문자 비활성화
@@ -84,13 +84,13 @@ struct LoginView: View {
                         .padding(.trailing, 40)
                         .padding(.bottom, 8)
                         .frame(height: 30)
-                        .submitLabel(.done)  
+                        .submitLabel(.done)
                         .disabled(isLoading)
                         .focused($passwordFieldIsFocused)
                         .overlay(
                             Rectangle()
-                                .frame(height: 1)
-                                .foregroundColor(passwordFieldIsFocused ? .black : .gray.opacity(0.3))
+                                .frame(height: 2)
+                                .foregroundColor(passwordFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
                                 .animation(.easeInOut(duration: 0.6), value: passwordFieldIsFocused),
                             alignment: .bottom
                         )
@@ -140,10 +140,14 @@ struct LoginView: View {
                     .disabled(!isValidInput || isLoading)
                     
                     // 회원가입 링크
-                    NavigationLink("계정이 없으신가요? 회원가입") {
+                    NavigationLink(destination: {
                         SignUpView()
                             .navigationBarBackButtonHidden(true) // ← 뒤로가기 버튼 숨기기
-                    }
+                    }, label: {
+                        Text("계정이 없으신가요? 회원가입")
+                            .foregroundStyle(GRColor.mainColor4_2)
+                            .bold()
+                    })
                     .padding(.top)
                     .disabled(isLoading)
                 }
