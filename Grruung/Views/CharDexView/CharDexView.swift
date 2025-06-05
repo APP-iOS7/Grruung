@@ -45,12 +45,6 @@ struct CharDexView: View {
         GridItem(.flexible(), spacing: 16)
     ]
     
-    // 임시 데이터(테스트 용)
-    @State private var garaCharacters: [GRCharacter] = [
-        GRCharacter(species: PetSpecies.CatLion, name: "구릉이1", imageName: "hare",
-                    birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome"))
-    ].filter { !($0.status.address == "space") }
-    
     // 캐릭터 데이터
     @State private var realCharacters: [GRCharacter] = []
         .filter { !($0.status.address == "space") }
@@ -266,7 +260,7 @@ struct CharDexView: View {
                         unlockCount = characterDexViewModel.unlockCount
                         selectedLockedIndex = characterDexViewModel.selectedLockedIndex
                         
-                        // 캐릭터 목록 업데이트
+                        // 캐릭터 목록 업데이트 - 매번 새로고침
                         await loadCharacters()
                     }
                     
@@ -418,80 +412,37 @@ struct CharDexView: View {
         let db = Firestore.firestore()
         
         do {
-            let snapshot = try await db.collection("users")
+            // 먼저 userHome 주소의 캐릭터 검색
+            let userHomeSnapshot = try await db.collection("users")
                 .document(userId)
                 .collection("characters")
+                .whereField("status.address", isEqualTo: "userHome")
+                .getDocuments()
+            
+            // 그 다음 동산 주소의 캐릭터 검색
+            let paradiseSnapshot = try await db.collection("users")
+                .document(userId)
+                .collection("characters")
+                .whereField("status.address", isEqualTo: "동산")
                 .getDocuments()
             
             var tempCharacters: [GRCharacter] = []
             
-            for document in snapshot.documents {
-                let data = document.data()
-                
-                // 기본값 정의
-                let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
-                let name = data["name"] as? String ?? "이름 없음"
-                let imageName = data["imageName"] as? String ?? ""
-                
-                // status 맵 파싱
-                var level = 1
-                var exp = 0
-                var expToNextLevel = 100
-                var phase: CharacterPhase = .egg
-                var address = "동산"
-                var satiety = 100
-                var stamina = 100
-                var activity = 100
-                var affection = 0
-                var affectionCycle = 0
-                var healthy = 50
-                var clean = 50
-                var appearance: [String: String] = [:]
-                var birthDate = Date()
-                
-                if let statusMap = data["status"] as? [String: Any] {
-                    level = statusMap["level"] as? Int ?? 1
-                    exp = statusMap["exp"] as? Int ?? 0
-                    expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
-                    phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
-                    address = statusMap["address"] as? String ?? "동산"
-                    satiety = statusMap["satiety"] as? Int ?? 100
-                    stamina = statusMap["stamina"] as? Int ?? 100
-                    activity = statusMap["activity"] as? Int ?? 100
-                    affection = statusMap["affection"] as? Int ?? 0
-                    affectionCycle = statusMap["affectionCycle"] as? Int ?? 0
-                    healthy = statusMap["healthy"] as? Int ?? 50
-                    clean = statusMap["clean"] as? Int ?? 50
-                    appearance = statusMap["appearance"] as? [String: String] ?? [:]
-                    birthDate = (statusMap["birthDate"] as? Timestamp)?.dateValue() ?? Date()
+            // userHome 캐릭터 처리
+            for document in userHomeSnapshot.documents {
+                if let character = parseCharacterFromDocument(document) {
+                    tempCharacters.append(character)
                 }
-                
-                let character = GRCharacter(
-                    id: document.documentID,
-                    species: species,
-                    name: name,
-                    imageName: imageName,
-                    birthDate: birthDate,
-                    status: GRCharacterStatus(
-                        level: level,
-                        exp: exp,
-                        expToNextLevel: expToNextLevel,
-                        phase: phase,
-                        satiety: satiety,
-                        stamina: stamina,
-                        activity: activity,
-                        affection: affection,
-                        affectionCycle: affectionCycle,
-                        healthy: healthy,
-                        clean: clean,
-                        address: address,
-                        birthDate: birthDate,
-                        appearance: appearance
-                    )
-                )
-                
-                tempCharacters.append(character)
             }
+            
+            // 동산 캐릭터 처리
+            for document in paradiseSnapshot.documents {
+                if let character = parseCharacterFromDocument(document) {
+                    tempCharacters.append(character)
+                }
+            }
+            
+            print("[CharDexView] 총 \(tempCharacters.count)개 캐릭터 로드 완료 (Home: \(userHomeSnapshot.documents.count), Paradise: \(paradiseSnapshot.documents.count))")
             
             // UI 업데이트는 메인 스레드에서!
             await MainActor.run {
@@ -502,6 +453,65 @@ struct CharDexView: View {
         }
     }
     
+    // 문서 파싱 헬퍼 함수
+    private func parseCharacterFromDocument(_ document: QueryDocumentSnapshot) -> GRCharacter? {
+        let data = document.data()
+        
+        // 기본값 정의
+        let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
+        let name = data["name"] as? String ?? "이름 없음"
+        let imageName = data["image"] as? String ?? ""
+        
+        // status 맵 파싱
+        guard let statusMap = data["status"] as? [String: Any] else {
+            print("❌ status 맵 누락: \(document.documentID)")
+            return nil
+        }
+        
+        let level = statusMap["level"] as? Int ?? 1
+        let exp = statusMap["exp"] as? Int ?? 0
+        let expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
+        let phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
+        let address = statusMap["address"] as? String ?? "동산"
+        let satiety = statusMap["satiety"] as? Int ?? 100
+        let stamina = statusMap["stamina"] as? Int ?? 100
+        let activity = statusMap["activity"] as? Int ?? 100
+        let affection = statusMap["affection"] as? Int ?? 0
+        let affectionCycle = statusMap["affectionCycle"] as? Int ?? 0
+        let healthy = statusMap["healthy"] as? Int ?? 50
+        let clean = statusMap["clean"] as? Int ?? 50
+        let appearance = statusMap["appearance"] as? [String: String] ?? [:]
+        let birthDate = (statusMap["birthDate"] as? Timestamp)?.dateValue() ?? Date()
+        
+        print("✅ 캐릭터 파싱 성공: \(name), 주소: \(address)")
+        
+        let status = GRCharacterStatus(
+            level: level,
+            exp: exp,
+            expToNextLevel: expToNextLevel,
+            phase: phase,
+            satiety: satiety,
+            stamina: stamina,
+            activity: activity,
+            affection: affection,
+            affectionCycle: affectionCycle,
+            healthy: healthy,
+            clean: clean,
+            address: address,
+            birthDate: birthDate,
+            appearance: appearance
+        )
+        
+        return GRCharacter(
+            id: document.documentID,
+            species: species,
+            name: name,
+            imageName: imageName,
+            birthDate: birthDate,
+            status: status
+        )
+    }
+    
     private func loadCharacters() async {
         print("[CharDexView] 캐릭터 목록 로드 시작")
         await MainActor.run {
@@ -510,16 +520,18 @@ struct CharDexView: View {
         
         // Firebase에서 현재 사용자의 캐릭터 목록 가져오기
         do {
+            // 모든 주소의 캐릭터를 한 번에 가져오기
             let userHome = await fetchCharactersWithAddress(address: "userHome")
             let paradise = await fetchCharactersWithAddress(address: "paradise")
             
-            // space는 제외 (삭제된 캐릭터)
+            // 모든 캐릭터 통합 (space는 제외)
             let allCharacters = userHome + paradise
             
             print("[CharDexView] 총 \(allCharacters.count)개 캐릭터 로드 완료 (Home: \(userHome.count), Paradise: \(paradise.count))")
             
             await MainActor.run {
-                self.realCharacters = allCharacters.filter { !($0.status.address == "space") }
+                // 이 시점에서 먼저 필터링 - space 상태인 캐릭터는 제외
+                self.realCharacters = allCharacters.filter { $0.status.address != "space" }
                 self.isLoading = false
             }
         } catch {
@@ -532,16 +544,28 @@ struct CharDexView: View {
 
     private func fetchCharactersWithAddress(address: String) async -> [GRCharacter] {
         return await withCheckedContinuation { continuation in
-            FirebaseService.shared.findCharactersByAddress(address: address) { characters, error in
+            let actualAddress: String
+            // 주소 변환 (한글 -> 영문)
+            if address == "paradise" {
+                actualAddress = "동산"
+            } else if address == "userHome" {
+                actualAddress = "userHome" // 또는 실제 저장된 값
+            } else {
+                actualAddress = address
+            }
+            
+            FirebaseService.shared.findCharactersByAddress(address: actualAddress) { characters, error in
                 if let error = error {
                     print("[CharDexView] 주소 \(address)로 캐릭터 검색 실패: \(error.localizedDescription)")
                     continuation.resume(returning: [])
                 } else {
+                    print("[CharDexView] 주소 \(address)(\(actualAddress))로 \(characters?.count ?? 0)개 캐릭터 검색됨")
                     continuation.resume(returning: characters ?? [])
                 }
             }
         }
     }
+
 }
 
 // 날짜 -> 00월 00일 포맷으로 변경 함수
