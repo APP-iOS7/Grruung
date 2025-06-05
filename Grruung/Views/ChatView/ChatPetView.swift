@@ -11,8 +11,8 @@ struct ChatPetView: View {
     @StateObject private var viewModel: ChatPetViewModel
     @Environment(\.presentationMode) var presentationMode
     @FocusState private var isInputFocused: Bool
-    @State private var showVoiceChatLive = false
-    
+    @State private var showUpdateAlert = false // 업데이트 알림 표시 여부
+
     // 캐릭터와 프롬프트 직접 저장
     let character: GRCharacter
     let prompt: String
@@ -80,11 +80,10 @@ struct ChatPetView: View {
                     dismissButton: .default(Text("확인"))
                 )
             }
-            .sheet(isPresented: $showVoiceChatLive) {
-                VoiceChatView(
-                    character: character,
-                    prompt: prompt
-                )
+            .alert("음성 대화 모드", isPresented: $showUpdateAlert) {
+                Button("확인", role: .cancel) { }
+            } message: {
+                Text("추후 음성 대화 모드 업데이트 예정입니다.")
             }
             .onTapGesture {
                 // 배경 탭 시 키보드 숨기기
@@ -146,13 +145,13 @@ struct ChatPetView: View {
                         .cornerRadius(20)
                 }
                 
-                // 음성 대화 모드
+                // 음성 대화 모드 버튼 - 클릭 시 업데이트 예정 알림
                 Button(action: {
-                    showVoiceChatLive = true
+                    showUpdateAlert = true
                 }) {
-                    Image(systemName: viewModel.isListening ? "mic.fill" : "mic")
+                    Image(systemName: "mic")
                         .font(.system(size: 20))
-                        .foregroundStyle(viewModel.isListening ? .red : .primary)
+                        .foregroundStyle(.primary)
                         .padding(8)
                         .background(Color(UIColor.systemGray5))
                         .clipShape(Circle())

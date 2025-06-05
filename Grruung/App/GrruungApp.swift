@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 import Firebase
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseAppCheck // App Check 추가
+import StoreKit // 유료 구매를 위해서 추가
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -36,12 +38,38 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct GrruungApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var authService = AuthService()
+    // 구매 여부 확인
+    @StateObject private var transactionObserver = TransactionObserver()
+    // 유저 정보
+    @StateObject private var userViewModel = UserViewModel()
+    // 동산 정보
+    @StateObject private var characterDexViewModel = CharacterDexViewModel()
+    // 인벤토리 정보
+    @StateObject private var userInventoryViewModel = UserInventoryViewModel()
+    
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            GRAnimationMetadata.self,
+            ImageTestModel.self
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authService)
+                .environmentObject(transactionObserver)
+                .environmentObject(userViewModel)
+                .environmentObject(characterDexViewModel)
+                .environmentObject(userInventoryViewModel)
         }
-        .modelContainer(for: [GRAnimationMetadata.self])
+        .modelContainer(sharedModelContainer)
     }
 }
