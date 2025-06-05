@@ -91,6 +91,7 @@ struct CharacterDetailView: View {
         }
         .onAppear {
             print("📱 CharacterDetailView 표시됨 - 캐릭터: \(characterUUID)")
+            print("✅✅✅✅✅ CharacterDetailView - 캐릭터 주소 로드 성공: \(viewModel.character.status.address)")
             viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
         }
         .navigationDestination(item: $selectedPostForEdit) { post in

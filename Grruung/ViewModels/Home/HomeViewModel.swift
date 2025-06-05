@@ -378,55 +378,6 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    // 기본 캐릭터를 생성하고 Firebase에 저장
-    /*
-    private func createDefaultCharacter() {
-        print("🆕 기본 캐릭터 생성 중...")
-        
-        let status = GRCharacterStatus(
-            level: 0,
-            exp: 0,
-            expToNextLevel: 50,
-            phase: .egg,
-            satiety: 100,
-            stamina: 100,
-            activity: 100,
-            affection: 0,
-            affectionCycle: 0,
-            healthy: 50,
-            clean: 50
-        )
-        
-        let newCharacter = GRCharacter(
-            species: .quokka,
-            name: "냥냥이",
-            imageName: "Quokka",
-            birthDate: Date(),
-            status: status
-        )
-        
-        // Firebase에 캐릭터 생성 및 메인으로 설정
-        firebaseService.createAndSetMainCharacter(character: newCharacter) { [weak self] characterID, error in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                if let error = error {
-                    self.firebaseError = "캐릭터 생성 실패: \(error.localizedDescription)"
-                    print("❌ 기본 캐릭터 생성 실패: \(error.localizedDescription)")
-                    return
-                }
-                
-                if let characterID = characterID {
-                    print("✅ 기본 캐릭터 생성 완료: \(characterID)")
-                    
-                    // 생성된 캐릭터로 설정
-                    self.setupCharacterFromFirebase(newCharacter)
-                    self.setupRealtimeListener(characterID: characterID)
-                }
-            }
-        }
-    }*/
-    
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
         self.isUpdatingFromFirebase = true

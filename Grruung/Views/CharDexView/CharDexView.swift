@@ -21,6 +21,10 @@ struct CharDexView: View {
     @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
     
+    // FIXME: - Start 실시간 리스너를 위한 속성 추가
+    @State private var charactersListener: ListenerRegistration?
+    // FIXME: - End
+    
     // 정렬 옵션
     @State private var sortType: SortType = .original
     
@@ -35,6 +39,7 @@ struct CharDexView: View {
     @State private var showingNotEnoughTicketAlert = false
     @State private var showingErrorAlert = false
     @State private var firstAlert = true
+    @State private var showingOnboarding = false
     
     // Environment Objects
     @EnvironmentObject private var authService: AuthService
@@ -132,7 +137,14 @@ struct CharDexView: View {
                                         characterSlot(character)
                                     }
                                 case .add:
-                                    NavigationLink(destination: OnboardingView()) {
+                                    Button {
+                                        // 슬롯이 가득 찼는지 확인
+                                        if sortedCharacters.count >= unlockCount {
+                                            showingNotEnoughAlert = true
+                                        } else {
+                                            showingOnboarding = true
+                                        }
+                                    } label: {
                                         addSlot
                                     }
                                 case .locked(let index):
@@ -161,12 +173,15 @@ struct CharDexView: View {
             .onAppear {
                 loadData()
                 
-                // 알림 리스너 설정
-                setupNotificationObservers()
+                // FIXME: - Start 실시간 리스너 설정
+                setupRealtimeCharacterListener()
+                // FIXME: - End
             }
             .onDisappear {
-                // 알림 리스너 제거
-                NotificationCenter.default.removeObserver(self)
+                // FIXME: - Start 리스너 정리
+                charactersListener?.remove()
+                charactersListener = nil
+                // FIXME: - End
             }
             
             // MARK: - Alert Modifiers
@@ -177,7 +192,11 @@ struct CharDexView: View {
                 Button("취소", role: .cancel) {}
             }
             .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
-                Button("확인", role: .cancel) {
+                Button("슬롯 해금하기") {
+                    selectedLockedIndex = 0
+                    showingUnlockAlert = true
+                }
+                Button("취소", role: .cancel) {
                     firstAlert = false
                 }
             }
@@ -188,6 +207,13 @@ struct CharDexView: View {
                 Button("확인", role: .cancel) {}
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
+            }
+            .sheet(isPresented: $showingOnboarding) {
+                OnboardingView()
+                    .onDisappear {
+                        // 온보딩이 끝나면 데이터 새로고침은 실시간 리스너가 처리
+                        print("✅ 온보딩 완료 - 실시간 리스너가 자동 업데이트 처리")
+                    }
             }
         }
     }
@@ -285,20 +311,20 @@ struct CharDexView: View {
                 .foregroundStyle(.black)
                 
                 // 위치 표시 아이콘
-                if character.status.address == "space" {
-                    Image(systemName: "xmark")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 15, height: 15)
-                        .offset(x: 60, y: -40)
-                        .foregroundStyle(.red)
-                } else {
-                    Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                if character.status.address == "userHome" {
+                    Image(systemName: "house")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 20, height: 20)
                         .offset(x: 60, y: -40)
-                        .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                        .foregroundStyle(.blue)
+                } else if character.status.address == "paradise" {
+                    Image(systemName: "mountain.2")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20, height: 20)
+                        .offset(x: 60, y: -40)
+                        .foregroundStyle(.black)
                 }
             }
             Text(character.name)
@@ -362,17 +388,14 @@ struct CharDexView: View {
         Task {
             isLoading = true
             
-            // 1. 캐릭터 데이터 로드
-            await loadCharacters()
-            
-            // 2. 인벤토리 데이터 로드
+            // 1. 인벤토리 데이터 로드
             do {
                 try await userInventoryViewModel.fetchInventories(userId: currentUserId)
             } catch {
                 print("❌ 인벤토리 로드 실패: \(error.localizedDescription)")
             }
             
-            // 3. 동산 정보 로드
+            // 2. 동산 정보 로드
             do {
                 try await characterDexViewModel.fetchCharDex(userId: currentUserId)
                 
@@ -388,7 +411,7 @@ struct CharDexView: View {
                 }
                 
                 // 캐릭터 수와 해제 슬롯 수 체크
-                if unlockCount == sortedCharacters.count && firstAlert {
+                if unlockCount <= sortedCharacters.count && firstAlert {
                     showingNotEnoughAlert = true
                 }
                 
@@ -403,53 +426,126 @@ struct CharDexView: View {
         }
     }
     
-    /// 캐릭터 데이터 로드
-    private func loadCharacters() async {
-        print("📱 캐릭터 데이터 로드 시작")
-        
-        // 1. 메인 캐릭터 로드
-        let userHomeCharacters = await fetchCharactersWithAddress(address: "userHome")
-        
-        // 2. 동산 캐릭터 로드
-        let paradiseCharacters = await fetchCharactersWithAddress(address: "paradise")
-        
-        // 3. 전체 캐릭터 통합
-        let allCharacters = userHomeCharacters + paradiseCharacters
-        
-        print("📱 총 \(allCharacters.count)개 캐릭터 로드 (Home: \(userHomeCharacters.count), Paradise: \(paradiseCharacters.count))")
-        
-        // UI 업데이트
-        await MainActor.run {
-            self.characters = allCharacters
-        }
-    }
-    
-    /// 특정 주소에 있는 캐릭터 로드
-    private func fetchCharactersWithAddress(address: String) async -> [GRCharacter] {
-        let displayAddress: String
-        
-        // 주소 변환 (영문 -> 한글)
-        switch address {
-        case "paradise":
-            displayAddress = "paradise"
-        case "userHome":
-            displayAddress = "userHome"
-        default:
-            displayAddress = address
+    // FIXME: - Start 실시간 캐릭터 리스너 설정
+    /// Firebase 실시간 리스너를 설정하여 캐릭터 변화를 감지
+    private func setupRealtimeCharacterListener() {
+        guard let userID = authService.user?.uid else {
+            print("❌ 사용자 인증 정보가 없습니다")
+            return
         }
         
-        return await withCheckedContinuation { continuation in
-            FirebaseService.shared.findCharactersByAddress(address: displayAddress) { characters, error in
+        print("🔄 실시간 캐릭터 리스너 설정 중...")
+        
+        // 기존 리스너가 있다면 제거
+        charactersListener?.remove()
+        
+        // 캐릭터 컬렉션에 실시간 리스너 설정
+        charactersListener = Firestore.firestore()
+            .collection("users").document(userID)
+            .collection("characters")
+            .addSnapshotListener { snapshot, error in
+                
                 if let error = error {
-                    print("❌ 주소 \(address) 캐릭터 로드 실패: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                } else {
-                    print("✅ 주소 \(address)에서 \(characters?.count ?? 0)개 캐릭터 로드")
-                    continuation.resume(returning: characters ?? [])
+                    print("❌ 실시간 리스너 오류: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.errorMessage = "데이터 동기화 실패: \(error.localizedDescription)"
+                    }
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("📝 캐릭터 문서가 없습니다")
+                    DispatchQueue.main.async {
+                        self.characters = []
+                    }
+                    return
+                }
+                
+                print("🔄 실시간 업데이트: \(documents.count)개 캐릭터 감지")
+                
+                // 문서들을 GRCharacter 객체로 변환
+                let updatedCharacters = documents.compactMap { document -> GRCharacter? in
+                    return self.parseCharacterFromDocument(document)
+                }.filter { character in
+                    // space 주소가 아닌 캐릭터만 포함 (삭제된 캐릭터 제외)
+                    return character.status.address != "space"
+                }
+                
+                // 메인 스레드에서 UI 업데이트
+                DispatchQueue.main.async {
+                    self.characters = updatedCharacters
+                    self.isLoading = false
+                    
+                    print("✅ 캐릭터 목록 업데이트 완료: \(updatedCharacters.count)개")
+                    
+                    // 디버깅을 위한 로그
+                    for character in updatedCharacters {
+                        print("   - \(character.name): \(character.status.address)")
+                    }
                 }
             }
-        }
     }
+    
+    /// Firestore 문서에서 GRCharacter 객체로 파싱
+    private func parseCharacterFromDocument(_ document: DocumentSnapshot) -> GRCharacter? {
+        let data = document.data() ?? [:]
+        let characterID = document.documentID
+        
+        // 기본 캐릭터 정보 파싱
+        let speciesRaw = data["species"] as? String ?? ""
+        let species = PetSpecies(rawValue: speciesRaw) ?? .CatLion
+        let name = data["name"] as? String ?? "이름 없음"
+        let imageName = data["image"] as? String ?? ""
+        let createdAtTimestamp = data["createdAt"] as? Timestamp
+        let createdAt = createdAtTimestamp?.dateValue() ?? Date()
+        
+        // 상태 정보 파싱
+        let statusData = data["status"] as? [String: Any] ?? [:]
+        let level = statusData["level"] as? Int ?? 1
+        let exp = statusData["exp"] as? Int ?? 0
+        let expToNextLevel = statusData["expToNextLevel"] as? Int ?? 100
+        let phaseRaw = statusData["phase"] as? String ?? ""
+        let phase = CharacterPhase(rawValue: phaseRaw) ?? .infant
+        let satiety = statusData["satiety"] as? Int ?? 50
+        let stamina = statusData["stamina"] as? Int ?? 50
+        let activity = statusData["activity"] as? Int ?? 50
+        let affection = statusData["affection"] as? Int ?? 50
+        let affectionCycle = statusData["affectionCycle"] as? Int ?? 0
+        let healthy = statusData["healthy"] as? Int ?? 50
+        let clean = statusData["clean"] as? Int ?? 50
+        let address = statusData["address"] as? String ?? "userHome"
+        let birthDateTimestamp = statusData["birthDate"] as? Timestamp
+        let birthDate = birthDateTimestamp?.dateValue() ?? Date()
+        let appearance = statusData["appearance"] as? [String: String] ?? [:]
+        
+        let status = GRCharacterStatus(
+            level: level,
+            exp: exp,
+            expToNextLevel: expToNextLevel,
+            phase: phase,
+            satiety: satiety,
+            stamina: stamina,
+            activity: activity,
+            affection: affection,
+            affectionCycle: affectionCycle,
+            healthy: healthy,
+            clean: clean,
+            address: address,
+            birthDate: birthDate,
+            appearance: appearance
+        )
+        
+        return GRCharacter(
+            id: characterID,
+            species: species,
+            name: name,
+            imageName: imageName,
+            birthDate: birthDate,
+            createdAt: createdAt,
+            status: status
+        )
+    }
+    // FIXME: - End
     
     /// 동산 데이터 업데이트
     private func updateCharDexData() async {
@@ -493,42 +589,6 @@ struct CharDexView: View {
             }
         }
     }
-    
-    /// 알림 리스너 설정
-    private func setupNotificationObservers() {
-        // 캐릭터 주소 변경 리스너
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("CharacterAddressChanged"),
-            object: nil,
-            queue: .main
-        ) { _ in
-            Task {
-                await self.loadCharacters()
-            }
-        }
-        
-        // 캐릭터 이름 변경 리스너
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("CharacterNameChanged"),
-            object: nil,
-            queue: .main
-        ) { _ in
-            Task {
-                await self.loadCharacters()
-            }
-        }
-        
-        // 메인 캐릭터 설정 리스너
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("CharacterSetAsMain"),
-            object: nil,
-            queue: .main
-        ) { _ in
-            Task {
-                await self.loadCharacters()
-            }
-        }
-    }
 }
 
 // MARK: - Helper Types
@@ -554,12 +614,4 @@ func calculateAge(_ birthDate: Date) -> Int {
     let calendar = Calendar.current
     let ageComponents = calendar.dateComponents([.year], from: birthDate, to: Date())
     return ageComponents.year ?? 0
-}
-
-// MARK: - Preview
-#Preview {
-    CharDexView()
-        .environmentObject(CharacterDexViewModel())
-        .environmentObject(UserInventoryViewModel())
-        .environmentObject(AuthService())
 }
