@@ -18,6 +18,8 @@ struct WriteStoryView: View {
     
     @StateObject private var viewModel = WriteStoryViewModel()
     @StateObject private var writingCountVM = WritingCountViewModel()
+    @StateObject private var charDetailVM: CharacterDetailViewModel
+    
     @EnvironmentObject private var authService: AuthService
     
     @Environment(\.dismiss) var dismiss
@@ -83,6 +85,7 @@ struct WriteStoryView: View {
         self.currentMode = currentMode
         self.characterUUID = characterUUID
         self.postID = postID
+        self._charDetailVM = StateObject(wrappedValue: CharacterDetailViewModel(characterUUID: characterUUID))
     }
     
     var body: some View {
@@ -317,7 +320,7 @@ struct WriteStoryView: View {
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                 
-                Text("사진을 추가하여 쿼카에게 들려줄 이야기를 더 풍성하게 만들어보세요!")
+                Text("사진을 추가하여 \(charDetailVM.character.name)에게 들려줄 이야기를 더 풍성하게 만들어보세요!")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -370,12 +373,12 @@ struct WriteStoryView: View {
     
     private var editModeContent: some View {
         VStack(spacing: 20) {
-            // 제목 입력
+            // 주제 입력
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "pencil.circle.fill")
                         .foregroundColor(Color(GRColor.buttonColor_1))
-                    Text("제목")
+                    Text("주제")
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -392,7 +395,7 @@ struct WriteStoryView: View {
                         )
                     
                     if isTitlePlaceholderVisible {
-                        Text("오늘의 제목을 적어주세요")
+                        Text("어떤 주제에 대해 이야기할까요?")
                             .foregroundColor(Color(.placeholderText))
                             .font(.title3)
                             .padding(16)
@@ -425,7 +428,7 @@ struct WriteStoryView: View {
                         .scrollContentBackground(.hidden)
                     
                     if isPlaceholderVisible {
-                        Text("오늘 하루 \"쿼카\"에게 들려주고 싶은 이야기를 써보세요.\n\n어떤 일이 있었나요? 어떤 기분이었나요?\n소소한 일상도 좋아요 ✨")
+                        Text("오늘 하루 \(charDetailVM.character.name)에게 들려주고 싶은 이야기를 써보세요.\n\n어떤 일이 있었나요? 어떤 기분이었나요?\n소소한 일상도 좋아요 ✨")
                             .foregroundColor(Color(.placeholderText))
                             .font(.body)
                             .lineSpacing(4)

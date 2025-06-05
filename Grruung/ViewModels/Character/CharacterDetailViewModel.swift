@@ -33,6 +33,7 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage()
     
     init(characterUUID: String = "") {
+//        print("CharacterDetailViewModel 초기화 - characterUUID: \(characterUUID)")
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
