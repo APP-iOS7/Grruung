@@ -128,6 +128,13 @@ struct WriteStoryView: View {
         .onAppear {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
+            
+            if currentMode == .create {
+                   // 잠시 대기 후 체크 (초기화 시간 확보)
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                       checkWritingCount()
+                   }
+               }
         }
         .interactiveDismissDisabled(isUploading)
         .toolbar {
@@ -164,7 +171,11 @@ struct WriteStoryView: View {
             Text("삭제된 이야기는 복구할 수 없습니다.")
         }
         .alert("글쓰기 횟수 부족", isPresented: $showNoWritingCountAlert) {
-             Button("취소", role: .cancel) {}
+             Button("취소", role: .cancel) {
+                 if currentMode == .create {
+                     dismiss()
+                 }
+             }
              Button("구매하기") {
                  // TODO : 상점으로 이동하는 로직 추가
                  print("상점으로 이동")
@@ -615,6 +626,18 @@ struct WriteStoryView: View {
             } catch {
                 print("게시물 삭제 중 오류 발생: \(error)")
             }
+        }
+    }
+    
+    private func checkWritingCount() {
+        // userWritingCount가 있고, 글쓰기 가능 여부를 확인
+        guard let count = writingCountVM.userWritingCount else { return }
+        
+        // 글쓰기 가능한지 확인 (writingCount 내부 값 변경 없이)
+        let canWrite = (count.dailyCount + count.additionalCount) > 0
+        
+        if !canWrite {
+            showNoWritingCountAlert = true
         }
     }
     
