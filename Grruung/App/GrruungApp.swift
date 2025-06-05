@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import Firebase
 import FirebaseCore
 import FirebaseFirestore
@@ -46,6 +47,20 @@ struct GrruungApp: App {
     // 인벤토리 정보
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
     
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            GRAnimationMetadata.self,
+            ImageTestModel.self
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -55,6 +70,6 @@ struct GrruungApp: App {
                 .environmentObject(characterDexViewModel)
                 .environmentObject(userInventoryViewModel)
         }
-        .modelContainer(for: [GRAnimationMetadata.self])
+        .modelContainer(sharedModelContainer)
     }
 }

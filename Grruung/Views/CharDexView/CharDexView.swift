@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseFirestore
+import FirebaseStorage
 
 struct CharDexView: View {
     // 생성 가능한 최대 캐릭터 수
@@ -22,6 +25,7 @@ struct CharDexView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
+    @EnvironmentObject private var characterDetailViewModel: CharacterDetailViewModel
     // 잠금해제 alert 변수
     @State private var showingUnlockAlert = false
     // 생성 가능한 캐릭터 수가 부족한 경우 alert 변수
@@ -47,6 +51,10 @@ struct CharDexView: View {
                     birthDate: Calendar.current.date(from: DateComponents(year: 2023, month: 12, day: 25))!, createdAt: Date(), status: GRCharacterStatus(address: "userHome"))
     ].filter { !($0.status.address == "space") }
     
+    // 캐릭터 데이터
+    @State private var realCharacters: [GRCharacter] = []
+        .filter { !($0.status.address == "space") }
+    
     private enum SortType {
         case original
         case createdAscending
@@ -58,13 +66,13 @@ struct CharDexView: View {
     private var sortedCharacterSlots: [GRCharacter] {
         switch sortType {
         case .original:
-            return garaCharacters
+            return realCharacters
         case .createdAscending:
-            return garaCharacters.sorted { $0.birthDate > $1.birthDate }
+            return realCharacters.sorted { $0.birthDate > $1.birthDate }
         case .createdDescending:
-            return garaCharacters.sorted { $0.birthDate < $1.birthDate }
+            return realCharacters.sorted { $0.birthDate < $1.birthDate }
         case .alphabet:
-            return garaCharacters.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            return realCharacters.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         }
     }
     
@@ -97,7 +105,7 @@ struct CharDexView: View {
             ScrollView {
                 if !characterDexViewModel.isLoading {
                     HStack {
-                        Text("\(garaCharacters.count)")
+                        Text("\(realCharacters.count)")
                             .foregroundStyle(.yellow)
                         Text("/ \(maxDexCount) 수집")
                     }
@@ -159,7 +167,7 @@ struct CharDexView: View {
 //            .navigationTitle("캐릭터 동산")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: CharDexSearchView(searchCharacters: garaCharacters)) {
+                    NavigationLink(destination: CharDexSearchView(searchCharacters: realCharacters)) {
                         Image(systemName: "magnifyingglass")
                     }
                 }
@@ -241,6 +249,9 @@ struct CharDexView: View {
                 Task {
                     // 유저 Id 가져오기
                     realUserId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
+                    // 캐릭터 데이터 가져오기
+                    await fetchCharacters(userId: realUserId)
+                    // 인벤토리 데이터 가져오기
                     try await userInventoryViewModel.fetchInventories(userId: realUserId)
                     // 동산 데이터 가져오기
                     if !characterDexViewModel.isLoading {
@@ -260,12 +271,12 @@ struct CharDexView: View {
                     }
                     
                     // 캐릭터 수와 해제 슬롯 수가 같은 경우 안내
-                    if unlockCount == garaCharacters.count && firstAlert {
+                    if unlockCount == realCharacters.count && firstAlert {
                         showingNotEnoughAlert = true
                     }
                     
                     // 캐릭터 수가 해제 슬롯 수보다 많으면 에러
-                    if garaCharacters.count > unlockCount {
+                    if realCharacters.count > unlockCount {
                         showingErrorAlert = true
                     }
                 }
@@ -403,6 +414,94 @@ struct CharDexView: View {
         .frame(height: 180)
     }
     
+    func fetchCharacters(userId: String) async {
+        let db = Firestore.firestore()
+        
+        do {
+            let snapshot = try await db.collection("users")
+                .document(userId)
+                .collection("characters")
+                .getDocuments()
+            
+            var tempCharacters: [GRCharacter] = []
+            
+            for document in snapshot.documents {
+                let data = document.data()
+                
+                // 기본값 정의
+                let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
+                let name = data["name"] as? String ?? "이름 없음"
+                let imageName = data["imageName"] as? String ?? ""
+                
+                // status 맵 파싱
+                var level = 1
+                var exp = 0
+                var expToNextLevel = 100
+                var phase: CharacterPhase = .egg
+                var address = "동산"
+                var satiety = 100
+                var stamina = 100
+                var activity = 100
+                var affection = 0
+                var affectionCycle = 0
+                var healthy = 50
+                var clean = 50
+                var appearance: [String: String] = [:]
+                var birthDate = Date()
+                
+                if let statusMap = data["status"] as? [String: Any] {
+                    level = statusMap["level"] as? Int ?? 1
+                    exp = statusMap["exp"] as? Int ?? 0
+                    expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
+                    phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
+                    address = statusMap["address"] as? String ?? "동산"
+                    satiety = statusMap["satiety"] as? Int ?? 100
+                    stamina = statusMap["stamina"] as? Int ?? 100
+                    activity = statusMap["activity"] as? Int ?? 100
+                    affection = statusMap["affection"] as? Int ?? 0
+                    affectionCycle = statusMap["affectionCycle"] as? Int ?? 0
+                    healthy = statusMap["healthy"] as? Int ?? 50
+                    clean = statusMap["clean"] as? Int ?? 50
+                    appearance = statusMap["appearance"] as? [String: String] ?? [:]
+                    birthDate = (statusMap["birthDate"] as? Timestamp)?.dateValue() ?? Date()
+                }
+                
+                let character = GRCharacter(
+                    id: document.documentID,
+                    species: species,
+                    name: name,
+                    imageName: imageName,
+                    birthDate: birthDate,
+                    status: GRCharacterStatus(
+                        level: level,
+                        exp: exp,
+                        expToNextLevel: expToNextLevel,
+                        phase: phase,
+                        satiety: satiety,
+                        stamina: stamina,
+                        activity: activity,
+                        affection: affection,
+                        affectionCycle: affectionCycle,
+                        healthy: healthy,
+                        clean: clean,
+                        address: address,
+                        birthDate: birthDate,
+                        appearance: appearance
+                    )
+                )
+                
+                tempCharacters.append(character)
+            }
+            
+            // UI 업데이트는 메인 스레드에서!
+            await MainActor.run {
+                self.realCharacters = tempCharacters
+            }
+        } catch {
+            print("문서 불러오기 실패: \(error.localizedDescription)")
+        }
+    }
+    
     private func loadCharacters() async {
         print("[CharDexView] 캐릭터 목록 로드 시작")
         await MainActor.run {
@@ -420,7 +519,7 @@ struct CharDexView: View {
             print("[CharDexView] 총 \(allCharacters.count)개 캐릭터 로드 완료 (Home: \(userHome.count), Paradise: \(paradise.count))")
             
             await MainActor.run {
-                self.garaCharacters = allCharacters.filter { !($0.status.address == "space") }
+                self.realCharacters = allCharacters.filter { !($0.status.address == "space") }
                 self.isLoading = false
             }
         } catch {
@@ -465,4 +564,14 @@ func calculateAge(_ birthDate: Date) -> Int {
     }
     
     return age
+}
+
+
+
+#Preview {
+    CharDexView()
+        .environmentObject(CharacterDexViewModel())
+        .environmentObject(CharacterDetailViewModel())
+        .environmentObject(UserInventoryViewModel())
+        .environmentObject(AuthService())
 }

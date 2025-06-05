@@ -20,6 +20,7 @@ struct HomeView: View {
     @State private var isShowingWriteStory = false
     @State private var isShowingChatPet = false
     @State private var isShowingSettings = false
+    @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     @State private var isShowingOnboarding = false
 
     // MARK: - Body
@@ -35,6 +36,12 @@ struct HomeView: View {
                 characterSection
                 
                 Spacer()
+                
+                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                if let character = viewModel.character,
+                   character.status.evolutionStatus.needsEvolution {
+                    evolutionButton
+                }
                 
                 // 상태 바 섹션
                 statsSection
@@ -53,6 +60,19 @@ struct HomeView: View {
                 actionButtonsGrid
             }
             .padding()
+            .scrollContentBackground(.hidden) // 기본 배경 숨기기
+            .background(
+                // 배경 이미지 설정
+                Image("forest1")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 200)
+                    .scaleEffect(1.1) // 줌인 줌아웃
+                    .offset(x: -10, y: -145) // 위치 조정
+
+                    // .clipped() // 넘치는 부분 잘라내기
+                    //.ignoresSafeArea(.all)
+            )
 //            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
             .navigationBarBackButtonHidden(true)
             .onAppear {
@@ -91,8 +111,83 @@ struct HomeView: View {
         .sheet(isPresented: $isShowingSettings) {
             //            SettingsSheetView()
         }
+        // 진화 화면 시트
+        .sheet(isPresented: $showEvolutionScreen) {
+            if let character = viewModel.character {
+                EvolutionView(
+                    character: character,
+                    homeViewModel: viewModel
+                )
+            }
+        }
+        // 온보딩 화면 시트
         .sheet(isPresented: $isShowingOnboarding) {
             OnboardingView()
+        }
+        // 부화 팝업 오버레이
+        .overlay {
+            if viewModel.showEvolutionPopup {
+                EvolutionPopupView(
+                    isPresented: $viewModel.showEvolutionPopup,
+                    onEvolutionStart: {
+                        // 부화 버튼을 눌렀을 때 진화 화면 표시
+                        showEvolutionScreen = true
+                        print("🥚 부화 시작 - 진화 화면으로 이동")
+                    },
+                    onEvolutionDelay: {
+                        // 보류 버튼을 눌렀을 때는 아무것도 하지 않음
+                        print("⏸️ 부화 보류 - 나중에 다시 시도 가능")
+                    }
+                )
+            }
+        }
+    }
+    
+    // 부화 진행 버튼
+    private var evolutionButton: some View {
+        Button(action: {
+            showEvolutionScreen = true
+        }) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16))
+                
+                // 진화 상태에 따라 버튼 텍스트 변경
+                Text(getEvolutionButtonText())
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [Color.orange, Color.red],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
+        }
+    }
+    
+    // 진화 상태에 따른 버튼 텍스트 반환
+    private func getEvolutionButtonText() -> String {
+        guard let character = viewModel.character else { return "부화 진행" }
+        
+        switch character.status.evolutionStatus {
+        case .toInfant:
+            return "부화 진행"
+        case .toChild:
+            return "소아기 진화"
+        case .toAdolescent:
+            return "청년기 진화"
+        case .toAdult:
+            return "성년기 진화"
+        case .toElder:
+            return "노년기 진화"
+        default:
+            return "진화 진행"
         }
     }
     
@@ -158,60 +253,14 @@ struct HomeView: View {
             Spacer()
             
             // 캐릭터 이미지
-            ZStack {
-                if let character = viewModel.character {
-                    // 조건부 로직을 직접 Image 생성에 적용
-                    Group {
-                        if character.status.phase == .egg {
-                            // 운석 단계일 경우 이미지 사용
-                            Image("egg")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(height: 200)
-                        } else {
-                            // 그 외 단계에서는 species에 따라 이미지 결정
-                            if character.species == .quokka {
-                                Image("quokka")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 200)
-                            } else {
-                                Image("CatLion")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 200)
-                            }
-                        }
-                    }
-                    .scaleEffect(viewModel.isSleeping ? 0.95 : 1.0)
-                    .animation(
-                        viewModel.isSleeping ?
-                        Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-                                .default,
-                        value: viewModel.isSleeping
-                    )
-                } else {
-                    // 캐릭터가 없는 경우 플러스 아이콘 표시
-                    Button(action: {
-                        isShowingOnboarding = true
-                    }) {
-                        Image(systemName: "plus.circle")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 100)
-                            .foregroundColor(.gray)
-                    }
+            ScreenView(
+                character: viewModel.character,
+                isSleeping: viewModel.isSleeping,
+                onCreateCharacterTapped: {
+                    // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
+                    isShowingOnboarding = true
                 }
-                
-                // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
-                if viewModel.isSleeping, viewModel.character != nil {
-                    VStack {
-                        Text("💤")
-                            .font(.largeTitle)
-                            .offset(x: 50, y: -50)
-                    }
-                }
-            }
+            )
             
             Spacer()
             
@@ -303,10 +352,10 @@ struct HomeView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .frame(width: 60, height: 60)
-                    .foregroundColor(Color.gray.opacity(0.05))
+                    .foregroundColor(Color.gray.opacity(0.6))
                 
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.gray)
+                    .foregroundColor(.white)
             }
         } else {
             if systemName == "cart.fill" {
@@ -314,7 +363,7 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.2))
+                            .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
                             .foregroundColor(.black) // 회색에서 검은색으로 변경
@@ -336,7 +385,7 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.2))
+                            .foregroundColor(Color.gray.opacity(0.6))
                         Image(systemName: systemName)
                             .font(.system(size: 24))
                             .foregroundColor(.black) // 회색에서 검은색으로 변경
@@ -349,7 +398,7 @@ struct HomeView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .frame(width: 60, height: 60)
-                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.05) : Color.gray.opacity(0.2))
+                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.1) : Color.gray.opacity(0.6))
                         
                         Image(systemName: systemName)
                             .font(.system(size: 24))

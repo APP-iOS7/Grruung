@@ -57,7 +57,7 @@
          </CommandLineArgument>
       </CommandLineArguments>
       <StoreKitConfigurationFileReference
-         identifier = "../../Grruung/ShopItems.storekit">
+         identifier = "../../Grruung/ShopItems.storekit/Configuration.storekit/Configuration.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction

@@ -35,6 +35,7 @@ struct GRCharacterStatus {
     var healthy: Int // 건강도 (0~100, 시작값 50)
     var clean: Int // 청결도 (0~100, 시작값 50)
     var appearance: [String: String] // 외모 (성장 이후 바뀔 수 있음)
+    var evolutionStatus: EvolutionStatus // 진화 상태
     
     // MARK: - 초기값
     init(level: Int = 0,
@@ -50,7 +51,8 @@ struct GRCharacterStatus {
          clean: Int = 50, // 시작값 50
          address: String = "usersHome",
          birthDate: Date = Date(),
-         appearance: [String: String] = [:]) {
+         appearance: [String: String] = [:],
+         evolutionStatus: EvolutionStatus = .eggComplete) {
         
         self.level = level
         self.exp = exp
@@ -66,6 +68,7 @@ struct GRCharacterStatus {
         self.address = address
         self.birthDate = birthDate
         self.appearance = appearance
+        self.evolutionStatus = evolutionStatus
     }
     
     // 캐릭터 성장 단계를 업데이트합니다.
@@ -184,4 +187,47 @@ enum Address: String, Codable, CaseIterable {
     case userHome = "메인"
     case paradise = "동산"
     case space = "우주"
+}
+
+// MARK: - 진화 상태 열거형
+enum EvolutionStatus: String, Codable, CaseIterable {
+    case eggComplete = "운석완료"          // 운석 단계 완료
+    case toInfant = "유아기진화중"         // 유아기로 진화 중 (레벨 1 달성했지만 부화 진행 안함)
+    case completeInfant = "유아기완료"     // 유아기 진화 완료 (부화 완료)
+    case toChild = "소아기진화중"          // 소아기로 진화 중
+    case completeChild = "소아기완료"      // 소아기 진화 완료
+    case toAdolescent = "청년기진화중"     // 청년기로 진화 중
+    case completeAdolescent = "청년기완료" // 청년기 진화 완료
+    case toAdult = "성년기진화중"          // 성년기로 진화 중
+    case completeAdult = "성년기완료"      // 성년기 진화 완료
+    case toElder = "노년기진화중"          // 노년기로 진화 중
+    case completeElder = "노년기완료"      // 노년기 진화 완료
+    
+    // 진화가 필요한 상태인지 확인
+    var needsEvolution: Bool {
+        switch self {
+        case .toInfant, .toChild, .toAdolescent, .toAdult, .toElder:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    // 현재 상태에서 목표로 하는 성장 단계
+    var targetPhase: CharacterPhase? {
+        switch self {
+        case .eggComplete:
+            return .egg
+        case .toInfant, .completeInfant:
+            return .infant
+        case .toChild, .completeChild:
+            return .child
+        case .toAdolescent, .completeAdolescent:
+            return .adolescent
+        case .toAdult, .completeAdult:
+            return .adult
+        case .toElder, .completeElder:
+            return .elder
+        }
+    }
 }

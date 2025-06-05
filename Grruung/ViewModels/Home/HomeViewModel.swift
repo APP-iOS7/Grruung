@@ -345,9 +345,9 @@ class HomeViewModel: ObservableObject {
         )
         
         let newCharacter = GRCharacter(
-            species: .CatLion,
+            species: .quokka,
             name: "냥냥이",
-            imageName: "CatLion",
+            imageName: "quokka",
             birthDate: Date(),
             createdAt: Date(),
             status: status
@@ -398,9 +398,9 @@ class HomeViewModel: ObservableObject {
         )
         
         let newCharacter = GRCharacter(
-            species: .CatLion,
+            species: .quokka,
             name: "냥냥이",
-            imageName: "CatLion",
+            imageName: "Quokka",
             birthDate: Date(),
             status: status
         )
@@ -1087,6 +1087,9 @@ class HomeViewModel: ObservableObject {
         let oldPhase = character?.status.phase
         updateGrowthPhase()
         
+        // 진화 상태 업데이트
+        updateEvolutionStatus()
+        
         // 새 경험치 요구량 설정
         updateExpRequirement()
         
@@ -1174,6 +1177,62 @@ class HomeViewModel: ObservableObject {
 #if DEBUG
         print("🎁 레벨업 보너스: 보이는 스탯 +\(bonusAmount), 히든 스탯 +\(hiddenBonusAmount)")
 #endif
+    }
+    
+    // 진화 상태 업데이트 메서드
+    private func updateEvolutionStatus() {
+        guard var character = character else { return }
+        
+        // 레벨에 따라 진화 상태 변경
+        switch level {
+        case 0:
+            character.status.evolutionStatus = .eggComplete
+        case 1:
+            // 레벨 1이 되면 유아기로 진화 중 상태
+            character.status.evolutionStatus = .toInfant
+            // 레벨 1 달성 시 부화 팝업 표시 (다음 단계에서 구현)
+            showEvolutionPopup = true
+        case 3:
+            character.status.evolutionStatus = .toChild
+        case 6:
+            character.status.evolutionStatus = .toAdolescent
+        case 9:
+            character.status.evolutionStatus = .toAdult
+        case 16:
+            character.status.evolutionStatus = .toElder
+        default:
+            // 다른 레벨에서는 진화 상태 변경 없음
+            break
+        }
+        
+        self.character = character
+        
+    #if DEBUG
+        print("🔄 레벨 \(level) 달성 -> 진화 상태: \(character.status.evolutionStatus.rawValue)")
+    #endif
+    }
+
+    // 부화 팝업 표시 여부 (다음 단계에서 사용)
+    @Published var showEvolutionPopup: Bool = false
+    
+    // 진화 완료 메서드
+    func completeEvolution(to phase: CharacterPhase) {
+        guard var character = character else { return }
+        
+        // 진화 상태를 완료로 변경
+        switch phase {
+        case .infant:
+            character.status.evolutionStatus = .completeInfant
+        case .child:
+            character.status.evolutionStatus = .completeChild
+        // ... 다른 단계들
+        default:
+            break
+        }
+        
+        // 캐릭터 업데이트
+        self.character = character
+        updateCharacterStatus()
     }
     
     // MARK: - Action System
