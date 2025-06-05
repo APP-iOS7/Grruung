@@ -22,9 +22,10 @@ struct WriteStoryView: View {
     
     @Environment(\.dismiss) var dismiss
     
-    var currentMode: ViewMode
+    @State var currentMode: ViewMode
     var characterUUID: String
     var postID: String?
+    private var isImageDelete: Bool = false // 이미지 삭제 여부
     
     @State private var currentPost: GRPost? = nil
     @State private var postBody: String = ""
@@ -32,6 +33,7 @@ struct WriteStoryView: View {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil // 새로 선택/변경한 이미지 데이터
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
+    @State private var showDeleteAlert = false
     
     private var isPlaceholderVisible: Bool {
         postBody.isEmpty
@@ -65,8 +67,10 @@ struct WriteStoryView: View {
         switch currentMode {
         case .read:
             return "닫기"
-        case .edit, .create:
-            return "저장"
+        case .edit:
+            return "수정"
+        case .create:
+            return "작성"
         }
     }
     
@@ -113,12 +117,45 @@ struct WriteStoryView: View {
         )
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarItems(
-            trailing: saveButton
-        )
+        //        .navigationBarItems(
+        //            trailing: saveButton
+        //        )
         .onAppear {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if currentMode == .read {
+                    Menu {
+                        Button(action: {
+                            // 편집 모드로 변경
+                            currentMode = .edit
+                            setupViewforCurrentMode()
+                        }) {
+                            Label("수정하기", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive, action: {
+                            showDeleteAlert = true
+                        }) {
+                            Label("삭제하기", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                } else {
+                    saveButton
+                }
+            }
+        }
+        .alert("이야기를 삭제하시겠습니까?", isPresented: $showDeleteAlert) {
+            Button("취소", role: .cancel) {}
+            Button("삭제", role: .destructive) {
+                deletePost()
+            }
+        } message: {
+            Text("삭제된 이야기는 복구할 수 없습니다.")
         }
     }
     
@@ -396,10 +433,13 @@ struct WriteStoryView: View {
                             postTitle: postTitle,
                             postBody: postBody,
                             newImageData: selectedImageData,
-                            existingImageUrl: currentPost?.postImage ?? ""
+                            existingImageUrl: currentPost?.postImage ?? "",
+                            deleteImage: displayedImage == nil && selectedImageData == nil
                         )
+                        dismiss()
+                    } else {
+                        dismiss()
                     }
-                    dismiss()
                 } catch {
                     print("Error saving post: \(error)")
                 }
@@ -481,37 +521,51 @@ struct WriteStoryView: View {
         
     }
     
-    private func handleSaveOrUpdate() {
-        let characterUUID = currentPost?.characterUUID ?? ""
+//    private func handleSaveOrUpdate() {
+//        let characterUUID = currentPost?.characterUUID ?? ""
+//        
+//        Task {
+//            do {
+//                if currentMode == .create {
+//                    let newPostId = try await viewModel.createPost(
+//                        characterUUID: characterUUID,
+//                        postTitle: postTitle,
+//                        postBody: postBody,
+//                        imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
+//                    )
+//                    print("새 게시물 ID: \(newPostId)")
+//                } else if currentMode == .edit, let postToEdit = currentPost {
+//                    try await viewModel.editPost(
+//                        postID: postToEdit.postID,
+//                        postTitle: postTitle,
+//                        postBody: postBody,
+//                        newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
+//                        existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
+//                    )
+//                    
+//                    
+//                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
+//                }
+//                dismiss()
+//            } catch {
+//                print("저장/수정 중 오류 발생: \(error)")
+//            }
+//        }
+//    }
+    
+    private func deletePost() {
+        guard let postID = postID else { return }
         
         Task {
             do {
-                if currentMode == .create {
-                    let newPostId = try await viewModel.createPost(
-                        characterUUID: characterUUID,
-                        postTitle: postTitle,
-                        postBody: postBody,
-                        imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
-                    )
-                    print("새 게시물 ID: \(newPostId)")
-                } else if currentMode == .edit, let postToEdit = currentPost {
-                    try await viewModel.editPost(
-                        postID: postToEdit.postID,
-                        postTitle: postTitle,
-                        postBody: postBody,
-                        newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
-                        existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
-                    )
-                    
-                    
-                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
-                }
+                try await viewModel.deletePost(postID: postID)
                 dismiss()
             } catch {
-                print("저장/수정 중 오류 발생: \(error)")
+                print("게시물 삭제 중 오류 발생: \(error)")
             }
         }
     }
+    
 }
 
 #Preview {
