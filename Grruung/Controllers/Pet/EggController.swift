@@ -1,5 +1,5 @@
 //
-//  EggControl.swift
+//  EggController.swift
 //  Grruung
 //
 //  Created by NoelMacMini on 5/30/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 운석(Egg) 애니메이션을 컨트롤하는 클래스
-class EggControl: ObservableObject {
+class EggController: ObservableObject {
     
     // MARK: - Published 프로퍼티들 (UI가 자동으로 업데이트됨)
     @Published var currentFrame: UIImage? = nil  // 현재 표시할 프레임
@@ -130,6 +130,6 @@ class EggControl: ObservableObject {
     // MARK: - 정리 함수 (뷰가 사라질 때 호출)
     func cleanup() {
         stopAnimation()
-        print("EggControl 정리 완료")
+        print("EggController 정리 완료")
     }
 }

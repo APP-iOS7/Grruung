@@ -132,6 +132,7 @@ class FirebaseService: ObservableObject {
             "address": character.status.address,
             "birthDate": Timestamp(date: character.status.birthDate),
             "appearance": character.status.appearance,
+            "evolutionStatus": character.status.evolutionStatus.rawValue
         ]
         
         // 캐릭터 정보를 딕셔너리로 변환
@@ -994,6 +995,8 @@ class FirebaseService: ObservableObject {
         let birthDateTimestamp = statusData["birthDate"] as? Timestamp
         let birthDate = birthDateTimestamp?.dateValue() ?? Date()
         let appearance = statusData["appearance"] as? [String: String] ?? [:]
+        let evolutionStatusRaw = statusData["evolutionStatus"] as? String ?? "eggComplete"
+        let evolutionStatus = EvolutionStatus(rawValue: evolutionStatusRaw) ?? .eggComplete
         
         let status = GRCharacterStatus(
             level: level,
@@ -1009,7 +1012,8 @@ class FirebaseService: ObservableObject {
             clean: clean,
             address: address,
             birthDate: birthDate,
-            appearance: appearance
+            appearance: appearance,
+            evolutionStatus: evolutionStatus
         )
         
         return GRCharacter(
