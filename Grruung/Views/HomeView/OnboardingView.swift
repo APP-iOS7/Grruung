@@ -56,8 +56,12 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             // 배경색
-            Color(UIColor.systemBackground)
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [Color(hex: "FFF6EE"), Color(hex: "FDE0CA")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
             if showNameSelection {
                 // 이름 설정 화면
@@ -77,7 +81,7 @@ struct OnboardingView: View {
                             }
                         }
                         .padding()
-                        .foregroundColor(.blue)
+                        .foregroundColor(.black)
                     }
                     
                     Spacer()
@@ -113,8 +117,10 @@ struct OnboardingView: View {
                         .padding()
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.blue.opacity(0.1))
-                        )
+                                .fill(
+                                    LinearGradient(colors: [Color(hex: "#FFB778"), Color(hex: "FFA04D")], startPoint: .leading, endPoint: .trailing)
+                                )
+                    )
                         .padding(.horizontal, 20)
                         .padding(.top, 10)
                     

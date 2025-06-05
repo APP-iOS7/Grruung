@@ -74,7 +74,6 @@ struct ProfileDetailView: View {
                                     }
                                 }
                                 .overlay(Circle().stroke(Color.white, lineWidth: 4))
-                                .background(Circle().fill(Color(.systemBackground)))
                             }
                                          .onChange(of: selectedItem) { newItem in
                                              Task {
@@ -110,12 +109,12 @@ struct ProfileDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .background(Color.gray)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                     .padding(.horizontal)
                     
@@ -132,7 +131,7 @@ struct ProfileDetailView: View {
                                     }
                                 }
                             }
-                            .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                         }
                         
                         Button {
@@ -150,11 +149,12 @@ struct ProfileDetailView: View {
                 }
                 .padding(.bottom, 50)
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
             
             if isShowingNameEditorPopup {
-                Color.black.opacity(0.4).ignoresSafeArea()
-                
                 VStack(spacing: 20) {
                     HStack {
                         Spacer()
@@ -177,7 +177,7 @@ struct ProfileDetailView: View {
                         .padding()
                         .background(Color(.systemGray6))
                         .frame(maxWidth: .infinity)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                     
                     Button {
                         username = newName
@@ -194,7 +194,7 @@ struct ProfileDetailView: View {
                 .padding()
                 .frame(width: 300)
                 .background(Color.white)
-                .cornerRadius(20)
+                .cornerRadius(12)
                 .shadow(radius: 20)
             }
         }
@@ -222,8 +222,8 @@ struct SettingRow: View {
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
         }
-        .padding(.vertical, 20)
-        .padding(.horizontal, 15)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
     }
 }
 

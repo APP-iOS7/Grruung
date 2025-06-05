@@ -25,94 +25,104 @@ struct PetNameSelectionView: View {
     var onComplete: () -> Void
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 25) {
-                // 헤더
-                Text("새로운 친구의 이름을 지어주세요")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                    .multilineTextAlignment(.center)
-                
-                // 펫 이미지 (운석 단계 이미지 표시)
+            NavigationStack {
                 ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.1))
-                        .frame(width: 220, height: 220)
+                    // 배경색
+                    LinearGradient(
+                        colors: [Color(hex: "FEF9EA"), Color(hex: "FDE0CA")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
                     
-                    Image("egg") // 운석 이미지 (Assets에 추가 필요)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 180)
-                        .padding()
-                }
-                .padding(.vertical, 20)
-                
-                // 펫 종류 안내 (실제로는 아직 운석 상태)
-                Text("우주에서 온 신비한 운석")
-                    .font(.headline)
-                    .foregroundColor(.gray)
-                
-                // 이름 입력 필드
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("이름")
+                VStack(spacing: 25) {
+                    // 헤더
+                    Text("새로운 친구의 이름을 지어주세요")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .padding(.top, 40)
+                        .multilineTextAlignment(.center)
+                    
+                    // 펫 이미지 (운석 단계 이미지 표시)
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(width: 220, height: 220)
+                        
+                        Image("egg") // 운석 이미지 (Assets에 추가 필요)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 180)
+                            .padding()
+                    }
+                    .padding(.vertical, 20)
+                    
+                    // 펫 종류 안내 (실제로는 아직 운석 상태)
+                    Text("우주에서 온 신비한 운석")
                         .font(.headline)
                         .foregroundColor(.gray)
                     
-                    TextField("이름을 입력하세요", text: $petName)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                        .disabled(isLoading)
+                    // 이름 입력 필드
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("이름")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        
+                        TextField("이름을 입력하세요", text: $petName)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                            .disabled(isLoading)
+                    }
+                    .padding(.horizontal, 30)
+                    .padding(.top, 10)
+                    
+                    // 생성 버튼
+                    Button(action: {
+                        createPet()
+                    }) {
+                        Text("친구 만들기")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(petName.isEmpty ? Color.gray : Color.orange)
+                            .cornerRadius(10)
+                    }
+                    .disabled(petName.isEmpty || isLoading)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 20)
+                    
+                    if isLoading {
+                        ProgressView("캐릭터를 생성하고 있어요...")
+                            .padding(.top, 20)
+                    }
+                    
+                    Spacer()
+                    
+                    // 안내 메시지
+                    Text("이 친구는 처음에는 운석 상태로 시작해요.\n사랑과 관심으로 키워주세요!")
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
                 }
-                .padding(.horizontal, 30)
-                .padding(.top, 10)
-                
-                // 생성 버튼
-                Button(action: {
-                    createPet()
-                }) {
-                    Text("친구 만들기")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(petName.isEmpty ? Color.gray : Color.blue)
-                        .cornerRadius(10)
+                .padding()
+                .alert(isPresented: $showError) {
+                    Alert(
+                        title: Text("오류"),
+                        message: Text(errorMessage ?? "알 수 없는 오류가 발생했습니다."),
+                        dismissButton: .default(Text("확인"))
+                    )
                 }
-                .disabled(petName.isEmpty || isLoading)
-                .padding(.horizontal, 30)
-                .padding(.top, 20)
-                
-                if isLoading {
-                    ProgressView("캐릭터를 생성하고 있어요...")
-                        .padding(.top, 20)
+                // 홈 화면으로 이동하는 네비게이션 링크
+                .navigationDestination(isPresented: $navigateToHome) {
+                    MainTabView()
+                        .environmentObject(authService)
+                        .navigationBarBackButtonHidden(true)
                 }
-                
-                Spacer()
-                
-                // 안내 메시지
-                Text("이 친구는 처음에는 운석 상태로 시작해요.\n사랑과 관심으로 키워주세요!")
-                    .font(.caption)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.gray)
-                    .padding(.bottom, 20)
+                .navigationBarBackButtonHidden(true)
             }
-            .padding()
-            .alert(isPresented: $showError) {
-                Alert(
-                    title: Text("오류"),
-                    message: Text(errorMessage ?? "알 수 없는 오류가 발생했습니다."),
-                    dismissButton: .default(Text("확인"))
-                )
-            }
-            // 홈 화면으로 이동하는 네비게이션 링크
-            .navigationDestination(isPresented: $navigateToHome) {
-                MainTabView()
-                    .environmentObject(authService)
-                    .navigationBarBackButtonHidden(true)
-            }
-            .navigationBarBackButtonHidden(true)
         }
     }
     
