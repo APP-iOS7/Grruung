@@ -114,7 +114,7 @@ class EggController: ObservableObject {
         
         // 디버깅용 로그 (매 10프레임마다 출력)
         if currentFrameIndex % 10 == 0 {
-            print("현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count)")
+            print("운석 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count)")
         }
     }
     
