@@ -75,6 +75,8 @@ class FirebaseService: ObservableObject {
                     let createdAtTimestamp = statusData["createdAt"] as? Timestamp
                     let createdAt = createdAtTimestamp?.dateValue() ?? Date()
                     let appearance = statusData["appearance"] as? [String: String] ?? [:]
+                    let evolutionStatusRaw = statusData["evolutionStatus"] as? String ?? "eggComplete"
+                    let evolutionStatus = EvolutionStatus(rawValue: evolutionStatusRaw) ?? .eggComplete
                     
                     let status = GRCharacterStatus(
                         level: level,
@@ -89,7 +91,8 @@ class FirebaseService: ObservableObject {
                         clean: clean,
                         address: address,
                         birthDate: birthDate,
-                        appearance: appearance
+                        appearance: appearance,
+                        evolutionStatus: evolutionStatus
                     )
                     
                     let character = GRCharacter(
@@ -1141,6 +1144,8 @@ class FirebaseService: ObservableObject {
                     let createdAtTimestamp = statusData["createdAt"] as? Timestamp
                     let createdAt = createdAtTimestamp?.dateValue() ?? Date()
                     let appearance = statusData["appearance"] as? [String: String] ?? [:]
+                    let evolutionStatusRaw = statusData["evolutionStatus"] as? String ?? "eggComplete"
+                    let evolutionStatus = EvolutionStatus(rawValue: evolutionStatusRaw) ?? .eggComplete
                     
                     let status = GRCharacterStatus(
                         level: level,
@@ -1155,7 +1160,8 @@ class FirebaseService: ObservableObject {
                         clean: clean,
                         address: address,
                         birthDate: birthDate,
-                        appearance: appearance
+                        appearance: appearance,
+                        evolutionStatus: evolutionStatus
                     )
                     
                     let character = GRCharacter(
