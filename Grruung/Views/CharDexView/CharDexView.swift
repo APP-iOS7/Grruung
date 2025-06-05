@@ -368,7 +368,7 @@ struct CharDexView: View {
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
+        .cornerRadius(UIConstants.cornerRadius)
         .foregroundColor(.gray)
         .padding(.bottom, 16)
     }
@@ -391,7 +391,7 @@ struct CharDexView: View {
                         .frame(height: 180)
                         .frame(maxWidth: .infinity)
                         .background(Color.black.opacity(0.5))
-                        .cornerRadius(20)
+                        .cornerRadius(UIConstants.cornerRadius)
                 }
                 .padding(.bottom, 16)
                 .offset(y: yOffset)
@@ -414,7 +414,7 @@ struct CharDexView: View {
                     .frame(height: 180)
                     .frame(maxWidth: .infinity)
                     .background(Color.brown.opacity(0.5))
-                    .cornerRadius(20)
+                    .cornerRadius(UIConstants.cornerRadius)
             }
             .padding(.bottom, 16)
             .offset(y: yOffset)

@@ -57,7 +57,7 @@ struct CharDexSearchView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .frame(height: 32)
-                    .cornerRadius(8)
+                    .cornerRadius(UIConstants.cornerRadius)
                     .padding(.horizontal, 16)
                     .overlay(
                         HStack {
@@ -92,6 +92,14 @@ struct CharDexSearchView: View {
                 }
                 .padding()
             }
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [
+                    Color(GRColor.mainColor1_1),
+                    Color(GRColor.mainColor1_2)
+                ],
+                               startPoint: .top, endPoint: .bottom)
+            ) // 원하는 색상 지정
             .navigationTitle("캐릭터 검색")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -173,7 +181,7 @@ struct CharDexSearchView: View {
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
+        .cornerRadius(UIConstants.cornerRadius)
         .foregroundColor(.gray)
         .padding(.bottom, 16)
     }
