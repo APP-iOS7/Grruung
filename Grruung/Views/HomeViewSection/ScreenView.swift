@@ -50,9 +50,7 @@ struct ScreenView: View {
             // tapEffectLayer
             
             // 캐릭터가 자고 있을 때 "Z" 이모티콘 표시
-            if isSleeping {
-                sleepingIndicator
-            }
+            sleepingIndicator
         }
         .frame(height: 200)
         .onAppear {
@@ -100,17 +98,27 @@ struct ScreenView: View {
     // 운석 애니메이션 뷰
      @ViewBuilder
      private var eggAnimationView: some View {
-         if let currentFrame = eggControl.currentFrame {
-             Image(uiImage: currentFrame)
+         ZStack {
+             // 받침대 (뒤쪽에 표시)
+             Image("eggPedestal1")
                  .resizable()
                  .aspectRatio(contentMode: .fit)
-                 .frame(height: 180) // 배경보다 작게
-         } else {
-             // EggControl이 로드되지 않았을 때 기본 이미지
-             Image("egg_normal_1")
-                 .resizable()
-                 .aspectRatio(contentMode: .fit)
-                 .frame(height: 180)
+                 .frame(height: 90) // 받침대 크기 조절
+                 .offset(x: 0, y: 67) // 운석 아래쪽에 위치하도록 조정
+             
+             // 운석
+             if let currentFrame = eggControl.currentFrame {
+                 Image(uiImage: currentFrame)
+                     .resizable()
+                     .aspectRatio(contentMode: .fit)
+                     .frame(height: 180) // 배경보다 작게
+             } else {
+                 // EggControl이 로드되지 않았을 때 기본 이미지
+                 Image("egg_normal_1")
+                     .resizable()
+                     .aspectRatio(contentMode: .fit)
+                     .frame(height: 180)
+             }
          }
      }
     
@@ -122,13 +130,6 @@ struct ScreenView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 180)
-                .scaleEffect(isSleeping ? 0.95 : 1.0)
-                .animation(
-                    isSleeping ?
-                    Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-                            .default,
-                    value: isSleeping
-                )
         }
     }
     
@@ -140,13 +141,6 @@ struct ScreenView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 180)
-                .scaleEffect(isSleeping ? 0.95 : 1.0)
-                .animation(
-                    isSleeping ?
-                    Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-                            .default,
-                    value: isSleeping
-                )
         } else {
             // QuokkaController가 로드되지 않았을 때 기본 이미지
             Image("quokka")
@@ -164,17 +158,6 @@ struct ScreenView: View {
              .progressViewStyle(CircularProgressViewStyle()) // 보류
              .scaleEffect(1.5) // 보류
              .padding()
-//        Image(character?.imageName ?? "CatLion")
-//            .resizable()
-//            .aspectRatio(contentMode: .fit)
-//            .frame(height: 150) // 배경보다 작게
-//            .scaleEffect(isSleeping ? 0.95 : 1.0)
-//            .animation(
-//                isSleeping ?
-//                Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
-//                        .default,
-//                value: isSleeping
-//            )
     }
     
     // 🎯 잠자는 표시
@@ -184,6 +167,14 @@ struct ScreenView: View {
             Text("💤")
                 .font(.largeTitle)
                 .offset(x: 50, y: -50)
+                .scaleEffect(isSleeping ? 1.3 : 0.7)
+                .opacity(isSleeping ? 1.0 : 0.0) // 투명도로 보이기/숨기기 제어
+                .animation(
+                    isSleeping ?
+                    Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
+                    .default,
+                    value: isSleeping
+                )
         }
     }
     
