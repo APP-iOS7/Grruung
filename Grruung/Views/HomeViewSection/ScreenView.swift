@@ -14,7 +14,7 @@ struct ScreenView: View {
     let isSleeping: Bool
     
     // 애니메이션 컨트롤러 추가
-    @StateObject private var eggControl = EggControl()
+    @StateObject private var eggController = EggController()
     @StateObject private var quokkaController = QuokkaController()
     
     @Environment(\.modelContext) private var modelContext
@@ -31,8 +31,8 @@ struct ScreenView: View {
             // 캐릭터 애니메이션 영역
             // 캐릭터 상태에 따라 다른 애니메이션 표시
             if let character = character {
-                if character.status.phase == .egg {
-                    // 운석 단계일 때 - EggControl 사용
+                if shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
+                    // 운석 단계일 때 - EggController 사용
                     eggAnimationView
                 } else {
                     // 다른 단계일 때 - QuokkaController 사용
@@ -63,6 +63,7 @@ struct ScreenView: View {
             cleanupControllers()
         }
         .onChange(of: character?.status.evolutionStatus) { oldValue, newValue in
+            print("🔄 진화 상태 변경: \(oldValue?.rawValue ?? "nil") → \(newValue?.rawValue ?? "nil")")
             // 진화 상태가 변경되면 애니메이션 다시 설정
             setupControllers()
             startAppropriateAnimation()
@@ -107,13 +108,13 @@ struct ScreenView: View {
                  .offset(x: 0, y: 67) // 운석 아래쪽에 위치하도록 조정
              
              // 운석
-             if let currentFrame = eggControl.currentFrame {
+             if let currentFrame = eggController.currentFrame {
                  Image(uiImage: currentFrame)
                      .resizable()
                      .aspectRatio(contentMode: .fit)
                      .frame(height: 180) // 배경보다 작게
              } else {
-                 // EggControl이 로드되지 않았을 때 기본 이미지
+                 // EggController가 로드되지 않았을 때 기본 이미지
                  Image("egg_normal_1")
                      .resizable()
                      .aspectRatio(contentMode: .fit)
@@ -214,8 +215,8 @@ struct ScreenView: View {
     private func handleTapWithEffect() {
         // 기존 로직
         if character?.status.phase == .egg || character == nil {
-            eggControl.toggleAnimation()
-            print("🥚 운석 애니메이션 토글: \(eggControl.isAnimating ? "재생" : "정지")")
+            eggController.toggleAnimation()
+            print("🥚 운석 애니메이션 토글: \(eggController.isAnimating ? "재생" : "정지")")
         }
         
         // 🎯 이펙트 타입 설정 (다양한 이펙트 선택 가능)
@@ -264,9 +265,12 @@ struct ScreenView: View {
     private func startAppropriateAnimation() {
         guard let character = character else { return }
         
+        // 먼저 모든 애니메이션 정지
+        stopAllAnimations()
+        
         if character.status.phase == .egg {
-            // 운석 단계 - EggControl 애니메이션 시작
-            eggControl.startAnimation()
+            // 운석 단계 - EggController 애니메이션 시작
+            eggController.startAnimation()
             print("운석 애니메이션 시작")
         } else {
             // 다른 단계 - QuokkaController 핑퐁 애니메이션 시작
@@ -277,9 +281,18 @@ struct ScreenView: View {
         }
     }
     
+    // 모든 애니메이션 정지 메서드 추가
+    private func stopAllAnimations() {
+        eggController.stopAnimation()
+        quokkaController.stopAnimation()
+        print("⏹️ 모든 애니메이션 정지")
+    }
+    
     // 컨트롤러들 정리
     private func cleanupControllers() {
-        eggControl.cleanup()
+        stopAllAnimations() // 정지 먼저 하고
+        
+        eggController.cleanup()
         quokkaController.cleanup()
         print("모든 컨트롤러 정리 완료")
     }
@@ -289,15 +302,26 @@ struct ScreenView: View {
         guard let character = character else { return }
         
         if character.status.phase == .egg {
-            // 운석 단계 - EggControl 토글
-            eggControl.toggleAnimation()
-            print("운석 애니메이션 토글: \(eggControl.isAnimating ? "재생" : "정지")")
+            // 운석 단계 - EggController 토글
+            eggController.toggleAnimation()
+            print("운석 애니메이션 토글: \(eggController.isAnimating ? "재생" : "정지")")
         } else {
             // 다른 단계 - QuokkaController 토글
             if character.species == .quokka {
                 quokkaController.toggleAnimation()
                 print("쿼카 애니메이션 토글: \(quokkaController.isAnimating ? "재생" : "정지")")
             }
+        }
+    }
+    
+    // MARK: - 어떤 애니메이션을 보여줄지 결정하는 헬퍼 메서드
+    // 운석 애니메이션을 보여줄지 결정하는 헬퍼 메서드
+    private func shouldShowEggAnimation(evolutionStatus: EvolutionStatus) -> Bool {
+        switch evolutionStatus {
+        case .eggComplete, .toInfant:
+            return true  // 운석 애니메이션 계속 표시
+        case .completeInfant, .toChild, .completeChild, .toAdolescent, .completeAdolescent, .toAdult, .completeAdult, .toElder, .completeElder:
+            return false // 진화 완료된 애니메이션 표시
         }
     }
 }
