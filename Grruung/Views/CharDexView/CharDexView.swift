@@ -165,6 +165,14 @@ struct CharDexView: View {
                 }
             }
 //            .navigationTitle("캐릭터 동산")
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [
+                    Color(GRColor.mainColor1_1),
+                    Color(GRColor.mainColor1_2)
+                ],
+                               startPoint: .top, endPoint: .bottom)
+            ) // 원하는 색상 지정
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: CharDexSearchView(searchCharacters: realCharacters)) {
