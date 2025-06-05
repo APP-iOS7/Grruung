@@ -35,6 +35,9 @@ struct WriteStoryView: View {
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
     @State private var showDeleteAlert = false
     
+    @State private var isImageLoading = false
+    @State private var isUploading = false
+    
     private var isPlaceholderVisible: Bool {
         postBody.isEmpty
     }
@@ -124,6 +127,7 @@ struct WriteStoryView: View {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
         }
+        .interactiveDismissDisabled(isUploading)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if currentMode == .read {
@@ -191,7 +195,9 @@ struct WriteStoryView: View {
     
     private var readModeImageView: some View {
         Group {
-            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+            if isImageLoading {
+                loadingIndicator
+            } else if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
                 diaryImageView(uiImage: uiImage)
             } else if let displayedImage = displayedImage {
                 diaryImageView(uiImage: displayedImage)
@@ -206,7 +212,9 @@ struct WriteStoryView: View {
                 matching: .images,
                 photoLibrary: .shared()
             ) {
-                if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                if isImageLoading {
+                    loadingIndicator
+                } else if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
                     diaryImageView(uiImage: uiImage)
                         .overlay(
                             VStack {
@@ -411,6 +419,8 @@ struct WriteStoryView: View {
     private var saveButton: some View {
         Button(buttonTitle) {
             Task {
+                isUploading = true
+                
                 do {
                     print("우측 상단 button tapped!")
                     
@@ -423,8 +433,10 @@ struct WriteStoryView: View {
                                 postBody: postBody,
                                 imageData: selectedImageData
                             )
+                            isUploading = false
                             dismiss()
                         } else {
+                            isUploading = false
                             print("글쓰기 횟수가 부족합니다")
                         }
                     } else if currentMode == .edit {
@@ -436,11 +448,14 @@ struct WriteStoryView: View {
                             existingImageUrl: currentPost?.postImage ?? "",
                             deleteImage: displayedImage == nil && selectedImageData == nil
                         )
+                        isUploading = false
                         dismiss()
                     } else {
+                        isUploading = false
                         dismiss()
                     }
                 } catch {
+                    isUploading = false
                     print("Error saving post: \(error)")
                 }
             }
@@ -452,6 +467,16 @@ struct WriteStoryView: View {
             }
         }
         .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
+        .opacity(isUploading ? 0 : 1) // 업로드 중일 때 버튼 숨기기
+        .overlay(
+              Group {
+                  if isUploading {
+                      ProgressView()
+                          .progressViewStyle(CircularProgressViewStyle())
+                          .tint(.white)
+                  }
+              }
+          )
         .font(.headline)
         .fontWeight(.semibold)
         .foregroundColor(.white)
@@ -508,50 +533,65 @@ struct WriteStoryView: View {
             self.displayedImage = nil
             return
         }
+        isImageLoading = true // 로딩 시작
         
         Task {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 self.displayedImage = UIImage(data: data)
+                isImageLoading = false
             } catch {
                 print("Error loading image: \(error)")
-                self.displayedImage = nil
+                isImageLoading = false
             }
         }
         
     }
     
-//    private func handleSaveOrUpdate() {
-//        let characterUUID = currentPost?.characterUUID ?? ""
-//        
-//        Task {
-//            do {
-//                if currentMode == .create {
-//                    let newPostId = try await viewModel.createPost(
-//                        characterUUID: characterUUID,
-//                        postTitle: postTitle,
-//                        postBody: postBody,
-//                        imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
-//                    )
-//                    print("새 게시물 ID: \(newPostId)")
-//                } else if currentMode == .edit, let postToEdit = currentPost {
-//                    try await viewModel.editPost(
-//                        postID: postToEdit.postID,
-//                        postTitle: postTitle,
-//                        postBody: postBody,
-//                        newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
-//                        existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
-//                    )
-//                    
-//                    
-//                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
-//                }
-//                dismiss()
-//            } catch {
-//                print("저장/수정 중 오류 발생: \(error)")
-//            }
-//        }
-//    }
+    //    private func handleSaveOrUpdate() {
+    //        let characterUUID = currentPost?.characterUUID ?? ""
+    //
+    //        Task {
+    //            do {
+    //                if currentMode == .create {
+    //                    let newPostId = try await viewModel.createPost(
+    //                        characterUUID: characterUUID,
+    //                        postTitle: postTitle,
+    //                        postBody: postBody,
+    //                        imageData: selectedImageData // 새로 선택된 이미지 데이터 전달
+    //                    )
+    //                    print("새 게시물 ID: \(newPostId)")
+    //                } else if currentMode == .edit, let postToEdit = currentPost {
+    //                    try await viewModel.editPost(
+    //                        postID: postToEdit.postID,
+    //                        postTitle: postTitle,
+    //                        postBody: postBody,
+    //                        newImageData: selectedImageData, // 새로 선택된 이미지 데이터 전달
+    //                        existingImageUrl: postToEdit.postImage // 기존 이미지 URL 전달
+    //                    )
+    //
+    //
+    //                    print("게시물 수정 완료, ID: \(postToEdit.postID)")
+    //                }
+    //                dismiss()
+    //            } catch {
+    //                print("저장/수정 중 오류 발생: \(error)")
+    //            }
+    //        }
+    //    }
+    // 로딩 인디케이터 뷰 추가
+    private var loadingIndicator: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.gray.opacity(0.1))
+                .frame(height: 200)
+            
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle())
+                .scaleEffect(1.5)
+        }
+        .padding()
+    }
     
     private func deletePost() {
         guard let postID = postID else { return }
@@ -570,9 +610,7 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .read, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8"
-                       , postID: "fq2ry1aZ1CiiSgq6XhaH"
-        )
-        .environmentObject(AuthService())
+        WriteStoryView(currentMode: .create, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8")
+            .environmentObject(AuthService())
     }
 }
