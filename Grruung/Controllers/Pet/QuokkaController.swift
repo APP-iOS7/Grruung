@@ -46,6 +46,18 @@ class QuokkaController: ObservableObject {
         "sleep4WakeUp": 173
     ]
     
+    // 단계별 애니메이션 타입 매핑
+    private func getAnimationTypesForPhase(_ phase: CharacterPhase) -> [String] {
+        switch phase {
+        case .egg:
+            return ["normal"] // egg는 Bundle에 있으니 실제로는 사용 안함
+        case .infant:
+            return ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
+        case .child, .adolescent, .adult, .elder:
+            return ["normal", "sleeping", "eating"] // 기본 애니메이션만
+        }
+    }
+    
     // MARK: - SwiftData 컨텍스트 설정
     func setModelContext(_ context: ModelContext) {
         self.modelContext = context
@@ -231,7 +243,7 @@ class QuokkaController: ObservableObject {
         }
         
         let phaseString = phase.toEnglishString()
-        let animationTypes = ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
+        let animationTypes = getAnimationTypesForPhase(phase)
         
         // 모든 애니메이션 타입이 완전히 다운로드되었는지 확인
         for animationType in animationTypes {
@@ -340,6 +352,25 @@ class QuokkaController: ObservableObject {
         }
     }
     
+    // 메타데이터에 해당하는 실제 파일들이 존재하는지 확인
+    private func checkIfFilesExist(_ metadataList: [GRAnimationMetadata]) -> Bool {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // 처음 10개 파일만 샘플 체크 (성능상 이유)
+        let sampleMetadata = Array(metadataList.prefix(10))
+        
+        for metadata in sampleMetadata {
+            let fileURL = documentsDirectory.appendingPathComponent(metadata.filePath)
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                print("❌ 샘플 파일 없음: \(metadata.filePath)")
+                return false
+            }
+        }
+        
+        print("✅ 샘플 파일들 존재 확인됨")
+        return true
+    }
+    
     // MARK: - 정리 함수
     func cleanup() {
         stopAnimation()
@@ -363,60 +394,88 @@ extension QuokkaController {
         
         let characterType = "quokka"
         let phase = CharacterPhase.infant
-        let animationType = "normal"
-        let expectedFrameCount = 122 // 예상 프레임 수
+        let phaseString = "infant"
+        let animationTypes = ["normal", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
         
         do {
-            // 기존 메타데이터 확인 및 검증
-            let phaseString = BundleAnimationLoader.phaseToString(phase)
-            let predicate = #Predicate<GRAnimationMetadata> { metadata in
-                metadata.characterType == characterType &&
-                metadata.phase == phaseString &&
-                metadata.animationType == animationType
-            }
-            let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
-            let existingMetadata = try context.fetch(fetchDescriptor)
-
-            // 메타데이터 검증 및 정리
-            if !existingMetadata.isEmpty {
-                let frameCount = existingMetadata.count
-                print("기존 메타데이터 발견: \(frameCount)개 프레임")
+            // 모든 애니메이션 타입에 대해 확인
+            var needsDownload = false
+            var totalExpectedFrames = 0
+            var existingFrameCount = 0
+            
+            // 기존 메타데이터 확인 및 검증 (각 애니메이션 타입별로 확인)
+            for animationType in animationTypes {
+                let expectedFrameCount = frameCountMap[animationType] ?? 0
+                totalExpectedFrames += expectedFrameCount
                 
-                // 예상 프레임 수와 다르면 기존 메타데이터 삭제
-                if frameCount != expectedFrameCount {
-                    print("⚠️ 프레임 수 불일치 (예상: \(expectedFrameCount), 실제: \(frameCount)) - 메타데이터 정리")
-                    
-                    await MainActor.run {
-                        downloadMessage = "기존 데이터 정리 중..."
-                        downloadProgress = 0.1
-                    }
-                    
-                    // 기존 메타데이터 삭제
-                    for metadata in existingMetadata {
-                        context.delete(metadata)
-                    }
-                    try context.save()
-                    
-                    print("🗑️ 잘못된 메타데이터 \(frameCount)개 삭제 완료")
-                } else {
-                    // 올바른 메타데이터가 이미 있음
-                    print("✅ 올바른 메타데이터가 이미 존재함 - 다운로드 생략")
-                    
-                    await MainActor.run {
-                        downloadMessage = "이미 다운로드됨 - 로드 중..."
-                        downloadProgress = 0.8
-                    }
-                    
-                    // 기존 프레임 로드 (개선된 버전)
-                    await loadExistingFramesFromMetadata(existingMetadata)
-                    
-                    await MainActor.run {
-                        downloadProgress = 1.0
-                        downloadMessage = "로드 완료!"
-                    }
-                    return
+                let phaseString = BundleAnimationLoader.phaseToString(phase)
+                let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString &&
+                    metadata.animationType == animationType
+                }
+                let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+                let existingMetadata = try context.fetch(fetchDescriptor)
+                
+                let actualCount = existingMetadata.count
+                existingFrameCount += actualCount
+                
+                print("📊 \(animationType): \(actualCount)/\(expectedFrameCount)개 프레임")
+                
+                // 프레임 수가 다르거나 파일이 없으면 다운로드 필요
+                if actualCount != expectedFrameCount {
+                    needsDownload = true
+                    print("❌ \(animationType) 프레임 수 불일치")
+                } else if !checkIfFilesExist(existingMetadata) {
+                    needsDownload = true
+                    print("❌ \(animationType) 파일 없음")
                 }
             }
+            
+            // 다운로드가 필요하지 않으면 기존 데이터 로드
+            if !needsDownload {
+                print("✅ 모든 애니메이션 데이터 완료 - 로드만 진행")
+                
+                await MainActor.run {
+                    downloadMessage = "이미 다운로드됨 - 로드 중..."
+                    downloadProgress = 0.8
+                }
+                
+                // normal 애니메이션 로드
+                let normalPredicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString && 
+                    metadata.animationType == "normal"
+                }
+                let normalDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: normalPredicate)
+                let normalMetadata = try context.fetch(normalDescriptor)
+                
+                await loadExistingFramesFromMetadata(normalMetadata)
+                
+                await MainActor.run {
+                    downloadProgress = 1.0
+                    downloadMessage = "로드 완료!"
+                }
+                return
+            }
+
+            // 다운로드가 필요하면 기존 메타데이터 모두 삭제
+            print("🗑️ 불완전한 데이터 정리 중...")
+            for animationType in animationTypes {
+                let phaseString = BundleAnimationLoader.phaseToString(phase)
+                let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString &&
+                    metadata.animationType == animationType
+                }
+                let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+                let existingMetadata = try context.fetch(fetchDescriptor)
+                
+                for metadata in existingMetadata {
+                    context.delete(metadata)
+                }
+            }
+            try context.save()
             
             
             // 다운로드 시작
