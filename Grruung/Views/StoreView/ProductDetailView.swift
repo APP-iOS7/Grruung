@@ -103,10 +103,12 @@ struct ProductDetailView: View {
                         if quantity > 1 { quantity -= 1 }
                     } label: {
                         Image(systemName: "minus.circle")
+                            .foregroundStyle(GRColor.buttonColor_1)
                             .font(.title2)
                     }
                     
                     Text("\(quantity)")
+                        
                         .font(.title)
                         .padding(.horizontal, 16)
                     
@@ -118,6 +120,7 @@ struct ProductDetailView: View {
                         }
                     } label: {
                         Image(systemName: "plus.circle")
+                            .foregroundStyle(GRColor.buttonColor_2)
                             .font(.title2)
                     }
                     .alert("한정 수량 이상을 구매하실 수 없습니다.", isPresented: $isOutOfLimitedQuantity) {
@@ -138,7 +141,10 @@ struct ProductDetailView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.cyan)
+                    .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+                    .background(
+                        LinearGradient(colors: [GRColor.buttonColor_1, GRColor.buttonColor_2], startPoint: .leading, endPoint: .trailing)
+                    )
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }

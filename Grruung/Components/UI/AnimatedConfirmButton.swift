@@ -21,14 +21,48 @@ struct AnimatedConfirmButton: View {
                 .foregroundColor(.white)
                 .frame(width: 130, height: 50)
                 .background(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.6), .blue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    ZStack {
+                        // 배경색 기본
+                        GRColor.buttonColor_2
+                        
+                        // 윗부분 하이라이트 선
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.5),
+                                        Color.clear
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1.5
+                            )
+                        
+                        // 입체감용 위 blur
+                        RoundedRectangle(cornerRadius: 16)
+                            .foregroundColor(.white)
+                            .blur(radius: 2)
+                            .offset(x: -2, y: -2)
+                        
+                        // 입체감용 아래 blur
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(
+                                LinearGradient(
+                                    colors: [GRColor.buttonColor_1,
+                                             GRColor.buttonColor_2],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .padding(2)
+                            .blur(radius: 2)
+                            .offset(x: 2, y: 2)
+                    }
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .scaleEffect(isPressed ? 0.92 : 1.0)
+                .scaleEffect(1.0)
+                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 2, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
         .onLongPressGesture(
