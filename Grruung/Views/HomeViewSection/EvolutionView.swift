@@ -218,6 +218,8 @@ struct EvolutionView: View {
                 
                 if isUpdateMode {
                     statusMessage = "업데이트 완료!"
+                    // 업데이트 완료 처리 추가
+                    homeViewModel.completeAnimationUpdate()
                 } else {
                     statusMessage = "부화 완료!"
                     

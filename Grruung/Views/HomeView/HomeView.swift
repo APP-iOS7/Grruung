@@ -23,6 +23,7 @@ struct HomeView: View {
     @State private var isShowingSettings = false
     @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     @State private var isShowingOnboarding = false
+    @State private var showUpdateScreen = false // 업데이트 화면 표시 상태
 
     // MARK: - Body
     var body: some View {
@@ -44,6 +45,11 @@ struct HomeView: View {
                 if let character = viewModel.character,
                    character.status.evolutionStatus.needsEvolution {
                     evolutionButton
+                }
+                
+                // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
+                if viewModel.needsAnimationUpdate {
+                    updateButton
                 }
                 
                 // 상태 바 섹션
@@ -84,6 +90,10 @@ struct HomeView: View {
                 // QuokkaController에 ModelContext 전달
                 viewModel.setModelContext(modelContext)
             }
+            // viewModel의 showUpdateScreen 상태 감시
+            .onChange(of: viewModel.showUpdateScreen) { oldValue, newValue in
+                showUpdateScreen = newValue
+            }
         }
         
         .sheet(isPresented: $showInventory) {
@@ -117,15 +127,29 @@ struct HomeView: View {
         .sheet(isPresented: $isShowingSettings) {
             //            SettingsSheetView()
         }
+        
         // 진화 화면 시트
         .sheet(isPresented: $showEvolutionScreen) {
             if let character = viewModel.character {
                 EvolutionView(
                     character: character,
-                    homeViewModel: viewModel
+                    homeViewModel: viewModel,
+                    isUpdateMode: false  // 진화 모드
                 )
             }
         }
+        
+        // 업데이트 화면 시트
+        .sheet(isPresented: $showUpdateScreen) {
+            if let character = viewModel.character {
+                EvolutionView(
+                    character: character,
+                    homeViewModel: viewModel,
+                    isUpdateMode: true  // 업데이트 모드
+                )
+            }
+        }
+        
         // 온보딩 화면 시트
         .sheet(isPresented: $isShowingOnboarding) {
             OnboardingView()
@@ -169,6 +193,33 @@ struct HomeView: View {
             .background(
                 LinearGradient(
                     colors: [Color.orange, Color.red],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
+        }
+    }
+    
+    // 업데이트 버튼
+    private var updateButton: some View {
+        Button(action: {
+            showUpdateScreen = true
+        }) {
+            HStack {
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 16))
+                
+                Text("데이터 업데이트")
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [Color.blue, Color.purple],
                     startPoint: .leading,
                     endPoint: .trailing
                 )

@@ -1689,4 +1689,12 @@ class HomeViewModel: ObservableObject {
         print("✅ HomeViewModel: ModelContext 설정 완료")
     }
     
+    // 업데이트 완료 처리 메서드
+    @MainActor
+    func completeAnimationUpdate() {
+        needsAnimationUpdate = false
+        showUpdateScreen = false
+        print("✅ 애니메이션 업데이트 완료")
+    }
+    
 }
