@@ -69,16 +69,23 @@ struct CharacterDetailView: View {
                 // 성장 과정 영역
                 growthProgressSection
                 
-                // 날짜 탐색 버튼
-                dateNavigationSection
-                
-                // 활동 기록 영역
-                activitySection
-                
-                // 들려준 이야기 영역
-                storyListSection
+                VStack(spacing: 20) {
+                    // 날짜 탐색 버튼
+                    dateNavigationSection
+                    
+                    // 활동 기록 영역
+                    activitySection
+                    
+                    // 들려준 이야기 영역
+                    storyListSection
+                }
+                .padding(.vertical, UIConstants.verticalPadding)
+                .background(
+                RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                    .fill(GRColor.mainColor2_1) // Color extension 사용
+                )
+                .padding(.horizontal ,UIConstants.horizontalPadding)
             }
-            .padding(.bottom, 30)
         }
         .scrollContentBackground(.hidden) // 기본 배경을 숨기고
         .background(
