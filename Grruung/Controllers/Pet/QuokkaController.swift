@@ -224,6 +224,7 @@ class QuokkaController: ObservableObject {
     }
     
     // MARK: - 다운로드 상태 확인
+    // 다운로드 여부 확인
     func isPhaseDataDownloaded(phase: CharacterPhase) -> Bool {
         guard let context = modelContext, phase != .egg else {
             return phase == .egg // egg는 Bundle에 있으므로 항상 true
@@ -258,6 +259,85 @@ class QuokkaController: ObservableObject {
         
         print("✅ \(phaseString) 단계 모든 데이터 다운로드 완료")
         return true
+    }
+    
+    // MARK: - 데이터 완전성 확인
+    /// [HomeViewModel] checkAnimationDataCompleteness 메서드에 사용
+    func isPhaseDataComplete(phase: CharacterPhase, evolutionStatus: EvolutionStatus) -> Bool {
+        guard let context = modelContext, phase != .egg else {
+            return phase == .egg // egg는 Bundle에 있으므로 항상 완전함
+        }
+        
+        let phaseString = phase.toEnglishString()
+        
+        // 진화 상태에 따라 필요한 애니메이션 타입 결정
+        let requiredAnimationTypes = getRequiredAnimationTypes(
+            phase: phase,
+            evolutionStatus: evolutionStatus
+        )
+        
+        // 각 애니메이션 타입의 완전성 확인
+        for animationType in requiredAnimationTypes {
+            if !isAnimationTypeComplete(
+                phase: phaseString,
+                animationType: animationType
+            ) {
+                print("❌ 미완료 애니메이션: \(animationType)")
+                return false
+            }
+        }
+        
+        print("✅ 모든 애니메이션 데이터 완료: \(phaseString)")
+        return true
+    }
+    
+    // 진화 상태에 따른 필요 애니메이션 타입 반환
+    /// [QuokkaController] isPhaseDataComplete 메서드에 사용
+    private func getRequiredAnimationTypes(
+        phase: CharacterPhase,
+        evolutionStatus: EvolutionStatus
+    ) -> [String] {
+        // 기본 애니메이션들
+        var required = ["normal", "sleeping", "eating"]
+        
+        // infant 단계에서 수면 애니메이션 추가
+        if phase == .infant {
+            required.append(contentsOf: [
+                "sleep1Start",
+                "sleep2Pingpong",
+                "sleep3mouth",
+                "sleep4WakeUp"
+            ])
+        }
+        
+        return required
+    }
+    
+    // 특정 애니메이션 타입의 완전성 확인
+    /// [QuokkaController] isPhaseDataComplete 메서드에 사용
+    private func isAnimationTypeComplete(
+        phase: String,
+        animationType: String
+    ) -> Bool {
+        guard let context = modelContext else { return false }
+        
+        let expectedFrameCount = frameCountMap[animationType] ?? 0
+        
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == "quokka" &&
+                metadata.phase == phase &&
+                metadata.animationType == animationType
+            }
+        )
+        
+        do {
+            let results = try context.fetch(descriptor)
+            return results.count >= expectedFrameCount
+        } catch {
+            print("❌ 완전성 확인 실패: \(error)")
+            return false
+        }
     }
     
     // MARK: - 정리 함수

@@ -14,6 +14,7 @@ struct HomeView: View {
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
+    @Environment(\.modelContext) private var modelContext // SwiftData 컨텍스트
     
     @State private var showInventory = false
     @State private var showPetGarden = false
@@ -79,6 +80,9 @@ struct HomeView: View {
             .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
+                
+                // QuokkaController에 ModelContext 전달
+                viewModel.setModelContext(modelContext)
             }
         }
         
