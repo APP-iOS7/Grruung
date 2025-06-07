@@ -39,7 +39,11 @@ class QuokkaController: ObservableObject {
     private let frameCountMap: [String: Int] = [
         "normal": 122,
         "sleeping": 1,  // 임시 값
-        "eating": 1     // 임시 값
+        "eating": 1,     // 임시 값
+        "sleep1Start": 204,
+        "sleep2Pingpong": 60,
+        "sleep3mouth": 54,
+        "sleep4WakeUp": 173
     ]
     
     // MARK: - SwiftData 컨텍스트 설정
@@ -226,7 +230,7 @@ class QuokkaController: ObservableObject {
         }
         
         let phaseString = phase.toEnglishString()
-        let animationTypes = ["normal", "sleeping", "eating"]
+        let animationTypes = ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
         
         // 모든 애니메이션 타입이 완전히 다운로드되었는지 확인
         for animationType in animationTypes {
@@ -340,7 +344,7 @@ extension QuokkaController {
                 updateDownloadState(isDownloading: true, progress: 0.0, message: "부화에 필요한 데이터를 받아오는 중...")
             }
             
-            let animationTypes = ["normal", "sleeping", "eating"]
+            let animationTypes = ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
             var totalFramesToDownload = 0
             
             // 총 프레임 수 계산
