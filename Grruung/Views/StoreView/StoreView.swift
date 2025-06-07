@@ -100,6 +100,10 @@ struct StoreView: View {
                 }
             }
             .navigationTitle("Store")
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+                .background(
+                    LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
+                ) // 원하는 색상 지정
         } //
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드
