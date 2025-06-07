@@ -117,7 +117,7 @@ struct EvolutionView: View {
     
     private var progressSection: some View {
         VStack(spacing: 15) {
-            if evolutionStep == .downloading || evolutionStep == .hatching {
+            if evolutionStep == .downloading || evolutionStep == .hatching || evolutionStep == .updating {
                 // 진행률 바 (QuokkaController에서 진행률 가져오기)
                 ProgressView(value: quokkaController.downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
