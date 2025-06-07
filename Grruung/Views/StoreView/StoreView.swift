@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StoreView: View {
-    let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
+    let tabs = ["전체", "놀이", "회복", "다이아", "티켓"]
     @State private var selectedTab = 0
     @State private var gold = 0
     @State private var diamond = 0
@@ -81,11 +81,12 @@ struct StoreView: View {
                             // 각 섹션은 ID로 scrollTo 대상
                             SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
+                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)

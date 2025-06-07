@@ -161,7 +161,7 @@ struct ProductDetailView: View {
 
 
 #Preview {
-    if let product = treatmentProducts.first {
+    if let product = diamondProducts.first {
         ProductDetailView(product: product)
     } else {
         Text("샘플 데이터 없음")
