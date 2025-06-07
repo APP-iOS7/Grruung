@@ -63,7 +63,7 @@ struct StoreView: View {
                                         .font(.headline)
                                         .foregroundColor(selectedTab == index ? .primary : .secondary)
                                     Capsule()
-                                        .fill(selectedTab == index ? Color.primary : Color.clear)
+                                        .fill(selectedTab == index ? GRColor.buttonColor_2 : Color.clear)
                                         .frame(height: 3)
                                 }
                                 .padding(.vertical, 8)
