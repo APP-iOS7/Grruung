@@ -32,6 +32,11 @@ class QuokkaController: ObservableObject {
     private var modelContext: ModelContext?             // SwiftData 컨텍스트
     private let frameRate: Double = 24.0                // 초당 프레임 수
     
+    // MARK: - 애니메이션 재생 로직 관련 프로퍼티
+    enum PlayMode { case once, pingPong }
+    private var currentPlayMode: PlayMode = .pingPong
+    private var onComplete: (() -> Void)? = nil
+    
     // MARK: - 고정 설정 (quokka만 처리)
     private let characterType = "quokka"
     
@@ -97,15 +102,10 @@ class QuokkaController: ObservableObject {
         
         do {
             let results = try context.fetch(descriptor)
-            if let metadata = results.first {
-                // 파일에서 이미지 로드
-                if let image = loadImageFromPath(metadata.filePath) {
-                    currentFrame = image
-                    currentFrameIndex = frameIndex - 1 // 0부터 시작하도록
-                    print("✅ 첫 번째 프레임 로드 성공: \(metadata.filePath)")
-                } else {
-                    print("❌ 이미지 파일 로드 실패: \(metadata.filePath)")
-                }
+            if let metadata = results.first, let image = loadImageFromPath(metadata.filePath) {
+                currentFrame = image
+                currentFrameIndex = frameIndex - 1 // 0부터 시작하도록
+                print("✅ 첫 번째 프레임 로드 성공: \(metadata.filePath)")
             } else {
                 print("❌ 메타데이터를 찾을 수 없음: \(phaseString)/\(animationType)/\(frameIndex)")
             }
@@ -136,7 +136,7 @@ class QuokkaController: ObservableObject {
     }
     
     // 전체 애니메이션 프레임 로드 (노멀 상태)
-    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String = "normal") {
+    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String) {
         guard let context = modelContext else {
             print("❌ SwiftData 컨텍스트가 없음")
             return
@@ -156,7 +156,7 @@ class QuokkaController: ObservableObject {
         
         do {
             let metadataList = try context.fetch(descriptor)
-            print("📥 \(metadataList.count)개 프레임 메타데이터 발견")
+            print("📥 \(metadataList.count)개 프레임 메타데이터 발견 (\(animationType))")
             
             // 프레임들을 순서대로 로드
             var loadedFrames: [UIImage] = []
@@ -169,8 +169,6 @@ class QuokkaController: ObservableObject {
             animationFrames = loadedFrames
             
             if !animationFrames.isEmpty {
-                currentFrame = animationFrames[0]
-                currentFrameIndex = 0
                 print("✅ \(animationFrames.count)개 애니메이션 프레임 로드 완료")
             }
             
@@ -374,7 +372,6 @@ class QuokkaController: ObservableObject {
     // MARK: - 정리 함수
     func cleanup() {
         stopAnimation()
-        isAnimating = false
         animationFrames.removeAll()
         currentFrame = nil
         print("🧹 QuokkaController 정리 완료")
@@ -643,6 +640,113 @@ extension QuokkaController {
     
     
     // MARK: - 애니메이션 재생
+    
+    /// 애니메이션을 재생하는 메인 함수
+    /// - Parameters:
+    ///   - type: 재생할 애니메이션 종류 (e.g., "normal", "sleep1Start")
+    ///   - phase: 캐릭터 성장 단계
+    ///   - mode: 재생 방식 (.once 또는 .pingPong)
+    ///   - completion: .once 모드에서 재생이 끝났을 때 호출될 클로저
+    func playAnimation(type: String, phase: CharacterPhase, mode: PlayMode, completion: (() -> Void)? = nil) {
+        print("🎬 요청: \(type), 모드: \(mode)")
+        stopAnimation() // 기존 애니메이션 중지
+        
+        self.currentPlayMode = mode
+        self.onComplete = completion
+        
+        // 프레임 로드
+        loadAllAnimationFrames(phase: phase, animationType: type)
+        
+        // 프레임이 있으면 애니메이션 시작
+        if !animationFrames.isEmpty {
+            currentFrameIndex = 0
+            isReversing = false
+            currentFrame = animationFrames[currentFrameIndex]
+            startAnimationTimer()
+        } else {
+            print("⚠️ \(type) 애니메이션 프레임이 없어 재생할 수 없습니다.")
+        }
+    }
+    
+    // 타이머 시작
+    private func startAnimationTimer() {
+        guard !isAnimating else { return }
+        isAnimating = true
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
+            self?.updateFrame()
+        }
+        print("▶️ 애니메이션 타이머 시작")
+    }
+    
+    // 애니메이션 정지
+    func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        isAnimating = false
+        isReversing = false
+        onComplete = nil // 완료 핸들러 초기화
+        print("⏹️ 애니메이션 정지")
+    }
+    
+    // 프레임 업데이트 (재생 모드에 따라 분기)
+    private func updateFrame() {
+        guard !animationFrames.isEmpty else {
+            stopAnimation()
+            return
+        }
+        
+        switch currentPlayMode {
+        case .pingPong:
+            updatePingPongFrame()
+        case .once:
+            updateOnceFrame()
+        }
+        
+        // 현재 프레임 이미지 업데이트
+        if currentFrameIndex < animationFrames.count {
+            currentFrame = animationFrames[currentFrameIndex]
+        }
+    }
+    
+    // .once 모드 프레임 업데이트
+    private func updateOnceFrame() {
+        currentFrameIndex += 1
+        
+        // 마지막 프레임에 도달하면 애니메이션 중지 및 완료 핸들러 호출
+        if currentFrameIndex >= animationFrames.count {
+            let completionHandler = onComplete
+            stopAnimation()
+            completionHandler?()
+            print("✅ 'once' 애니메이션 완료")
+        }
+    }
+    
+    // .pingPong 모드 프레임 업데이트
+    private func updatePingPongFrame() {
+        if isReversing {
+            // 역순 재생 중
+            currentFrameIndex -= 1
+            if currentFrameIndex <= 0 {
+                currentFrameIndex = 0
+                isReversing = false
+                print("🔄 정순 재생으로 전환")
+            }
+        } else {
+            // 정순 재생 중
+            currentFrameIndex += 1
+            if currentFrameIndex >= animationFrames.count - 1 {
+                currentFrameIndex = animationFrames.count - 1
+                isReversing = true
+                print("🔄 역순 재생으로 전환")
+            }
+        }
+        
+        // 디버깅용 로그 (매 30프레임마다)
+        if currentFrameIndex % 30 == 0 {
+            print("🎬 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
+        }
+    }
+    
     // 핑퐁 애니메이션 시작
     func startPingPongAnimation() {
         guard !animationFrames.isEmpty, !isAnimating else {
@@ -659,52 +763,6 @@ extension QuokkaController {
         // 타이머 시작 (24fps = 약 0.042초 간격)
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
             self?.updatePingPongFrame()
-        }
-    }
-    
-    // 핑퐁 애니메이션 정지
-    func stopAnimation() {
-        animationTimer?.invalidate()
-        animationTimer = nil
-        isAnimating = false
-        isReversing = false
-        
-        print("⏹️ 애니메이션 정지")
-    }
-    
-    // 핑퐁 프레임 업데이트
-    private func updatePingPongFrame() {
-        guard !animationFrames.isEmpty else { return }
-        
-        // 현재 프레임 이미지 업데이트
-        currentFrame = animationFrames[currentFrameIndex]
-        
-        // 다음 프레임 인덱스 계산
-        if isReversing {
-            // 역순 재생 중 (122 → 1)
-            currentFrameIndex -= 1
-            
-            // 첫 번째 프레임에 도달하면 정순으로 전환
-            if currentFrameIndex <= 0 {
-                currentFrameIndex = 0
-                isReversing = false
-                print("🔄 정순 재생으로 전환")
-            }
-        } else {
-            // 정순 재생 중 (1 → 122)
-            currentFrameIndex += 1
-            
-            // 마지막 프레임에 도달하면 역순으로 전환
-            if currentFrameIndex >= animationFrames.count - 1 {
-                currentFrameIndex = animationFrames.count - 1
-                isReversing = true
-                print("🔄 역순 재생으로 전환")
-            }
-        }
-        
-        // 디버깅용 로그 (매 30프레임마다)
-        if currentFrameIndex % 30 == 0 {
-            print("🎬 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
         }
     }
     
