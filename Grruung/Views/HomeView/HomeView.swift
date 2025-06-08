@@ -298,17 +298,7 @@ struct HomeView: View {
     
     // 캐릭터 섹션
     private var characterSection: some View {
-        HStack {
-            // 왼쪽 버튼들
-            VStack(spacing: 15) {
-                ForEach(0..<3) { index in
-                    let button = viewModel.sideButtons[index]
-                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
-                }
-            }
-            
-            Spacer()
-            
+        ZStack {
             // 캐릭터 이미지
             VStack {
                 Spacer()
@@ -323,13 +313,23 @@ struct HomeView: View {
                 )
             }
             
-            Spacer()
-            
-            // 오른쪽 버튼들
-            VStack(spacing: 15) {
-                ForEach(3..<6) { index in
-                    let button = viewModel.sideButtons[index]
-                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+            HStack {
+                // 왼쪽 버튼들
+                VStack(spacing: 15) {
+                    ForEach(0..<3) { index in
+                        let button = viewModel.sideButtons[index]
+                        iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+                    }
+                }
+                
+                Spacer()
+                
+                // 오른쪽 버튼들
+                VStack(spacing: 15) {
+                    ForEach(3..<6) { index in
+                        let button = viewModel.sideButtons[index]
+                        iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+                    }
                 }
             }
         }
