@@ -17,6 +17,7 @@ class QuokkaController: ObservableObject {
     @Published var currentFrame: UIImage? = nil         // 현재 표시할 프레임
     @Published var isAnimating: Bool = false            // 애니메이션 재생 중인지
     @Published var currentFrameIndex: Int = 0           // 현재 프레임 번호
+    @Published var currentAnimationType: String = "normal"  // 현재 재생 중인 애니메이션 타입
     
     // 다운로드 관련
     @Published var isDownloading: Bool = false          // 다운로드 중인지
@@ -31,6 +32,11 @@ class QuokkaController: ObservableObject {
     private let storage = Storage.storage()             // Firebase Storage
     private var modelContext: ModelContext?             // SwiftData 컨텍스트
     private let frameRate: Double = 24.0                // 초당 프레임 수
+    
+    // MARK: - 수면 애니메이션 관련 프로퍼티
+    @Published var isSleepMode: Bool = false               // 수면 모드 여부
+    private var sleepAnimationStep: Int = 0                // 수면 애니메이션 단계 (0: normal, 1: sleep1Start, 2: sleep2Pingpong)
+
     
     // MARK: - 고정 설정 (quokka만 처리)
     private let characterType = "quokka"
@@ -136,13 +142,16 @@ class QuokkaController: ObservableObject {
     }
     
     // 전체 애니메이션 프레임 로드 (노멀 상태)
-    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String = "normal") {
+    func loadAnimationFrames(animationType: String = "normal") {
         guard let context = modelContext else {
             print("❌ SwiftData 컨텍스트가 없음")
             return
         }
         
-        let phaseString = phase.toEnglishString()
+        currentAnimationType = animationType
+        
+        // 현재는 infant 단계로 고정, 나중에 phase 매개변수 추가 가능
+        let phaseString = "infant"
         
         // 모든 프레임 조회 (frameIndex로 정렬)
         let descriptor = FetchDescriptor<GRAnimationMetadata>(
@@ -156,7 +165,7 @@ class QuokkaController: ObservableObject {
         
         do {
             let metadataList = try context.fetch(descriptor)
-            print("📥 \(metadataList.count)개 프레임 메타데이터 발견")
+            print("📥 \(animationType) 프레임 \(metadataList.count)개 발견")
             
             // 프레임들을 순서대로 로드
             var loadedFrames: [UIImage] = []
@@ -171,11 +180,11 @@ class QuokkaController: ObservableObject {
             if !animationFrames.isEmpty {
                 currentFrame = animationFrames[0]
                 currentFrameIndex = 0
-                print("✅ \(animationFrames.count)개 애니메이션 프레임 로드 완료")
+                print("✅ \(animationFrames.count)개 \(animationType) 프레임 로드 완료")
             }
             
         } catch {
-            print("❌ 애니메이션 프레임 로드 실패: \(error)")
+            print("❌ \(animationType) 프레임 로드 실패: \(error)")
         }
     }
     
@@ -444,7 +453,7 @@ extension QuokkaController {
                 // normal 애니메이션 로드
                 let normalPredicate = #Predicate<GRAnimationMetadata> { metadata in
                     metadata.characterType == characterType &&
-                    metadata.phase == phaseString && 
+                    metadata.phase == phaseString &&
                     metadata.animationType == "normal"
                 }
                 let normalDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: normalPredicate)
@@ -782,4 +791,173 @@ extension QuokkaController {
         }
     }
 }
+
+// MARK: - 수면 애니메이션
+extension QuokkaController {
+    // MARK: - 수면 애니메이션 시작
+    func startSleepAnimation() {
+        print("[QuokkaController] 수면 애니메이션 시작 요청")
+        print("[QuokkaController] 현재 상태 - isAnimating: \(isAnimating), isSleepMode: \(isSleepMode)")
+        
+        // 기존 애니메이션 정지
+        stopAnimation()
+        
+        isSleepMode = true
+        sleepAnimationStep = 1
+        
+        // sleep1Start 애니메이션 로드 및 재생
+        loadAndPlaySleepStartAnimation()
+    }
+    
+    // MARK: - 수면 애니메이션 종료 (깨우기)
+    func stopSleepAnimation() {
+        print("[QuokkaController] 수면 애니메이션 종료 요청 - normal로 복귀")
+        
+        // 수면 모드 해제
+        isSleepMode = false
+        sleepAnimationStep = 0
+        currentAnimationType = "normal"
+        
+        // 기존 애니메이션 정지
+        stopAnimation()
+        
+        // normal 애니메이션으로 복귀
+        loadAnimationFrames(animationType: "normal")
+        startPingPongAnimation()
+    }
+    
+    // MARK: - sleep1Start 애니메이션 로드 및 재생
+    private func loadAndPlaySleepStartAnimation() {
+        guard let context = modelContext else {
+            print("❌ SwiftData 컨텍스트가 없음")
+            return
+        }
+        
+        currentAnimationType = "sleep1Start"
+        
+        // sleep1Start 프레임들 로드
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == "quokka" &&
+                metadata.phase == "infant" &&
+                metadata.animationType == "sleep1Start"
+            },
+            sortBy: [SortDescriptor(\.frameIndex)]
+        )
+        
+        do {
+            let metadataList = try context.fetch(descriptor)
+            print("📥 sleep1Start 프레임 \(metadataList.count)개 로드")
+            
+            var loadedFrames: [UIImage] = []
+            for metadata in metadataList {
+                if let image = loadImageFromPath(metadata.filePath) {
+                    loadedFrames.append(image)
+                }
+            }
+            
+            animationFrames = loadedFrames
+            
+            if !animationFrames.isEmpty {
+                currentFrame = animationFrames[0]
+                currentFrameIndex = 0
+                
+                // sleep1Start 애니메이션 시작 (한 번만 재생)
+                startSleepStartAnimation()
+            }
+            
+        } catch {
+            print("❌ sleep1Start 로드 실패: \(error)")
+        }
+    }
+    
+    // MARK: - sleep1Start 애니메이션 재생 (한 번만)
+    private func startSleepStartAnimation() {
+        guard !animationFrames.isEmpty else { return }
+        
+        isAnimating = true
+        currentFrameIndex = 0
+        
+        print("🎬 sleep1Start 애니메이션 시작 - \(animationFrames.count)개 프레임")
+        
+        // 타이머 시작 (한 번만 재생)
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
+            self?.updateSleepStartFrame()
+        }
+    }
+    
+    // MARK: - sleep1Start 프레임 업데이트
+    private func updateSleepStartFrame() {
+        guard !animationFrames.isEmpty else { return }
+        
+        // 현재 프레임 이미지 업데이트
+        currentFrame = animationFrames[currentFrameIndex]
+        
+        // 다음 프레임으로 이동
+        currentFrameIndex += 1
+        
+        // 마지막 프레임에 도달하면 sleep2Pingpong으로 전환
+        if currentFrameIndex >= animationFrames.count {
+            print("✅ sleep1Start 완료 - sleep2Pingpong으로 전환")
+            
+            // 타이머 정지
+            animationTimer?.invalidate()
+            animationTimer = nil
+            isAnimating = false
+            
+            // sleep2Pingpong 애니메이션으로 전환
+            sleepAnimationStep = 2
+            loadAndPlaySleep2PingpongAnimation()
+        }
+        
+        // MARK: - sleep2Pingpong 애니메이션 로드 및 재생
+        func loadAndPlaySleep2PingpongAnimation() {
+            guard let context = modelContext else {
+                print("❌ SwiftData 컨텍스트가 없음")
+                return
+            }
+            
+            currentAnimationType = "sleep2Pingpong"
+            
+            // sleep2Pingpong 프레임들 로드
+            let descriptor = FetchDescriptor<GRAnimationMetadata>(
+                predicate: #Predicate { metadata in
+                    metadata.characterType == "quokka" &&
+                    metadata.phase == "infant" &&
+                    metadata.animationType == "sleep2Pingpong"
+                },
+                sortBy: [SortDescriptor(\.frameIndex)]
+            )
+            
+            do {
+                let metadataList = try context.fetch(descriptor)
+                print("📥 sleep2Pingpong 프레임 \(metadataList.count)개 로드")
+                
+                var loadedFrames: [UIImage] = []
+                for metadata in metadataList {
+                    if let image = loadImageFromPath(metadata.filePath) {
+                        loadedFrames.append(image)
+                    }
+                }
+                
+                animationFrames = loadedFrames
+                
+                if !animationFrames.isEmpty {
+                    currentFrame = animationFrames[0]
+                    currentFrameIndex = 0
+                    
+                    // sleep2Pingpong 핑퐁 애니메이션 시작
+                    startPingPongAnimation()
+                }
+                
+            } catch {
+                print("❌ sleep2Pingpong 로드 실패: \(error)")
+            }
+        }
+    }
+    
+    
+
+}
+
 

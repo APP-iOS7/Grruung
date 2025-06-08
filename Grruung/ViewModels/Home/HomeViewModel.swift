@@ -14,7 +14,7 @@ import SwiftData
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
     // 컨트롤러
-    private var quokkaController: QuokkaController?
+    @Published var quokkaController: QuokkaController?
     
     // 캐릭터 관련
     @Published var character: GRCharacter?
@@ -1283,20 +1283,33 @@ class HomeViewModel: ObservableObject {
     }
     
     // 재우기/깨우기 액션 처리
+    @MainActor
     func putPetToSleep() {
         if isSleeping {
             // 이미 자고 있으면 깨우기
             isSleeping = false
             statusMessage = "일어났어요! 이제 활동할 수 있어요!"
+            
+            // QuokkaController 깨우기 애니메이션 호출
+            if let character = character, character.species == .quokka, character.status.phase == .infant {
+                quokkaController?.stopSleepAnimation()
+            }
+            
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
+            
             // 수면 시 즉시 회복 효과
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
             activityValue = min(100, activityValue + sleepBonus)
             
             statusMessage = "쿨쿨... 잠을 자고 있어요."
             updateAllPercents()
+            
+            // QuokkaController 수면 애니메이션 호출
+            if let character = character, character.species == .quokka, character.status.phase == .infant {
+                quokkaController?.startSleepAnimation()
+            }
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1319,7 +1332,7 @@ class HomeViewModel: ObservableObject {
     
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
-    func performAction(at index: Int) {
+    @MainActor func performAction(at index: Int) {
         // 액션 버튼 배열의 유효한 인덱스인지 확인
         guard index < actionButtons.count else {
             print("⚠️ 잘못된 액션 인덱스: \(index)")

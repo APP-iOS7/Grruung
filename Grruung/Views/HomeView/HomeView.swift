@@ -316,6 +316,7 @@ struct HomeView: View {
                 ScreenView(
                     character: viewModel.character,
                     isSleeping: viewModel.isSleeping,
+                    quokkaController: viewModel.quokkaController,
                     onCreateCharacterTapped: {
                         // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
                         isShowingOnboarding = true

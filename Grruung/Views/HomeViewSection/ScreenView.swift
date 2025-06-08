@@ -15,7 +15,7 @@ struct ScreenView: View {
     
     // 애니메이션 컨트롤러 추가
     @StateObject private var eggController = EggController()
-    @StateObject private var quokkaController = QuokkaController()
+    let quokkaController: QuokkaController? // (기존 @StateObject 제거하고 전달받은 것 사용)
     
     @Environment(\.modelContext) private var modelContext
     
@@ -66,6 +66,12 @@ struct ScreenView: View {
             print("🔄 진화 상태 변경: \(oldValue?.rawValue ?? "nil") → \(newValue?.rawValue ?? "nil")")
             // 진화 상태가 변경되면 애니메이션 다시 설정
             setupControllers()
+            startAppropriateAnimation()
+        }
+        // 수면 상태 변경 감지 추가
+        .onChange(of: isSleeping) { oldValue, newValue in
+            print("😴 수면 상태 변경: \(oldValue) → \(newValue)")
+            // 수면 상태가 변경되면 적절한 애니메이션으로 전환
             startAppropriateAnimation()
         }
         .onTapGesture {
@@ -137,7 +143,7 @@ struct ScreenView: View {
     // 쿼카 애니메이션 뷰
     @ViewBuilder
     private var quokkaAnimationView: some View {
-        if let currentFrame = quokkaController.currentFrame {
+        if let currentFrame = quokkaController?.currentFrame {
             Image(uiImage: currentFrame)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -232,9 +238,7 @@ struct ScreenView: View {
     
     // 컨트롤러들 설정
     private func setupControllers() {
-        // QuokkaController에 SwiftData 컨텍스트 설정
-        quokkaController.setModelContext(modelContext)
-        
+        // QuokkaController는 HomeViewModel에서 전달받으므로 별도 설정 불필요
         // 캐릭터가 있고 egg가 아닌 경우 애니메이션 프레임 로드
         if let character = character, character.status.phase != .egg {
             loadCharacterAnimationFrames(character: character)
@@ -245,11 +249,14 @@ struct ScreenView: View {
     private func loadCharacterAnimationFrames(character: GRCharacter) {
         switch character.species {
         case .quokka:
-            // 쿼카의 경우 현재 단계의 normal 애니메이션 로드
-            quokkaController.loadAllAnimationFrames(
-                phase: character.status.phase,
-                animationType: "normal"
-            )
+            // 수면 상태에 따라 다른 애니메이션 로드
+            if isSleeping {
+                // 수면 중이면 수면 애니메이션 시작
+                quokkaController?.startSleepAnimation()
+            } else {
+                // 깨어있으면 normal 애니메이션 로드
+                quokkaController?.loadAnimationFrames(animationType: "normal")
+            }
             print("🐨 쿼카 \(character.status.phase.rawValue) 애니메이션 프레임 로드")
             
         case .CatLion:
@@ -273,10 +280,17 @@ struct ScreenView: View {
             eggController.startAnimation()
             print("운석 애니메이션 시작")
         } else {
-            // 다른 단계 - QuokkaController 핑퐁 애니메이션 시작
+            // 다른 단계 - QuokkaController 애니메이션 시작
             if character.species == .quokka {
-                quokkaController.startPingPongAnimation()
-                print("쿼카 핑퐁 애니메이션 시작")
+                if isSleeping {
+                    // 수면 중이면 수면 애니메이션
+                    quokkaController?.startSleepAnimation()
+                    print("쿼카 수면 애니메이션 시작")
+                } else {
+                    // 깨어있으면 일반 핑퐁 애니메이션
+                    quokkaController?.startPingPongAnimation()
+                    print("쿼카 핑퐁 애니메이션 시작")
+                }
             }
         }
     }
@@ -284,7 +298,7 @@ struct ScreenView: View {
     // 모든 애니메이션 정지 메서드 추가
     private func stopAllAnimations() {
         eggController.stopAnimation()
-        quokkaController.stopAnimation()
+        quokkaController?.stopAnimation()
         print("⏹️ 모든 애니메이션 정지")
     }
     
@@ -293,7 +307,7 @@ struct ScreenView: View {
         stopAllAnimations() // 정지 먼저 하고
         
         eggController.cleanup()
-        quokkaController.cleanup()
+        quokkaController?.cleanup()
         print("모든 컨트롤러 정리 완료")
     }
     
@@ -308,8 +322,8 @@ struct ScreenView: View {
         } else {
             // 다른 단계 - QuokkaController 토글
             if character.species == .quokka {
-                quokkaController.toggleAnimation()
-                print("쿼카 애니메이션 토글: \(quokkaController.isAnimating ? "재생" : "정지")")
+                quokkaController?.toggleAnimation()
+                print("쿼카 애니메이션 토글: \(quokkaController?.isAnimating ?? false ? "재생" : "정지")")
             }
         }
     }
@@ -335,6 +349,7 @@ struct ScreenView: View {
             birthDate: Date()
         ),
         isSleeping: false,
+        quokkaController: nil,
         onCreateCharacterTapped: {
             print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
         }
