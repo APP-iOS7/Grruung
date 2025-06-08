@@ -180,6 +180,7 @@ struct SignUpView: View {
                         Text("비밀번호 확인")
                             .bold()
                             .frame(maxWidth: .infinity, alignment: .leading)
+
                         VStack {
                             // 비밀번호 확인 입력 필드
                             SecureField("", text: $passwordCheck)
@@ -190,7 +191,7 @@ struct SignUpView: View {
                                         .frame(height: 2)
                                         .foregroundStyle(
                                             focusedField == .passwordCheck
-                                                ? (passwordCheck.isEmpty ? GRColor.mainColor4_1 : (password != passwordCheck ? GRColor.mainColor4_1 : Color.red))
+                                                ? (passwordCheck.isEmpty ? GRColor.mainColor4_1 : (password == passwordCheck ? GRColor.mainColor4_1 : Color.red))
                                                 : Color.gray.opacity(0.3)
                                         ), alignment: .bottom
                                 )
@@ -259,6 +260,13 @@ struct SignUpView: View {
                         }
                         .disabled(isLoading)
                     }
+                    
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("완료") {
+                            hideKeyboard()
+                        }
+                    }
                 }
                 .alert("회원가입 오류", isPresented: $showError) {
                     Button("확인", role: .cancel) { }
@@ -283,6 +291,13 @@ struct SignUpView: View {
             showError = true
         }
         isLoading = false
+    }
+}
+
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
     }
 }
 

@@ -72,44 +72,54 @@ struct LoginView: View {
                         .bold()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    ZStack(alignment: .trailing) {
-                        // 비밀번호 입력 필드
-                        Group {
-                            if isSecure {
-                                SecureField("", text: $password)
-                            } else {
-                                TextField("", text: $password)
+                    VStack {
+                        ZStack(alignment: .trailing) {
+                            // 비밀번호 입력 필드
+                            Group {
+                                if isSecure {
+                                    SecureField("", text: $password)
+                                } else {
+                                    TextField("", text: $password)
+                                }
                             }
+                            .padding(.trailing, 40)
+                            .padding(.bottom, 8)
+                            .frame(height: 30)
+                            .submitLabel(.done)
+                            .disabled(isLoading)
+                            .focused($passwordFieldIsFocused)
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 2)
+                                    .foregroundColor(passwordFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                    .animation(.easeInOut(duration: 0.6), value: passwordFieldIsFocused),
+                                alignment: .bottom
+                            )
+                            
+                            // 눈 아이콘 버튼
+                            Button(action: {
+                                isSecure.toggle()
+                                
+                                // 포커스 재설정 지연
+                                DispatchQueue.main.async {
+                                    passwordFieldIsFocused = true
+                                }
+                            }) {
+                                Image(systemName: isSecure ? "eye.slash" : "eye")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.trailing, 8)
+                            
+                            
                         }
-                        .padding(.trailing, 40)
-                        .padding(.bottom, 8)
-                        .frame(height: 30)
-                        .submitLabel(.done)
-                        .disabled(isLoading)
-                        .focused($passwordFieldIsFocused)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(passwordFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
-                                .animation(.easeInOut(duration: 0.6), value: passwordFieldIsFocused),
-                            alignment: .bottom
-                        )
-                        
-                        // 눈 아이콘 버튼
-                        Button(action: {
-                            isSecure.toggle()
-                        }) {
-                            Image(systemName: isSecure ? "eye.slash" : "eye")
-                                .foregroundColor(.gray)
+                        if !isValidPassword && !password.isEmpty {
+                            Text("비밀번호는 최소 6자 이상이어야 합니다")
+                                .padding(.top, 4)
+                                .foregroundColor(.red)
+                                .font(.caption)
                         }
-                        .padding(.trailing, 8)
                     }
-                    
-                    if !isValidPassword && !password.isEmpty {
-                        Text("비밀번호는 최소 6자 이상이어야 합니다")
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
+                    .frame(height: 60)
                     
                     // 로그인 버튼
                     Button(action: {
