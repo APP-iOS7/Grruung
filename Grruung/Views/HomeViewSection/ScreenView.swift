@@ -294,11 +294,13 @@ struct ScreenView: View {
                 quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
             }
         } else {
-            // 깨우기: normal (pingPong)
-            // 참고: 실제 앱에서는 "일어나는" 애니메이션을 먼저 재생 후 normal로 전환할 수 있습니다.
-            // 예: playAnimation(type: "sleep4WakeUp", mode: .once) { ... play normal ... }
-            print("☀️ 깨우기. Normal 애니메이션으로 전환")
-            quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
+            // 깨우기: sleep4WakeUp (once) -> normal (pingPong)
+            print("☀️ 깨우기 애니메이션 시퀀스 시작")
+            quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once) {
+                // sleep4WakeUp이 끝나면 실행
+                print(" --> normal 애니메이션으로 전환")
+                self.quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
+            }
         }
     }
     
