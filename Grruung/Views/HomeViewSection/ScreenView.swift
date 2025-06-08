@@ -70,9 +70,19 @@ struct ScreenView: View {
         }
         // 수면 상태 변경 감지 추가
         .onChange(of: isSleeping) { oldValue, newValue in
+            guard oldValue != newValue else { return }
+            
             print("😴 수면 상태 변경: \(oldValue) → \(newValue)")
-            // 수면 상태가 변경되면 적절한 애니메이션으로 전환
-            startAppropriateAnimation()
+            // 직접 애니메이션 제어 (startAppropriateAnimation 호출하지 않음)
+            guard let character = character, character.species == .quokka, character.status.phase == .infant else { return }
+            
+            if newValue {
+                // 잠들기
+                quokkaController?.startSleepAnimation()
+            } else {
+                // 깨어나기
+                quokkaController?.stopSleepAnimation()
+            }
         }
         .onTapGesture {
             handleTap()

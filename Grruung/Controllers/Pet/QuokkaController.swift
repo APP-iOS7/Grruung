@@ -667,7 +667,9 @@ extension QuokkaController {
         
         // 타이머 시작 (24fps = 약 0.042초 간격)
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
-            self?.updatePingPongFrame()
+            Task { @MainActor in
+                self?.updatePingPongFrame()
+            }
         }
     }
     
@@ -873,16 +875,26 @@ extension QuokkaController {
     
     // MARK: - sleep1Start 애니메이션 재생 (한 번만)
     private func startSleepStartAnimation() {
-        guard !animationFrames.isEmpty else { return }
+        guard !animationFrames.isEmpty else {
+            print("❌ sleep1Start: 애니메이션 프레임이 없음")
+            return
+        }
+        
+        print("🎬 sleep1Start 애니메이션 시작 - \(animationFrames.count)개 프레임")
+        print("🎬 sleep1Start: 첫 번째 프레임부터 시작")
         
         isAnimating = true
         currentFrameIndex = 0
+        isReversing = false // 역순 플래그 초기화
         
-        print("🎬 sleep1Start 애니메이션 시작 - \(animationFrames.count)개 프레임")
+        // 첫 번째 프레임 설정
+        currentFrame = animationFrames[0]
         
         // 타이머 시작 (한 번만 재생)
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
-            self?.updateSleepStartFrame()
+            Task { @MainActor in
+                self?.updateSleepStartFrame()
+            }
         }
     }
     
@@ -893,12 +905,17 @@ extension QuokkaController {
         // 현재 프레임 이미지 업데이트
         currentFrame = animationFrames[currentFrameIndex]
         
+        // 디버깅 로그 추가 (매 20프레임마다)
+        if currentFrameIndex % 20 == 0 {
+            print("🎬 sleep1Start 재생 중: \(currentFrameIndex + 1)/\(animationFrames.count)")
+        }
+        
         // 다음 프레임으로 이동
         currentFrameIndex += 1
         
         // 마지막 프레임에 도달하면 sleep2Pingpong으로 전환
         if currentFrameIndex >= animationFrames.count {
-            print("✅ sleep1Start 완료 - sleep2Pingpong으로 전환")
+            print("✅ sleep1Start 완료 (\(animationFrames.count)프레임) - sleep2Pingpong으로 전환")
             
             // 타이머 정지
             animationTimer?.invalidate()
@@ -909,55 +926,120 @@ extension QuokkaController {
             sleepAnimationStep = 2
             loadAndPlaySleep2PingpongAnimation()
         }
+    }
         
-        // MARK: - sleep2Pingpong 애니메이션 로드 및 재생
-        func loadAndPlaySleep2PingpongAnimation() {
-            guard let context = modelContext else {
-                print("❌ SwiftData 컨텍스트가 없음")
-                return
+    // MARK: - sleep2Pingpong 애니메이션 로드 및 재생
+    func loadAndPlaySleep2PingpongAnimation() {
+        guard let context = modelContext else {
+            print("❌ SwiftData 컨텍스트가 없음")
+            return
+        }
+        
+        print("🔄 sleep2Pingpong 로드 시작")
+        currentAnimationType = "sleep2Pingpong"
+        
+        // sleep2Pingpong 프레임들 로드
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == "quokka" &&
+                metadata.phase == "infant" &&
+                metadata.animationType == "sleep2Pingpong"
+            },
+            sortBy: [SortDescriptor(\.frameIndex)]
+        )
+        
+        do {
+            let metadataList = try context.fetch(descriptor)
+            print("📥 sleep2Pingpong 프레임 \(metadataList.count)개 로드")
+            
+            var loadedFrames: [UIImage] = []
+            for metadata in metadataList {
+                if let image = loadImageFromPath(metadata.filePath) {
+                    loadedFrames.append(image)
+                }
             }
             
-            currentAnimationType = "sleep2Pingpong"
+            animationFrames = loadedFrames
             
-            // sleep2Pingpong 프레임들 로드
-            let descriptor = FetchDescriptor<GRAnimationMetadata>(
-                predicate: #Predicate { metadata in
-                    metadata.characterType == "quokka" &&
-                    metadata.phase == "infant" &&
-                    metadata.animationType == "sleep2Pingpong"
-                },
-                sortBy: [SortDescriptor(\.frameIndex)]
-            )
+            if !animationFrames.isEmpty {
+                // 초기화를 하고 시작
+                currentFrameIndex = 0
+                isReversing = false
+                currentFrame = animationFrames[0]
+                
+                print("🎬 sleep2Pingpong 핑퐁 애니메이션 시작 - \(animationFrames.count)개 프레임")
+                print("🎬 sleep2Pingpong: 1번 프레임부터 시작 (정순)")
+                
+                // sleep2Pingpong 핑퐁 애니메이션 시작
+                startSleep2PingPongAnimation()
+            } else {
+                print("❌ sleep2Pingpong 프레임 로드 실패")
+            }
             
-            do {
-                let metadataList = try context.fetch(descriptor)
-                print("📥 sleep2Pingpong 프레임 \(metadataList.count)개 로드")
-                
-                var loadedFrames: [UIImage] = []
-                for metadata in metadataList {
-                    if let image = loadImageFromPath(metadata.filePath) {
-                        loadedFrames.append(image)
-                    }
-                }
-                
-                animationFrames = loadedFrames
-                
-                if !animationFrames.isEmpty {
-                    currentFrame = animationFrames[0]
-                    currentFrameIndex = 0
-                    
-                    // sleep2Pingpong 핑퐁 애니메이션 시작
-                    startPingPongAnimation()
-                }
-                
-            } catch {
-                print("❌ sleep2Pingpong 로드 실패: \(error)")
+        } catch {
+            print("❌ sleep2Pingpong 로드 실패: \(error)")
+        }
+    }
+    
+    // MARK: - sleep2Pingpong 전용 핑퐁 애니메이션 시작
+    private func startSleep2PingPongAnimation() {
+        guard !animationFrames.isEmpty, !isAnimating else {
+            print("❌ sleep2Pingpong 시작 불가: 프레임(\(animationFrames.count)), 재생중(\(isAnimating))")
+            return
+        }
+        
+        isAnimating = true
+        isReversing = false
+        currentFrameIndex = 0
+        
+        print("🎬 sleep2Pingpong 핑퐁 타이머 시작")
+        
+        // 타이머 시작
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateSleep2PingPongFrame()
             }
         }
     }
     
+    // MARK: - sleep2Pingpong 전용 프레임 업데이트 - 새로 추가
+    private func updateSleep2PingPongFrame() {
+        guard !animationFrames.isEmpty else { return }
+        
+        // 현재 프레임 이미지 업데이트
+        currentFrame = animationFrames[currentFrameIndex]
+        
+        // 다음 프레임 인덱스 계산
+        if isReversing {
+            // 역순 재생 중 (60 → 1)
+            currentFrameIndex -= 1
+            
+            // 첫 번째 프레임에 도달하면 정순으로 전환
+            if currentFrameIndex <= 0 {
+                currentFrameIndex = 0
+                isReversing = false
+                print("🔄 sleep2Pingpong: 정순 재생으로 전환 (1→60)")
+            }
+        } else {
+            // 정순 재생 중 (1 → 60)
+            currentFrameIndex += 1
+            
+            // 마지막 프레임에 도달하면 역순으로 전환
+            if currentFrameIndex >= animationFrames.count - 1 {
+                currentFrameIndex = animationFrames.count - 1
+                isReversing = true
+                print("🔄 sleep2Pingpong: 역순 재생으로 전환 (60→1)")
+            }
+        }
+        
+        // 🎯 디버깅용 로그 (매 15프레임마다)
+        if currentFrameIndex % 15 == 0 {
+            print("🎬 sleep2Pingpong: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
+        }
+    }
+}
+    
     
 
-}
 
 
