@@ -109,12 +109,15 @@ struct ProfileDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.orange)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(colors: [Color(hex: "#FFB778"), Color(hex: "FFA04D")], startPoint: .leading, endPoint: .trailing)))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
+//                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                     .padding(.horizontal)
                     
@@ -122,16 +125,16 @@ struct ProfileDetailView: View {
                     
                     VStack(spacing: 30) {
                         ForEach(settingSections) { section in
-                            VStack(spacing: 0) {
+                            VStack {
                                 ForEach(section.items.indices, id: \ .self) { index in
                                     let item = section.items[index]
                                     SettingRow(icon: item.iconName, text: item.title)
-                                    if index < section.items.count - 1 {
-                                        Divider()
-                                    }
+//                                    if index < section.items.count - 1 {
+//                                        Divider()
+//                                    }
                                 }
                             }
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
+//                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                         }
                         
                         Button {
@@ -226,8 +229,6 @@ struct SettingRow: View {
         .padding(.horizontal, 20)
     }
 }
-
-
 
 // MARK: - Preview
 #Preview {
