@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StoreView: View {
-    let tabs = ["전체", "놀이", "회복", "다이아", "티켓"]
+    let tabs = ["전체", "놀이", "음식", "다이아", "티켓"]
     @State private var selectedTab = 0
     @State private var gold = 0
     @State private var diamond = 0
@@ -84,7 +84,7 @@ struct StoreView: View {
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
+                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
@@ -102,9 +102,9 @@ struct StoreView: View {
             }
             .navigationTitle("Store")
             .scrollContentBackground(.hidden) // 기본 배경을 숨기고
-                .background(
+            .background(
                     LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
-                ) // 원하는 색상 지정
+            ) // 원하는 색상 지정
         } //
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드
