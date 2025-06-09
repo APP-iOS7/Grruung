@@ -341,12 +341,13 @@ struct HomeView: View {
                                 
                                 Text(action.name)
                                     .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? .gray : .primary)
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? Color.gray : Color.primary)
                             }
                         }
                     }
                 }
-                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
+                // 애니메이션 실행 중이거나, 잠자는 상태에서 재우기/깨우기 버튼이 아닌 경우 버튼 비활성화
+                .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
             }
         }
     }
@@ -400,20 +401,65 @@ struct HomeView: View {
                 }
             } else {
                 Button(action: {
-                    handleSideButtonAction(systemName: systemName)
-                }) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(width: 60, height: 60)
-                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.1) : Color.gray.opacity(0.6))
-                        
-                        Image(systemName: systemName)
-                            .font(.system(size: 24))
-                            .foregroundColor(viewModel.isSleeping ? .gray : .black) // .primary에서 .black으로 변경
-                    }
-                }
-                .disabled(viewModel.isSleeping)
+                       handleButtonAction(systemName: systemName)
+                   }) {
+                       ZStack {
+                           Circle()
+                               .frame(width: 55, height: 55)
+                               .foregroundColor(unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                           
+                           if !unlocked {
+                               Image(systemName: "lock.fill")
+                                   .foregroundColor(.gray)
+                           } else {
+                               Image(systemName: systemName)
+                                   .font(.system(size: 24))
+                                   .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                           }
+                       }
+                   }
+                   // 애니메이션 실행 중이거나 잠자는 상태일 때 버튼 비활성화
+                   .disabled(viewModel.isAnimationRunning || viewModel.isSleeping)
             }
+        }
+    }
+    
+    private func handleButtonAction(systemName: String) {
+        // 애니메이션 실행 중일 때는 액션 처리하지 않음
+        guard !viewModel.isAnimationRunning else {
+            return
+        }
+        
+        // 기존 handleSideButtonAction 메서드 내용...
+        switch systemName {
+        case "backpack.fill": // 인벤토리
+            showInventory.toggle()
+        case "cart.fill": // 상점
+            // NavigationLink는 이미 처리됨
+            break
+        case "mountain.2.fill": // 동산
+            showPetGarden.toggle()
+        case "book.fill": // 일기
+            if let character = viewModel.character {
+                // 스토리 작성 시트 표시
+                isShowingWriteStory = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "microphone.fill": // 채팅
+            if let character = viewModel.character {
+                // 챗펫 시트 표시
+                isShowingChatPet = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "gearshape.fill": // 설정
+            // 설정 시트 표시
+            isShowingSettings.toggle()
+        default:
+            break
         }
     }
     

@@ -65,6 +65,7 @@ class HomeViewModel: ObservableObject {
     
     @Published var isDataReady: Bool = false
     @Published var userViewModel = UserViewModel()
+    @Published var isAnimationRunning: Bool = false
 
     // 디버그 모드 설정 추가
 #if DEBUG
@@ -1323,6 +1324,12 @@ class HomeViewModel: ObservableObject {
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
     func performAction(at index: Int) {
+        // 애니메이션 중이면 액션 수행하지 않음
+        guard !isAnimationRunning else {
+            print("🚫 애니메이션 실행 중: 액션 무시됨")
+            return
+        }
+        
         // 액션 버튼 배열의 유효한 인덱스인지 확인
         guard index < actionButtons.count else {
             print("⚠️ 잘못된 액션 인덱스: \(index)")
@@ -1343,6 +1350,10 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // 애니메이션 시작 (액션에 따라 적절한 지속 시간 설정)
+        let animationDuration = 1.0 // 기본 1초
+        startAnimation(duration: animationDuration)
+        
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
         case "bed.double":
@@ -1361,6 +1372,7 @@ class HomeViewModel: ObservableObject {
         // 액션 실행 후 액션 버튼 갱신
         refreshActionButtons()
     }
+
     
     // ActionManager를 통해 액션을 실행합니다.
     /// - Parameter actionId: 실행할 액션 ID
@@ -1719,4 +1731,18 @@ class HomeViewModel: ObservableObject {
             }
         }
     }
+    
+    // MARK: - 애니메이션 중 버튼 클릭 비활성화 기능 추가
+
+    // 애니메이션 시작/종료 메서드
+    func startAnimation(duration: Double = 1.0) {
+        isAnimationRunning = true
+        
+        // 애니메이션 완료 후 상태 변경
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isAnimationRunning = false
+        }
+    }
+    
+    
 }
