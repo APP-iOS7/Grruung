@@ -117,102 +117,102 @@ class CharacterDetailViewModel: ObservableObject {
         }
     }
     
-    func loadCharacter(characterUUID: String) {
-        guard !isLoadingCharacter else { return }
-        self.isLoadingCharacter = true
-        self.isLoading = true
-        
-        db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
-            guard let self = self else { return }
-            guard let data = snapshot?.data() else {
-                self.isLoadingCharacter = false
-                self.checkLoadingComplete()
-                return
-            }
-            
-            // 데이터 파싱 및 GRCharacter 생성
-            let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
-            let name = data["name"] as? String ?? "이름 없음"
-            
-            // 이미지 이름 확인 및 수정
-            let imageName = data["imageName"] as? String ?? ""
-            // 이미지 이름이 비어있으면 species에 따라 기본 이미지 설정
-            let finalImageName = imageName.isEmpty ?
-                (species == .quokka ? "quokka" : "CatLion") : imageName
-            
-            print("imageName: \(finalImageName)")
-            
-            let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
-            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-            
-            // status 맵에서 캐릭터 상태 정보 가져오기
-            var level = 1
-            var exp = 0
-            var expToNextLevel = 100
-            var phase: CharacterPhase = .egg
-            var address = "paradise"
-            var satiety = 100
-            var stamina = 100
-            var activity = 100
-            
-            if let statusMap = data["status"] as? [String: Any] {
-                level = statusMap["level"] as? Int ?? 1
-                exp = statusMap["exp"] as? Int ?? 0
-                expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
-                phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
-                address = statusMap["address"] as? String ?? "paradise"
-                satiety = statusMap["satiety"] as? Int ?? 100
-                stamina = statusMap["stamina"] as? Int ?? 100
-                activity = statusMap["activity"] as? Int ?? 100
-                
-                print("status 맵에서 가져온 phase 값: \(statusMap["phase"] as? String ?? "값 없음")")
-            }
-            
-            print("변환된 phase 값: \(phase)")
-            
-            let status = GRCharacterStatus(
-                level: level,
-                exp: exp,
-                expToNextLevel: expToNextLevel,
-                phase: phase,
-                satiety: satiety,
-                stamina: stamina,
-                activity: activity,
-                address: address
-            )
-            
-            DispatchQueue.main.async {
-                self.characterStatus = GRCharacterStatus(
-                    level: level,
-                    exp: exp,
-                    expToNextLevel: expToNextLevel,
-                    phase: phase,
-                    satiety: satiety,
-                    stamina: stamina,
-                    activity: activity,
-                    address: address
-                )
-                self.character = GRCharacter(
-                    id: characterUUID,
-                    species: species,
-                    name: name,
-                    imageName: finalImageName,
-                    birthDate: birthDate,
-                    createdAt: createdAt,
-                    status: status
-                )
-                
-                self.loadGrowthStages()
-            }
-            
-            // 캐릭터 정보 로드 후 성장 단계 이미지 로드
-            print("Firebase에서 가져온 phase 값: \(data["phase"] as? String ?? "값 없음")")
-            print("변환된 phase 값: \(phase)")
-            // 로딩 완료 후 플래그 해제
-            self.isLoadingCharacter = false
-            self.checkLoadingComplete()
-        }
-    }
+    //    func loadCharacter(characterUUID: String) {
+    //        guard !isLoadingCharacter else { return }
+    //        self.isLoadingCharacter = true
+    //        self.isLoading = true
+    //
+    //        db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
+    //            guard let self = self else { return }
+    //            guard let data = snapshot?.data() else {
+    //                self.isLoadingCharacter = false
+    //                self.checkLoadingComplete()
+    //                return
+    //            }
+    //
+    //            // 데이터 파싱 및 GRCharacter 생성
+    //            let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
+    //            let name = data["name"] as? String ?? "이름 없음"
+    //
+    //            // 이미지 이름 확인 및 수정
+    //            let imageName = data["imageName"] as? String ?? ""
+    //            // 이미지 이름이 비어있으면 species에 따라 기본 이미지 설정
+    //            let finalImageName = imageName.isEmpty ?
+    //                (species == .quokka ? "quokka" : "CatLion") : imageName
+    //
+    //            print("imageName: \(finalImageName)")
+    //
+    //            let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
+    //            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+    //
+    //            // status 맵에서 캐릭터 상태 정보 가져오기
+    //            var level = 1
+    //            var exp = 0
+    //            var expToNextLevel = 100
+    //            var phase: CharacterPhase = .egg
+    //            var address = "paradise"
+    //            var satiety = 100
+    //            var stamina = 100
+    //            var activity = 100
+    //
+    //            if let statusMap = data["status"] as? [String: Any] {
+    //                level = statusMap["level"] as? Int ?? 1
+    //                exp = statusMap["exp"] as? Int ?? 0
+    //                expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
+    //                phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
+    //                address = statusMap["address"] as? String ?? "paradise"
+    //                satiety = statusMap["satiety"] as? Int ?? 100
+    //                stamina = statusMap["stamina"] as? Int ?? 100
+    //                activity = statusMap["activity"] as? Int ?? 100
+    //
+    //                print("status 맵에서 가져온 phase 값: \(statusMap["phase"] as? String ?? "값 없음")")
+    //            }
+    //
+    //            print("변환된 phase 값: \(phase)")
+    //
+    //            let status = GRCharacterStatus(
+    //                level: level,
+    //                exp: exp,
+    //                expToNextLevel: expToNextLevel,
+    //                phase: phase,
+    //                satiety: satiety,
+    //                stamina: stamina,
+    //                activity: activity,
+    //                address: address
+    //            )
+    //
+    //            DispatchQueue.main.async {
+    //                self.characterStatus = GRCharacterStatus(
+    //                    level: level,
+    //                    exp: exp,
+    //                    expToNextLevel: expToNextLevel,
+    //                    phase: phase,
+    //                    satiety: satiety,
+    //                    stamina: stamina,
+    //                    activity: activity,
+    //                    address: address
+    //                )
+    //                self.character = GRCharacter(
+    //                    id: characterUUID,
+    //                    species: species,
+    //                    name: name,
+    //                    imageName: finalImageName,
+    //                    birthDate: birthDate,
+    //                    createdAt: createdAt,
+    //                    status: status
+    //                )
+    //
+    //                self.loadGrowthStages()
+    //            }
+    //
+    //            // 캐릭터 정보 로드 후 성장 단계 이미지 로드
+    //            print("Firebase에서 가져온 phase 값: \(data["phase"] as? String ?? "값 없음")")
+    //            print("변환된 phase 값: \(phase)")
+    //            // 로딩 완료 후 플래그 해제
+    //            self.isLoadingCharacter = false
+    //            self.checkLoadingComplete()
+    //        }
+    //    }
     
     // 캐릭터 이름 업데이트
     func updateCharacterName(characterUUID: String, newName: String) {
@@ -426,54 +426,54 @@ class CharacterDetailViewModel: ObservableObject {
         }
     }
     
-    func loadUser(characterUUID: String) {
-        guard !isLoadingUser else { return }
-        isLoadingUser = true
-        self.isLoading = true
-        
-        print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
-        db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
-            guard let self = self else { return }
-            
-            
-            if let error = error {
-                print("사용자 정보 가져오기 오류 : \(error)")
-                self.isLoadingUser = false
-                self.checkLoadingComplete()
-                return
-            }
-            
-            guard let documents = snapshot?.documents, !documents.isEmpty else {
-                print("No documents found")
-                self.isLoadingUser = false
-                self.checkLoadingComplete()
-                return
-            }
-            
-            let document = documents[0]
-            let data = document.data()
-            let userID = document.documentID
-            let userEmail = data["userEmail"] as? String ?? ""
-            let userName = data["userName"] as? String ?? ""
-            let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
-            
-            print("사용자 찾음 - User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
-            
-            // 메인 스레드에서 user 속성 업데이트
-            DispatchQueue.main.async {
-                self.user = GRUser(
-                    id : userID,
-                    userEmail: userEmail,
-                    userName: userName,
-                    chosenCharacterUUID: chosenCharacterUUID
-                )
-            }
-            
-            // 로딩 완료 후 플래그 해제
-            self.isLoadingUser = false
-            self.checkLoadingComplete()
-        }
-    }
+    //    func loadUser(characterUUID: String) {
+    //        guard !isLoadingUser else { return }
+    //        isLoadingUser = true
+    //        self.isLoading = true
+    //
+    //        print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
+    //        db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
+    //            guard let self = self else { return }
+    //
+    //
+    //            if let error = error {
+    //                print("사용자 정보 가져오기 오류 : \(error)")
+    //                self.isLoadingUser = false
+    //                self.checkLoadingComplete()
+    //                return
+    //            }
+    //
+    //            guard let documents = snapshot?.documents, !documents.isEmpty else {
+    //                print("No documents found")
+    //                self.isLoadingUser = false
+    //                self.checkLoadingComplete()
+    //                return
+    //            }
+    //
+    //            let document = documents[0]
+    //            let data = document.data()
+    //            let userID = document.documentID
+    //            let userEmail = data["userEmail"] as? String ?? ""
+    //            let userName = data["userName"] as? String ?? ""
+    //            let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
+    //
+    //            print("사용자 찾음 - User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
+    //
+    //            // 메인 스레드에서 user 속성 업데이트
+    //            DispatchQueue.main.async {
+    //                self.user = GRUser(
+    //                    id : userID,
+    //                    userEmail: userEmail,
+    //                    userName: userName,
+    //                    chosenCharacterUUID: chosenCharacterUUID
+    //                )
+    //            }
+    //
+    //            // 로딩 완료 후 플래그 해제
+    //            self.isLoadingUser = false
+    //            self.checkLoadingComplete()
+    //        }
+    //    }
     
     // 특정 월의 게시물 로드
     func loadPost(characterUUID: String, searchDate: Date) {
