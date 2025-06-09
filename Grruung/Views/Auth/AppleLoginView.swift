@@ -62,38 +62,48 @@ struct AppleLoginView: View {
             Auth.auth().signIn(with: firebaseCredential) { (authResult, error) in
                 if let error = error {
                     print("🔴 Firebase 로그인 실패: \(error.localizedDescription)")
-                } else if let user = authResult?.user {
-                    print("🟢 Firebase 로그인 성공: \(user.uid)")
+                    return
+                }
 
-                    // ✅ AuthService 상태 업데이트 (로그인 성공)
-                    DispatchQueue.main.async {
-                        authService.user = user
-                        authService.currentUserUID = user.uid
-                        authService.authenticationState = .authenticated
+                guard let firebaseUser = authResult?.user else {
+                    print("🔴 Firebase 사용자 없음")
+                    return
+                }
+
+                print("🟢 Firebase 로그인 성공: \(firebaseUser.uid)")
+
+                let userRef = Firestore.firestore().collection("users").document(firebaseUser.uid)
+
+                userRef.getDocument { docSnapshot, error in
+                    if let doc = docSnapshot, !doc.exists {
+                        // 이름 구성 (처음 로그인만 해당)
+                        let givenName = credential.fullName?.givenName ?? ""
+                        let familyName = credential.fullName?.familyName ?? ""
+                        let fullName = "\(givenName) \(familyName)".trimmingCharacters(in: .whitespaces)
+
+                        // GRUser 생성
+                        let now = Date()
+                        let newUser = GRUser(
+                            id: firebaseUser.uid,
+                            userEmail: firebaseUser.email ?? "",
+                            userName: fullName.isEmpty ? "AppleUser" : fullName,
+                        )
+
+                        // Firestore 저장
+                        userRef.setData(newUser.toFirestoreData()) { error in
+                            if let error = error {
+                                print("🔴 Firestore 저장 실패: \(error.localizedDescription)")
+                            } else {
+                                print("🟢 Firestore에 사용자 저장 성공")
+                            }
+                        }
                     }
 
-                    // ✅ Firestore에 사용자 정보 저장 (최초 로그인 시에만)
-                    let userRef = Firestore.firestore().collection("users").document(user.uid)
-                    userRef.getDocument { docSnapshot, error in
-                        if let doc = docSnapshot, !doc.exists {
-                            let givenName = credential.fullName?.givenName ?? ""
-                            let familyName = credential.fullName?.familyName ?? ""
-                            let fullName = "\(givenName) \(familyName)".trimmingCharacters(in: .whitespaces)
-                            
-                            // GRUser 모델 생성
-                            let newUser = GRUser(
-                                id: user.uid,
-                                userEmail: user.email ?? "",
-                                userName: fullName.isEmpty ? "AppleUser" : fullName
-                            )
-                            
-                            // Firestore에 사용자 정보 저장
-                            userRef.setData([
-                                "id": newUser.id,
-                                "userEmail": newUser.userEmail,
-                                "userName": newUser.userName
-                            ])
-                        }
+                    // AuthService 상태 업데이트
+                    DispatchQueue.main.async {
+                        authService.user = firebaseUser
+                        authService.currentUserUID = firebaseUser.uid
+                        authService.authenticationState = .authenticated
                     }
                 }
             }
