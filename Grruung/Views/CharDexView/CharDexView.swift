@@ -46,6 +46,8 @@ struct CharDexView: View {
     @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
     
+    @State private var isDataLoaded: Bool = false
+
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -104,55 +106,63 @@ struct CharDexView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if isLoading {
-                    VStack {
-                        ProgressView("데이터 로딩 중...")
-                            .padding(.top, 100)
-                    }
-                } else {
-                    VStack(spacing: 20) {
-                        // 수집 현황 정보
-                        HStack {
-                            Text("\(sortedCharacters.count)")
-                                .foregroundStyle(.yellow)
-                            Text("/ \(maxDexCount) 수집")
-                        }
-                        .frame(maxWidth: 180)
-                        .font(.title)
-                        .background(alignment: .center) {
-                            Capsule()
-                                .fill(Color.brown.opacity(0.5))
-                        }
-                        
-                        // 티켓 수량 표시
-                        ticketCountView
-                        
-                        // 캐릭터 그리드
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(Array(displaySlots.enumerated()), id: \.offset) { index, slot in
-                                switch slot {
-                                case .character(let character):
-                                    NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
-                                        characterSlot(character)
+            ZStack {
+                VStack {
+                    if isLoading || !isDataLoaded {
+                        LoadingView()
+                    } else {
+                        ScrollView {
+                            if isLoading {
+                                VStack {
+                                    ProgressView("데이터 로딩 중...")
+                                        .padding(.top, 100)
+                                }
+                            } else {
+                                VStack(spacing: 20) {
+                                    // 수집 현황 정보
+                                    HStack {
+                                        Text("\(sortedCharacters.count)")
+                                            .foregroundStyle(.yellow)
+                                        Text("/ \(maxDexCount) 수집")
                                     }
-                                case .add:
-                                    Button {
-                                        // 슬롯이 가득 찼는지 확인
-                                        if sortedCharacters.count >= unlockCount {
-                                            showingNotEnoughAlert = true
-                                        } else {
-                                            showingOnboarding = true
+                                    .frame(maxWidth: 180)
+                                    .font(.title)
+                                    .background(alignment: .center) {
+                                        Capsule()
+                                            .fill(Color.brown.opacity(0.5))
+                                    }
+                                    
+                                    // 티켓 수량 표시
+                                    ticketCountView
+                                    
+                                    // 캐릭터 그리드
+                                    LazyVGrid(columns: columns, spacing: 16) {
+                                        ForEach(Array(displaySlots.enumerated()), id: \.offset) { index, slot in
+                                            switch slot {
+                                            case .character(let character):
+                                                NavigationLink(destination: CharacterDetailView(characterUUID: character.id)) {
+                                                    characterSlot(character)
+                                                }
+                                            case .add:
+                                                Button {
+                                                    // 슬롯이 가득 찼는지 확인
+                                                    if sortedCharacters.count >= unlockCount {
+                                                        showingNotEnoughAlert = true
+                                                    } else {
+                                                        showingOnboarding = true
+                                                    }
+                                                } label: {
+                                                    addSlot
+                                                }
+                                            case .locked(let index):
+                                                lockSlot(index: index)
+                                            }
                                         }
-                                    } label: {
-                                        addSlot
                                     }
-                                case .locked(let index):
-                                    lockSlot(index: index)
+                                    .padding()
                                 }
                             }
                         }
-                        .padding()
                     }
                 }
             }
@@ -171,11 +181,7 @@ struct CharDexView: View {
                 }
             }
             .onAppear {
-                loadData()
-                
-                // FIXME: - Start 실시간 리스너 설정
-                setupRealtimeCharacterListener()
-                // FIXME: - End
+                loadInitialData()
             }
             .onDisappear {
                 // FIXME: - Start 리스너 정리
@@ -383,46 +389,49 @@ struct CharDexView: View {
     
     // MARK: - Methods
     
-    /// 초기 데이터 로딩
-    private func loadData() {
+    // 데이터 로딩
+    private func loadInitialData() {
         Task {
             isLoading = true
+            isDataLoaded = false
             
-            // 1. 인벤토리 데이터 로드
-            do {
-                try await userInventoryViewModel.fetchInventories(userId: currentUserId)
-            } catch {
-                print("❌ 인벤토리 로드 실패: \(error.localizedDescription)")
+            guard let currentUserId = authService.user?.uid else {
+                print("❌ 사용자 ID를 찾을 수 없습니다.")
+                isLoading = false
+                return
             }
             
-            // 2. 동산 정보 로드
+            // 1. 동산 데이터 먼저 로드
             do {
                 try await characterDexViewModel.fetchCharDex(userId: currentUserId)
-                
-                // 상태 업데이트
                 unlockCount = characterDexViewModel.unlockCount
                 unlockTicketCount = characterDexViewModel.unlockTicketCount
                 selectedLockedIndex = characterDexViewModel.selectedLockedIndex
+            } catch {
+                print("❌ 동산 데이터 로드 실패: \(error.localizedDescription)")
+            }
+            
+            // 2. 인벤토리 데이터 로드
+            do {
+                try await userInventoryViewModel.fetchInventories(userId: currentUserId)
                 
                 // 티켓 수량 확인 및 업데이트
                 if let ticket = userInventoryViewModel.inventories.first(where: { $0.userItemName == "동산 잠금해제x1" }) {
                     unlockTicketCount = ticket.userItemQuantity
                     await updateCharDexData()
                 }
-                
-                // 캐릭터 수와 해제 슬롯 수 체크
-                if unlockCount <= sortedCharacters.count && firstAlert {
-                    showingNotEnoughAlert = true
-                }
-                
-                if sortedCharacters.count > unlockCount {
-                    showingErrorAlert = true
-                }
             } catch {
-                print("❌ 동산 데이터 로드 실패: \(error.localizedDescription)")
+                print("❌ 인벤토리 로드 실패: \(error.localizedDescription)")
             }
             
+            // 3. 캐릭터 데이터 로드 (실시간 리스너로 설정)
+            setupRealtimeCharacterListener()
+            
+            // 로딩 상태 업데이트
             isLoading = false
+            
+            // 데이터가 실제로 로드될 때까지 isDataLoaded를 false로 유지
+            // 실시간 리스너에서 데이터가 처음 도착하면 isDataLoaded를 true로 설정
         }
     }
     
@@ -449,6 +458,7 @@ struct CharDexView: View {
                     print("❌ 실시간 리스너 오류: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         self.errorMessage = "데이터 동기화 실패: \(error.localizedDescription)"
+                        self.isDataLoaded = true // 오류가 있어도 로딩 상태 종료
                     }
                     return
                 }
@@ -457,6 +467,7 @@ struct CharDexView: View {
                     print("📝 캐릭터 문서가 없습니다")
                     DispatchQueue.main.async {
                         self.characters = []
+                        self.isDataLoaded = true // 데이터가 없어도 로딩 상태 종료
                     }
                     return
                 }
@@ -474,13 +485,17 @@ struct CharDexView: View {
                 // 메인 스레드에서 UI 업데이트
                 DispatchQueue.main.async {
                     self.characters = updatedCharacters
-                    self.isLoading = false
+                    self.isDataLoaded = true // 데이터 로드 완료
                     
                     print("✅ 캐릭터 목록 업데이트 완료: \(updatedCharacters.count)개")
                     
-                    // 디버깅을 위한 로그
-                    for character in updatedCharacters {
-                        print("   - \(character.name): \(character.status.address)")
+                    // 캐릭터 수와 해제 슬롯 수 체크 로직
+                    if self.unlockCount <= self.sortedCharacters.count && self.firstAlert {
+                        self.showingNotEnoughAlert = true
+                    }
+                    
+                    if self.sortedCharacters.count > self.unlockCount {
+                        self.showingErrorAlert = true
                     }
                 }
             }
@@ -614,4 +629,17 @@ func calculateAge(_ birthDate: Date) -> Int {
     let calendar = Calendar.current
     let ageComponents = calendar.dateComponents([.year], from: birthDate, to: Date())
     return ageComponents.year ?? 0
+}
+
+// 로딩 화면 컴포넌트
+struct LoadingView: View {
+    var body: some View {
+        VStack {
+            ProgressView()
+                .scaleEffect(1.5)
+                .padding()
+            Text("데이터 로딩 중...")
+                .font(.headline)
+        }
+    }
 }

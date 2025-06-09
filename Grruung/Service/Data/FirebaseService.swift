@@ -1264,4 +1264,53 @@ class FirebaseService: ObservableObject {
                 completion(characters, nil)
             }
     }
+    
+    func preFetchInitialData(userID: String) async {
+        print("🔥 초기 데이터 프리페치 시작")
+        
+        // 병렬로 데이터 로드
+        async let charDexTask = prefetchCharDex(userID: userID)
+        async let inventoryTask = prefetchInventory(userID: userID)
+        async let mainCharacterTask = prefetchMainCharacter(userID: userID)
+        
+        // 모든 작업 완료까지 대기
+        _ = await [try? charDexTask, try? inventoryTask, try? mainCharacterTask]
+        
+        print("✅ 초기 데이터 프리페치 완료")
+    }
+    
+    // 동산 데이터 프리페치
+    private func prefetchCharDex(userID: String) async throws {
+        let docRef = db.collection("charDex").document(userID)
+        let _ = try await docRef.getDocument()
+        print("✅ 동산 데이터 프리페치 완료")
+    }
+    
+    // 인벤토리 데이터 프리페치
+    private func prefetchInventory(userID: String) async throws {
+        let collectionRef = db.collection("users").document(userID).collection("inventory")
+        let _ = try await collectionRef.getDocuments()
+        print("✅ 인벤토리 데이터 프리페치 완료")
+    }
+    
+    // 메인 캐릭터 프리페치
+    private func prefetchMainCharacter(userID: String) async throws {
+        // 사용자 정보 로드
+        let userRef = db.collection("users").document(userID)
+        let userDoc = try await userRef.getDocument()
+        
+        // 메인 캐릭터 ID 가져오기
+        guard let userData = userDoc.data(),
+              let chosenCharacterUUID = userData["chosenCharacterUUID"] as? String,
+              !chosenCharacterUUID.isEmpty else {
+            print("❌ 메인 캐릭터 ID를 찾을 수 없습니다")
+            return
+        }
+        
+        // 메인 캐릭터 데이터 로드
+        let characterRef = db.collection("users").document(userID).collection("characters").document(chosenCharacterUUID)
+        let _ = try await characterRef.getDocument()
+        
+        print("✅ 메인 캐릭터 데이터 프리페치 완료")
+    }
 }

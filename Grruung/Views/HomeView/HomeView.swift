@@ -26,38 +26,45 @@ struct HomeView: View {
     // MARK: - Body
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Spacer()
-                
-                // 레벨 프로그레스 바
-                levelProgressBar
-                
-                // 메인 캐릭터 섹션
-                characterSection
-                
-                Spacer()
-                
-                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                if let character = viewModel.character,
-                   character.status.evolutionStatus.needsEvolution {
-                    evolutionButton
+            ZStack {
+                if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {
+                    // 로딩 중 표시
+                    LoadingView()
+                } else {
+                    VStack(spacing: 20) {
+                        Spacer()
+                        
+                        // 레벨 프로그레스 바
+                        levelProgressBar
+                        
+                        // 메인 캐릭터 섹션
+                        characterSection
+                        
+                        Spacer()
+                        
+                        // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                        if let character = viewModel.character,
+                           character.status.evolutionStatus.needsEvolution {
+                            evolutionButton
+                        }
+                        
+                        // 상태 바 섹션
+                        statsSection
+                        
+                        // 캐릭터 상태 메시지
+                        Text(viewModel.statusMessage)
+                            .font(viewModel.character?.status.phase == .egg ? .system(.headline, design: .monospaced) : .headline)
+                            .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
+                            .multilineTextAlignment(.center)
+                            .padding(.vertical, 5)
+                            .foregroundColor(getMessageColor())
+                        
+                        Spacer()
+                        
+                        // 액션 버튼 그리드
+                        actionButtonsGrid
+                    }
                 }
-                
-                // 상태 바 섹션
-                statsSection
-                
-                // 캐릭터 상태 메시지
-                Text(viewModel.statusMessage)
-                    .font(viewModel.character?.status.phase == .egg ? .system(.headline, design: .monospaced) : .headline)
-                    .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
-                    .multilineTextAlignment(.center)
-                    .padding(.vertical, 5)
-                    .foregroundColor(getMessageColor())
-                
-                Spacer()
-                
-                // 액션 버튼 그리드
-                actionButtonsGrid
             }
             .padding()
             .scrollContentBackground(.hidden) // 기본 배경 숨기기

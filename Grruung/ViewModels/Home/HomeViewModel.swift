@@ -63,6 +63,8 @@ class HomeViewModel: ObservableObject {
     private var isUpdatingFromFirebase: Bool = false
     private var saveDebounceTimer: Timer?
     
+    @Published var isDataReady: Bool = false
+    
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -195,7 +197,62 @@ class HomeViewModel: ObservableObject {
         print("🔥 Firebase 연동 초기화 시작")
         
         // 메인 캐릭터 로드
-        loadMainCharacterFromFirebase()
+        Task {
+            await loadMainCharacterFromFirebaseAsync()
+        }
+    }
+    
+    // 비동기 방식으로 메인 캐릭터 로드
+    private func loadMainCharacterFromFirebaseAsync() async {
+        // 기존 메서드 호출 대신 비동기 방식으로 구현
+        do {
+            let character = try await loadMainCharacterAsync()
+            
+            if let character = character {
+                // 메인 스레드에서 UI 업데이트
+                await MainActor.run {
+                    // Firebase에서 로드한 캐릭터 설정
+                    setupCharacterFromFirebase(character)
+                    isLoadingFromFirebase = false
+                    isDataReady = true
+                }
+                
+                // 실시간 리스너 설정
+                setupRealtimeListener(characterID: character.id)
+                
+                // 오프라인 보상 처리
+                processOfflineTime()
+                
+                print("✅ Firebase에서 캐릭터 로드 완료: \(character.name)")
+            } else {
+                // 캐릭터가 없는 경우
+                await MainActor.run {
+                    isLoadingFromFirebase = false
+                    isDataReady = true
+                }
+                print("📝 메인 캐릭터가 없습니다.")
+            }
+        } catch {
+            await MainActor.run {
+                firebaseError = "캐릭터 로드 실패: \(error.localizedDescription)"
+                isLoadingFromFirebase = false
+                isDataReady = true
+            }
+            print("❌ Firebase 캐릭터 로드 실패: \(error.localizedDescription)")
+        }
+    }
+    
+    // 비동기 방식으로 메인 캐릭터 로드 (Firebase 서비스 확장 필요)
+    private func loadMainCharacterAsync() async throws -> GRCharacter? {
+        return try await withCheckedThrowingContinuation { continuation in
+            firebaseService.loadMainCharacter { character, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: character)
+                }
+            }
+        }
     }
     
     private func setupAppStateObservers() {

@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import Firebase
+import FirebaseAuth
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseAppCheck // App Check 추가
@@ -29,6 +30,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let settings = FirestoreSettings()
         settings.cacheSettings = PersistentCacheSettings()
         Firestore.firestore().settings = settings
+        
+        // 로그인된 사용자가 있는지 확인하고 데이터 프리페치
+        if let userID = Auth.auth().currentUser?.uid {
+            Task {
+                await FirebaseService.shared.preFetchInitialData(userID: userID)
+            }
+        }
         
         return true
     }
