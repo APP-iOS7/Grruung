@@ -149,6 +149,8 @@ struct LoginView: View {
                     }
                     .disabled(!isValidInput || isLoading)
                     
+                    AppleLoginView()
+                    
                     // 회원가입 링크
                     NavigationLink(destination: {
                         SignUpView()
