@@ -75,9 +75,9 @@ struct WriteStoryView: View {
         case .read:
             return "닫기"
         case .edit:
-            return "수정"
+            return "저장"
         case .create:
-            return "작성"
+            return "저장"
         }
     }
     
@@ -133,11 +133,11 @@ struct WriteStoryView: View {
             writingCountVM.initialize(with: authService)
             
             if currentMode == .create {
-                   // 잠시 대기 후 체크 (초기화 시간 확보)
-                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                       checkWritingCount()
-                   }
-               }
+                // 잠시 대기 후 체크 (초기화 시간 확보)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    checkWritingCount()
+                }
+            }
         }
         .interactiveDismissDisabled(isUploading)
         .toolbar {
@@ -174,18 +174,18 @@ struct WriteStoryView: View {
             Text("삭제된 이야기는 복구할 수 없습니다.")
         }
         .alert("글쓰기 횟수 부족", isPresented: $showNoWritingCountAlert) {
-             Button("취소", role: .cancel) {
-                 if currentMode == .create {
-                     dismiss()
-                 }
-             }
-             Button("구매하기") {
-                 // TODO : 상점으로 이동하는 로직 추가
-                 print("상점으로 이동")
-             }
-         } message: {
-             Text("글쓰기 횟수가 부족합니다. 내일 작성하거나 상점에서 아이템을 구매해주세요.")
-         }
+            Button("취소", role: .cancel) {
+                if currentMode == .create {
+                    dismiss()
+                }
+            }
+            Button("구매하기") {
+                // TODO : 상점으로 이동하는 로직 추가
+                print("상점으로 이동")
+            }
+        } message: {
+            Text("글쓰기 횟수가 부족합니다. 내일 작성하거나 상점에서 아이템을 구매해주세요.")
+        }
     }
     
     // MARK: - UI Components
@@ -442,7 +442,7 @@ struct WriteStoryView: View {
     }
     
     private var saveButton: some View {
-        Button(buttonTitle) {
+        Button {
             Task {
                 isUploading = true
                 
@@ -491,22 +491,27 @@ struct WriteStoryView: View {
             } else {
                 print("No image selected.")
             }
+        } label: {
+            HStack {
+                Text(buttonTitle)
+                    .padding(.trailing, 5)
+            }
         }
         .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
         .opacity(isUploading ? 0 : 1) // 업로드 중일 때 버튼 숨기기
         .overlay(
-              Group {
-                  if isUploading {
-                      ProgressView()
-                          .progressViewStyle(CircularProgressViewStyle())
-                          .tint(.white)
-                  }
-              }
-          )
+            Group {
+                if isUploading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .tint(.white)
+                }
+            }
+        )
         .font(.headline)
         .fontWeight(.semibold)
         .foregroundColor(.white)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
             Capsule()
