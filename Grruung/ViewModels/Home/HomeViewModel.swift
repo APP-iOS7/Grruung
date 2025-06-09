@@ -64,7 +64,8 @@ class HomeViewModel: ObservableObject {
     private var saveDebounceTimer: Timer?
     
     @Published var isDataReady: Bool = false
-    
+    @Published var userViewModel = UserViewModel()
+
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -162,6 +163,8 @@ class HomeViewModel: ObservableObject {
         setupFirebaseIntegration()
         setupAppStateObservers()
         startStatDecreaseTimers()
+        
+        userViewModel = UserViewModel()
         
         // 캐릭터 주소 변경 이벤트 구독
         NotificationCenter.default.addObserver(
@@ -1124,9 +1127,13 @@ class HomeViewModel: ObservableObject {
             statusMessage = "레벨 업! 이제 레벨 \(level)입니다!"
         }
         
-#if DEBUG
+        // 레벨업 시 골드 획득 추가
+        let goldReward = calculateLevelUpGoldReward()
+        addGold(goldReward)
+        
+    #if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
-#endif
+    #endif
     }
     
     // 현재 레벨에 맞는 성장 단계를 업데이트
@@ -1414,9 +1421,9 @@ class HomeViewModel: ObservableObject {
             let oldExp = expValue
             addExp(action.expGain)
             
-#if DEBUG
+        #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-#endif
+        #endif
         }
         
         // 성공 메시지 표시
@@ -1432,12 +1439,18 @@ class HomeViewModel: ObservableObject {
         // Firebase에 스탯 변화 기록
         recordAndSaveStatChanges(statChanges, reason: "action_\(actionId)")
         
+        // 골드 획득 처리 추가
+        let goldReward = calculateGoldReward(for: actionId)
+        if goldReward > 0 {
+            addGold(goldReward)
+        }
+        
         print("✅ '\(action.name)' 액션을 실행했습니다")
         
-#if DEBUG
+    #if DEBUG
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
-#endif
+    #endif
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -1625,6 +1638,85 @@ class HomeViewModel: ObservableObject {
         if var character = self.character, character.id == characterUUID {
             character.name = newName
             self.character = character
+        }
+    }
+    
+    // MARK: - 골드 보상 관련 메서드 추가
+    func calculateGoldReward(for actionId: String) -> Int {
+        // 재우기, 깨우기 액션은 골드 획득 제외
+        if actionId == "sleep" {
+            return 0
+        }
+        
+        // 액션별 골드 획득량 설정
+        let goldRewards: [String: Int] = [
+            // 운석 전용 액션
+            "tap_egg": 5,
+            "warm_egg": 7,
+            "talk_egg": 4,
+            
+            // 유아기 이상 액션
+            "feed": 10,
+            "play": 15,
+            "wash": 8,
+            "give_medicine": 12,
+            
+            // 아동기 이상 액션
+            "vitamins": 10,
+            
+            // 청소년기 이상 액션
+            "check_health": 20,
+            
+            // 기본값
+            "default": 5
+        ]
+        
+        // 해당 액션의 골드 획득량 반환, 없으면 기본값 반환
+        return goldRewards[actionId] ?? goldRewards["default"]!
+    }
+    
+    // 레벨업 시 골드 획득량 계산
+    func calculateLevelUpGoldReward() -> Int {
+        // 레벨에 따른 보상량 설정 (레벨이 높을수록 더 많은 골드 획득)
+        return level * 50
+    }
+    
+    // 골드 획득 및 Firebase 업데이트
+    func addGold(_ amount: Int) {
+        guard let userId = firebaseService.getCurrentUserID(), !userId.isEmpty else {
+            print("⚠️ 사용자 ID가 없어 골드를 추가할 수 없습니다.")
+            return
+        }
+        
+        // 더미 ID 처리
+        let realUserId = userId == "" ? "23456" : userId
+        
+        Task {
+            do {
+                // 사용자 정보 가져오기
+                try await userViewModel.fetchUser(userId: realUserId)
+                
+                guard let currentUser = userViewModel.user else {
+                    print("⚠️ 사용자 정보가 없어 골드를 추가할 수 없습니다.")
+                    return
+                }
+                
+                let newGoldAmount = currentUser.gold + amount
+                
+                // Firebase에 업데이트
+                userViewModel.updateCurrency(userId: currentUser.id, gold: newGoldAmount)
+                
+                print("💰 골드 획득: \(amount) (현재: \(newGoldAmount))")
+                
+                // 성공 메시지 표시
+                if amount > 0 {
+                    await MainActor.run {
+                        statusMessage = "💰 \(amount) 골드를 획득했습니다!"
+                    }
+                }
+            } catch {
+                print("⚠️ 골드 업데이트 실패: \(error.localizedDescription)")
+            }
         }
     }
 }
