@@ -42,6 +42,8 @@ struct WriteStoryView: View {
     @State private var isImageLoading = false
     @State private var isUploading = false
     
+    @FocusState private var isTextEditorFocused: Bool
+    
     private var isPlaceholderVisible: Bool {
         postBody.isEmpty
     }
@@ -123,6 +125,9 @@ struct WriteStoryView: View {
             ],
                            startPoint: .top, endPoint: .bottom)
         )
+        .onTapGesture {
+            isTextEditorFocused = false
+        }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         //        .navigationBarItems(
@@ -164,6 +169,13 @@ struct WriteStoryView: View {
                     saveButton
                 }
             }
+//            // MARK: - 키보드 툴바에 완료 버튼 추가 (선택 사항)
+//            ToolbarItemGroup(placement: .keyboard) {
+//                Spacer()
+//                Button("완료") {
+//                    isTextEditorFocused = false
+//                }
+//            }
         }
         .alert("이야기를 삭제하시겠습니까?", isPresented: $showDeleteAlert) {
             Button("취소", role: .cancel) {}
@@ -371,9 +383,10 @@ struct WriteStoryView: View {
         }
     }
     
+    // .create, .edit 모드에서의 내용 입력 섹션
     private var editModeContent: some View {
         VStack(spacing: 20) {
-            // 주제 입력
+            // MARK: - 주제 입력
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "pencil.circle.fill")
@@ -393,6 +406,7 @@ struct WriteStoryView: View {
                             RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                                 .fill(Color(.systemGray6))
                         )
+                        .focused($isTextEditorFocused) // TextField도 동일한 FocusState 사용 가능
                     
                     if isTitlePlaceholderVisible {
                         Text("어떤 주제에 대해 이야기할까요?")
@@ -404,7 +418,7 @@ struct WriteStoryView: View {
                 }
             }
             
-            // 내용 입력
+            // MARK: - 이야기 입력
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "heart.circle.fill")
@@ -426,6 +440,7 @@ struct WriteStoryView: View {
                                 .fill(Color(.systemGray6))
                         )
                         .scrollContentBackground(.hidden)
+                        .focused($isTextEditorFocused)
                     
                     if isPlaceholderVisible {
                         Text("오늘 하루 \(charDetailVM.character.name)에게 들려주고 싶은 이야기를 써보세요.\n\n어떤 일이 있었나요? 어떤 기분이었나요?\n소소한 일상도 좋아요 ✨")
@@ -512,7 +527,7 @@ struct WriteStoryView: View {
         .fontWeight(.semibold)
         .foregroundColor(.white)
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 6)
         .background(
             Capsule()
                 .fill(
@@ -653,7 +668,7 @@ struct WriteStoryView: View {
 
 #Preview {
     NavigationStack {
-        WriteStoryView(currentMode: .create, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8")
+        WriteStoryView(currentMode: .edit, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8")
             .environmentObject(AuthService())
     }
 }
