@@ -23,7 +23,8 @@ struct HomeView: View {
     @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     @State private var isShowingOnboarding = false
     @State private var showUpdateAlert = false // 업데이트 예정 알림창 표시 여부
-
+    @State private var showSpecialEvent = false // 특수 이벤트 표시 여부
+    
     // MARK: - Body
     var body: some View {
             NavigationStack {
@@ -167,6 +168,13 @@ struct HomeView: View {
                         print("⏸️ 부화 보류 - 나중에 다시 시도 가능")
                     }
                 )
+            }
+            
+            // 특수이벤트
+            if showSpecialEvent {
+                SpecialEventView(viewModel: viewModel, isPresented: $showSpecialEvent)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: showSpecialEvent)
             }
         }
     }
@@ -414,17 +422,6 @@ struct HomeView: View {
                             .foregroundColor(.black) // 회색에서 검은색으로 변경
                     }
                 }
-            } else if systemName == "mountain.2.fill" {
-                NavigationLink(destination: CharDexView()) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.6))
-                        Image(systemName: systemName)
-                            .font(.system(size: 24))
-                            .foregroundColor(.black) // 회색에서 검은색으로 변경
-                    }
-                }
             } else {
                 Button(action: {
                        handleButtonAction(systemName: systemName)
@@ -463,8 +460,10 @@ struct HomeView: View {
         case "cart.fill": // 상점
             // NavigationLink는 이미 처리됨
             break
-        case "mountain.2.fill": // 동산
-            showPetGarden.toggle()
+        case "fireworks": // 특수 이벤트
+            withAnimation { // 애니메이션 추가
+                showSpecialEvent = true
+            }
         case "book.fill": // 일기
             if let character = viewModel.character {
                 // 스토리 작성 시트 표시
@@ -497,8 +496,8 @@ struct HomeView: View {
         case "cart.fill": // 상점
             // NavigationLink는 이미 처리됨
             break
-        case "mountain.2.fill": // 동산
-            showPetGarden.toggle()
+        case "fireworks": // 동산
+            showSpecialEvent.toggle() // 특수 이벤트 표시
         case "book.fill": // 일기
             if let character = viewModel.character {
                 // 스토리 작성 시트 표시
