@@ -25,9 +25,7 @@ struct SettingSection: Identifiable {
 
 struct ProfileDetailView: View {
     @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var selectedImageData: Data? = nil
     @State private var profileImage: Image? = nil
-    
     @State private var username = "Quaqqa"
     @State private var newName = ""
     @State private var isShowingNameEditorPopup = false
@@ -47,12 +45,11 @@ struct ProfileDetailView: View {
         ])
     ]
     
-    // MARK: - 프로필 섹션
     var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 30) {
-                    
+                    // MARK: - 프로필 섹션
                     VStack(spacing: 20) {
                         ZStack(alignment: .bottomTrailing) {
                             PhotosPicker(selection: $selectedItem,
@@ -75,16 +72,14 @@ struct ProfileDetailView: View {
                                 }
                                 .overlay(Circle().stroke(Color.white, lineWidth: 4))
                             }
-                                         .onChange(of: selectedItem) { newItem in
-                                             Task {
-                                                 if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                                     selectedImageData = data
-                                                     if let uiImage = UIImage(data: data) {
-                                                         profileImage = Image(uiImage: uiImage)
-                                                     }
-                                                 }
-                                             }
-                                         }
+                            .onChange(of: selectedItem) { newItem in
+                                Task {
+                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                       let uiImage = UIImage(data: data) {
+                                        profileImage = Image(uiImage: uiImage)
+                                    }
+                                }
+                            }
                             
                             Image(systemName: "camera.fill")
                                 .foregroundColor(.white)
@@ -103,38 +98,35 @@ struct ProfileDetailView: View {
                                     .font(.system(size: 22, weight: .semibold))
                                     .foregroundColor(.white)
                                 
-                                Image(systemName: "pencil.line")        .font(.system(size: 20, weight: .medium))
+                                Image(systemName: "pencil.line")
+                                    .font(.system(size: 20, weight: .medium))
                                     .foregroundColor(.white)
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(
-                                    LinearGradient(colors: [Color(hex: "#FFB778"), Color(hex: "FFA04D")], startPoint: .leading, endPoint: .trailing)))
+                            LinearGradient(
+                                colors: [Color(hex: "#FFB778"), Color(hex: "#FFA04D")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-//                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                     .padding(.horizontal)
                     
                     // MARK: - 설정 섹션
-                    
                     VStack(spacing: 30) {
                         ForEach(settingSections) { section in
                             VStack {
-                                ForEach(section.items.indices, id: \ .self) { index in
-                                    let item = section.items[index]
+                                ForEach(section.items) { item in
                                     SettingRow(icon: item.iconName, text: item.title)
-//                                    if index < section.items.count - 1 {
-//                                        Divider()
-//                                    }
                                 }
                             }
-//                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.5)))
                         }
                         
                         Button {
@@ -152,16 +144,20 @@ struct ProfileDetailView: View {
                 }
                 .padding(.bottom, 50)
             }
-            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .scrollContentBackground(.hidden)
             .background(
-                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(
+                    colors: [Color(hex: "#FFF5D2"), Color(hex: "#FFE38B")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
             
+            // MARK: - 닉네임 편집 팝업
             if isShowingNameEditorPopup {
                 VStack(spacing: 20) {
                     HStack {
                         Spacer()
-
                         Button {
                             isShowingNameEditorPopup = false
                         } label: {
@@ -215,13 +211,12 @@ struct SettingRow: View {
             Image(systemName: icon)
                 .frame(width: 24)
                 .foregroundColor(.primary)
-                .frame(maxHeight: .infinity, alignment: .center)
             
             Text(text)
                 .foregroundColor(.primary)
-                .frame(maxHeight: .infinity, alignment: .center)
             
             Spacer()
+            
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
         }
