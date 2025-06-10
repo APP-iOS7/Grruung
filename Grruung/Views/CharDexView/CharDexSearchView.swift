@@ -146,11 +146,66 @@ struct CharDexSearchView: View {
     private func characterSlot(_ character: GRCharacter) -> some View {
         VStack(alignment: .center) {
             ZStack {
-                Image(systemName: character.imageName)
-                    .resizable()
-                    .frame(width: 100, height: 100, alignment: .center)
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(.black)
+                //                Image(systemName: character.imageName)
+                //                    .resizable()
+                //                    .frame(width: 100, height: 100, alignment: .center)
+                //                    .aspectRatio(contentMode: .fit)
+                //                    .foregroundStyle(.black)
+                //                if character.status.address == "space" {
+                //                    Image(systemName: "xmark")
+                //                        .resizable()
+                //                        .aspectRatio(contentMode: .fit)
+                //                        .frame(width: 15, height: 15)
+                //                        .offset(x: 60, y: -40)
+                //                        .foregroundStyle(.red)
+                //                } else {
+                //                    Image(systemName: character.status.address == "userHome" ? "house": "mountain.2")
+                //                        .resizable()
+                //                        .aspectRatio(contentMode: .fit)
+                //                        .frame(width: 20, height: 20)
+                //                        .offset(x: 60, y: -40)
+                //                        .foregroundStyle(character.status.address == "userHome" ? .blue : .black)
+                //                }
+                //            }
+                //            Text(character.name)
+                //                .foregroundStyle(.black)
+                //                .bold()
+                //                .lineLimit(1)
+                //                .frame(maxWidth: .infinity)
+                //
+                //            Text("\(calculateAge(character.birthDate)) 살 (\(formatToMonthDay(character.birthDate)) 생)")
+                //                .foregroundStyle(.gray)
+                //                .font(.caption)
+                //                .frame(maxWidth: .infinity)
+                
+                
+                // MARK: - 2025.06.10 노성경: CharDexView와 동일하게 캐릭터 이미지 표시하도록 수정
+                // 이미지 부분 수정
+                Group {
+                    if character.status.phase == .egg {
+                        // 운석 단계일 경우 이미지 사용
+                        Image("egg")
+                            .resizable()
+                            .frame(width: 100, height: 100, alignment: .center)
+                            .aspectRatio(contentMode: .fit)
+                    } else {
+                        // 그 외 단계에서는 species에 따라 이미지 결정
+                        if character.species == .quokka {
+                            Image("quokka")
+                                .resizable()
+                                .frame(width: 100, height: 100, alignment: .center)
+                                .aspectRatio(contentMode: .fit)
+                        } else {
+                            Image("CatLion")
+                                .resizable()
+                                .frame(width: 100, height: 100, alignment: .center)
+                                .aspectRatio(contentMode: .fit)
+                        }
+                    }
+                }
+                .foregroundStyle(.black)
+                
+                // 위치 표시 아이콘
                 if character.status.address == "space" {
                     Image(systemName: "xmark")
                         .resizable()
