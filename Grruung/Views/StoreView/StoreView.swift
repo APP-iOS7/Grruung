@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct StoreView: View {
-    let tabs = ["전체", "치료", "놀이", "회복", "티켓"]
+    let tabs = ["전체", "놀이", "음식", "다이아", "티켓"]
     @State private var selectedTab = 0
     @State private var gold = 0
     @State private var diamond = 0
@@ -63,7 +63,7 @@ struct StoreView: View {
                                         .font(.headline)
                                         .foregroundColor(selectedTab == index ? .primary : .secondary)
                                     Capsule()
-                                        .fill(selectedTab == index ? Color.primary : Color.clear)
+                                        .fill(selectedTab == index ? GRColor.buttonColor_2 : Color.clear)
                                         .frame(height: 3)
                                 }
                                 .padding(.vertical, 8)
@@ -81,11 +81,12 @@ struct StoreView: View {
                             // 각 섹션은 ID로 scrollTo 대상
                             SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "치료", id: "치료", products: treatmentProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "회복", id: "회복", products: recoveryProducts, proxy: proxy)
+                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy)
+                                .environmentObject(userInventoryViewModel)
+                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
                             SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
                                 .environmentObject(userInventoryViewModel)
@@ -100,6 +101,10 @@ struct StoreView: View {
                 }
             }
             .navigationTitle("Store")
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                    LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
+            ) // 원하는 색상 지정
         } //
         .onAppear {
             // 상점 진입 시 사용자 인벤토리 미리 로드

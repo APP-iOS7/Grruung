@@ -1,5 +1,5 @@
 //
-//  EggControl.swift
+//  EggController.swift
 //  Grruung
 //
 //  Created by NoelMacMini on 5/30/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 운석(Egg) 애니메이션을 컨트롤하는 클래스
-class EggControl: ObservableObject {
+class EggController: ObservableObject {
     
     // MARK: - Published 프로퍼티들 (UI가 자동으로 업데이트됨)
     @Published var currentFrame: UIImage? = nil  // 현재 표시할 프레임
@@ -89,14 +89,13 @@ class EggControl: ObservableObject {
     
     // MARK: - 애니메이션 정지 함수
     func stopAnimation() {
-        print("애니메이션 정지")
-        
         // 타이머 중지 및 해제
         animationTimer?.invalidate()
         animationTimer = nil
         
         // 재생 상태 해제
         isAnimating = false
+        print("⏹️ EggController 애니메이션 정지")
     }
     
     // MARK: - 프레임 업데이트 함수 (타이머에 의해 호출됨)
@@ -114,7 +113,7 @@ class EggControl: ObservableObject {
         
         // 디버깅용 로그 (매 10프레임마다 출력)
         if currentFrameIndex % 10 == 0 {
-            print("현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count)")
+            print("운석 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count)")
         }
     }
     
@@ -130,6 +129,6 @@ class EggControl: ObservableObject {
     // MARK: - 정리 함수 (뷰가 사라질 때 호출)
     func cleanup() {
         stopAnimation()
-        print("EggControl 정리 완료")
+        print("EggController 정리 완료")
     }
 }

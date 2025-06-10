@@ -82,9 +82,16 @@ class ActionManager {
             result.append(modifiedSleepAction)
         }
         
+        // 유아기에는 우유먹기 액션을 항상 표시
+        if phase == .infant && !isSleeping {
+            if let milkAction = allActions.first(where: { $0.id == "milk_feeding" }) {
+                result.append(milkAction)
+            }
+        }
+        
         // 4단계: 나머지 액션 랜덤하게 추가
         if !isSleeping {
-            let otherActions = availableActions.filter { $0.id != "sleep" }
+            let otherActions = availableActions.filter { $0.id != "sleep" && $0.id != "milk_feeding" }
             
             // 운석 단계에서는 운석 전용 액션만 표시
             let finalActions: [PetAction]
@@ -94,17 +101,20 @@ class ActionManager {
                 finalActions = otherActions
             }
             
-            // 랜덤하게 선택하되, 남은 슬롯 수만큼만 선택
+            // 남은 슬롯 수 계산
             let remainingSlots = count - result.count
-            let randomActions = finalActions.shuffled().prefix(remainingSlots)
-            result.append(contentsOf: randomActions)
+            // 남은 슬롯이 있을 때만 랜덤 액션 추가
+            if remainingSlots > 0 {
+                let randomActions = finalActions.shuffled().prefix(remainingSlots)
+                result.append(contentsOf: randomActions)
+            }
             
-#if DEBUG
+    #if DEBUG
             print("🎯 액션 필터링 결과:")
             print("   - 현재 단계: \(phase.rawValue)")
             print("   - 전체 가능한 액션: \(availableActions.count)개")
             print("   - 최종 선택된 액션: \(result.map { $0.name }.joined(separator: ", "))")
-#endif
+    #endif
         }
         
         // ActionButton으로 변환
@@ -196,6 +206,19 @@ class ActionManager {
                 expGain: 3,
                 successMessage: "냠냠! 맛있어요!",
                 failMessage: "너무 지쳐서 먹을 힘도 없어요...",
+                timeRestriction: nil
+            ),
+            PetAction(
+                id: "milk_feeding",
+                icon: "drop.circle.fill",  // 우유를 나타내는 아이콘 사용
+                name: "우유먹기",
+                unlockPhase: .infant,     // 유아기부터 사용 가능
+                phaseExclusive: true,     // 유아기에서만 사용 가능하도록 설정
+                activityCost: 4,
+                effects: ["satiety": 12, "stamina": 8, "happiness": 5, "healthy": 3],  // 영양분 추가 + 행복감
+                expGain: 4,
+                successMessage: "우유를 꿀꺽꿀꺽! 매우 맛있어요!",
+                failMessage: "너무 지쳐서 우유를 마실 힘이 없어요...",
                 timeRestriction: nil
             ),
             PetAction(
