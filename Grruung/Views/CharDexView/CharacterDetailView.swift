@@ -81,8 +81,8 @@ struct CharacterDetailView: View {
                 }
                 .padding(.vertical, UIConstants.verticalPadding)
                 .background(
-                RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                    .fill(GRColor.mainColor2_1) // Color extension 사용
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                        .fill(GRColor.mainColor2_1) // Color extension 사용
                 )
                 .padding(.horizontal ,UIConstants.horizontalPadding)
             }
@@ -544,18 +544,41 @@ struct StoryRowView: View {
     
     var body: some View {
         NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: post.characterUUID, postID: post.postID)) {
-            HStack(spacing: UIConstants.horizontalPadding) { // UIConstants 사용
+            HStack(spacing: UIConstants.horizontalPadding) {
                 // 이미지
-                AsyncImage(url: URL(string: post.postImage)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
-                        .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius)) // UIConstants 사용
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                if let imageURL = URL(string: post.postImage), !post.postImage.isEmpty {
+                    AsyncImage(url: URL(string: post.postImage)) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .background(
+                                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                        .fill(GRColor.gray200Line)
+                                )
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
+                            
+                        case .failure:
+                            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                .fill(GRColor.gray200Line) // GRColor 사용
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .foregroundColor(GRColor.gray500)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                         .fill(GRColor.gray200Line) // GRColor 사용
-                        .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
+                        .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                         .overlay(
                             Image(systemName: "photo")
                                 .foregroundColor(GRColor.gray500) // GRColor 사용
