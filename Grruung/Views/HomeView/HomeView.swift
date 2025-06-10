@@ -26,75 +26,79 @@ struct HomeView: View {
 
     // MARK: - Body
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {
-                    // 로딩 중 표시
-                    LoadingView()
-                } else {
-                    VStack(spacing: 20) {
-                        Spacer()
-                        
-                        // 레벨 프로그레스 바
-                        levelProgressBar
-                        
-                        // 메인 캐릭터 섹션
-                        characterSection
-                        
-                        Spacer()
-                        
-                        // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                        if let character = viewModel.character,
-                           character.status.evolutionStatus.needsEvolution {
-                            evolutionButton
-                        }
-                        
-                        // 상태 바 섹션
-                        statsSection
-                        // 캐릭터 상태 메시지
-                        VStack(spacing: 5) {
-                            // 상태 메시지
-                            Text(viewModel.statusMessage)
-                                .font(viewModel.character?.status.phase == .egg ?
-                                    .system(.headline, design: .monospaced) : .headline)
-                                .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
-                                .multilineTextAlignment(.center)
-                                .padding(.vertical, 5)
-                                .foregroundColor(getMessageColor())
+            NavigationStack {
+                ZStack {
+                    // FIXME: - Start 배경 이미지 전체 화면에 적용
+                    // 배경 이미지 설정
+                    GeometryReader { geometry in
+                        Image("roomBasic1Big")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .edgesIgnoringSafeArea(.all)
+                    }
+                    .edgesIgnoringSafeArea(.all)
+                    // FIXME: - END
+                    
+                    // 원래 콘텐츠는 그대로 유지
+                    if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {
+                        // 로딩 중 표시
+                        LoadingView()
+                    } else {
+                        VStack(spacing: 20) {
+                            Spacer()
                             
-                            // 골드 획득 메시지 (비어있지 않을 때만 표시)
-                            if !viewModel.goldMessage.isEmpty {
-                                Text(viewModel.goldMessage)
-                                    .font(.headline)
-                                    .foregroundColor(.yellow)
+                            // 레벨 프로그레스 바
+                            levelProgressBar
+                            
+                            // 메인 캐릭터 섹션
+                            characterSection
+                            
+                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                            if let character = viewModel.character,
+                               character.status.evolutionStatus.needsEvolution {
+                                evolutionButton
+                            }
+                            
+                            // 액션 버튼 그리드
+                            actionButtonsGrid
+                            
+                            // 상태 바 섹션
+                            statsSection
+                            
+                            // 캐릭터 상태 메시지
+                            VStack(spacing: 5) {
+                                // 상태 메시지
+                                Text(viewModel.statusMessage)
+                                    .font(viewModel.character?.status.phase == .egg ?
+                                          .system(.headline, design: .monospaced) : .headline)
+                                    .italic(viewModel.character?.status.phase == .egg)
                                     .multilineTextAlignment(.center)
                                     .padding(.vertical, 5)
+                                    .foregroundColor(getMessageColor())
+                                
+                                // 골드 획득 메시지 (비어있지 않을 때만 표시)
+                                if !viewModel.goldMessage.isEmpty {
+                                    Text(viewModel.goldMessage)
+                                        .font(.headline)
+                                        .foregroundColor(.yellow)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.vertical, 5)
+                                }
                             }
+                            
+                            Spacer()
+                            Spacer()
+                            
+                            // 커스텀 탭바를 위한 여백
+                            Color.clear
+                                .frame(height: 40)
                         }
-                        
-                        Spacer()
-                        
-                        // 액션 버튼 그리드
-                        actionButtonsGrid
+                        .padding()
                     }
                 }
-            }
-            .padding()
-            .scrollContentBackground(.hidden) // 기본 배경 숨기기
-            .background(
-                // 배경 이미지 설정
-                Image("roomBasic1Big")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 200)
-                    .scaleEffect(1.1) // 줌인 줌아웃
-                    .offset(x: -10, y: -35) // 위치 조정
-
-                    // .clipped() // 넘치는 부분 잘라내기
-                    //.ignoresSafeArea(.all)
-            )
-//            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
-            .navigationBarBackButtonHidden(true)
+                .scrollContentBackground(.hidden) // 기본 배경 숨기기
+                .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
             }
