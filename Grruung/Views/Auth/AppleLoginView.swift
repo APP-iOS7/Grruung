@@ -12,6 +12,7 @@ import FirebaseFirestore
 
 struct AppleLoginView: View {
     @EnvironmentObject var authService: AuthService
+    @Environment(\.colorScheme) var colorScheme
     
     // Apple 로그인 시 nonce 값을 저장 (보안 목적)
     @State private var currentNonce: String?
@@ -24,8 +25,9 @@ struct AppleLoginView: View {
             onCompletion: handleAuthorization // 로그인 완료 후 처리
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .frame(maxWidth: .infinity, maxHeight: 45)
-        .signInWithAppleButtonStyle(.black)
+        .frame(maxWidth: .infinity, maxHeight: 50)
+        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+        .id(colorScheme)
     }
 
     // Apple 로그인 요청을 구성하는 함수
