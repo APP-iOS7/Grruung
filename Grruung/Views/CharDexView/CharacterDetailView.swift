@@ -249,15 +249,40 @@ struct CharacterDetailView: View {
                     ForEach(0...currentStageIndex, id: \.self) { index in
                         VStack(spacing: UIConstants.verticalPadding / 2) { // UIConstants 사용 (적절한 값으로 조정)
                             // 성장 단계 이미지
-                            AsyncImage(
-                                url: getGrowthStageImageURL(for: index)
-                            ) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
-                            } placeholder: {
-                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                            let imageUrl = getGrowthStageImageURL(for: index) // URL을 한 번만 가져옵니다.
+                            
+                            if let validUrl = imageUrl, !validUrl.absoluteString.isEmpty {
+                                AsyncImage(
+                                    url:validUrl
+                                ) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                                    .fill(GRColor.gray200Line)
+                                            )
+                                        
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
+                                    case .failure:
+                                        RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                                            .fill(GRColor.gray200Line) // GRColor 사용
+                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
+                                            .overlay(
+                                                Image(systemName: "photo")
+                                                    .foregroundColor(GRColor.gray500) // GRColor 사용
+                                            )
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else {
+                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                                     .fill(GRColor.gray200Line) // GRColor 사용
                                     .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
                                     .overlay(
@@ -265,10 +290,6 @@ struct CharacterDetailView: View {
                                             .foregroundColor(GRColor.gray500) // GRColor 사용
                                     )
                             }
-                            .background(
-                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                                    .fill(index == currentStageIndex ? GRColor.pointColor.opacity(0.1) : Color.clear) // GRColor 사용
-                            )
                             
                             // 단계 이름
                             Text(getPhaseNameFor(index: index))
