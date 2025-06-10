@@ -24,6 +24,7 @@ struct ProductDetailView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         VStack(spacing: 0) {
@@ -137,19 +138,37 @@ struct ProductDetailView: View {
             }
             
             // 하단 버튼
-            Button(action: {
-                showAlert = true
-            }) {
-                Text("Purchase")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .scrollContentBackground(.hidden) // 기본 배경을 숨기고
-                    .background(
-                        LinearGradient(colors: [GRColor.buttonColor_1, GRColor.buttonColor_2], startPoint: .leading, endPoint: .trailing)
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+            HStack {
+                Button(action: {
+                    dismiss()
+                }, label: {
+                    Text("취소하기")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+                        .background(
+                            LinearGradient(colors: [Color.red.opacity(0.4), Color.red.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        
+                })
+                Spacer()
+                Button(action: {
+                    showAlert = true
+                }) {
+                    Text("구매하기")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+                        .background(
+                            LinearGradient(colors: [GRColor.buttonColor_1, GRColor.buttonColor_2], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
             }
             .padding()
         }
@@ -162,6 +181,12 @@ struct ProductDetailView: View {
                 .environmentObject(userInventoryViewModel)
                 .environmentObject(userViewModel)
                 .environmentObject(authService)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                EmptyView()
+            }
         }
     }
 }

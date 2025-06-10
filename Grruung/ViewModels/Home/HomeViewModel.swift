@@ -116,7 +116,7 @@ class HomeViewModel: ObservableObject {
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
-        ("cart.fill", true, "상점"),
+        ("cart.fill", false, "상점"),
         ("mountain.2.fill", true, "동산"),
         ("book.fill", true, "일기"),
         ("microphone.fill", true, "채팅"),

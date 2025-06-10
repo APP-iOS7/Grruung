@@ -23,7 +23,7 @@ struct StoreView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Text("Store")
+                Text("상점")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.largeTitle)
@@ -38,10 +38,10 @@ struct StoreView: View {
                                 .frame(width: 20, height: 25)
                                 .foregroundColor(.cyan)
                             Text("\(diamond)")
+                                .lineLimit(1)
                                 .font(.title3)
                                 .foregroundStyle(.black)
                         }
-                        .padding(.leading, 50)
                         
                         Spacer()
                         
@@ -52,13 +52,15 @@ struct StoreView: View {
                                 .frame(width: 25, height: 25)
                                 .foregroundColor(.yellow)
                             Text("\(gold)")
+                                .lineLimit(1)
                                 .font(.title3)
                                 .foregroundStyle(.black)
                         }
-                        .padding(.trailing, 50)
                     }
                 }
                 .padding(.top, 8)
+                .padding(.leading, 50)
+                .padding(.trailing, 50)
                 // 상단 탭
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 20) {
