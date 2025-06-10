@@ -47,7 +47,7 @@ struct CharDexView: View {
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
     
     @State private var isDataLoaded: Bool = false
-
+    
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -166,6 +166,7 @@ struct CharDexView: View {
                     }
                 }
             }
+            .padding(.bottom, 48) // 하단 여백 추가
             .scrollContentBackground(.hidden) // 기본 배경을 숨기고
             .background(
                 LinearGradient(colors: [
