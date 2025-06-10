@@ -109,12 +109,12 @@ class ActionManager {
                 result.append(contentsOf: randomActions)
             }
             
-    #if DEBUG
+#if DEBUG
             print("🎯 액션 필터링 결과:")
             print("   - 현재 단계: \(phase.rawValue)")
             print("   - 전체 가능한 액션: \(availableActions.count)개")
             print("   - 최종 선택된 액션: \(result.map { $0.name }.joined(separator: ", "))")
-    #endif
+#endif
         }
         
         // ActionButton으로 변환
@@ -209,19 +209,6 @@ class ActionManager {
                 timeRestriction: nil
             ),
             PetAction(
-                id: "milk_feeding",
-                icon: "drop.circle.fill",  // 우유를 나타내는 아이콘 사용
-                name: "우유먹기",
-                unlockPhase: .infant,     // 유아기부터 사용 가능
-                phaseExclusive: true,     // 유아기에서만 사용 가능하도록 설정
-                activityCost: 4,
-                effects: ["satiety": 12, "stamina": 8, "happiness": 5, "healthy": 3],  // 영양분 추가 + 행복감
-                expGain: 4,
-                successMessage: "우유를 꿀꺽꿀꺽! 매우 맛있어요!",
-                failMessage: "너무 지쳐서 우유를 마실 힘이 없어요...",
-                timeRestriction: nil
-            ),
-            PetAction(
                 id: "play",
                 icon: "gamecontroller.fill",
                 name: "놀아주기",
@@ -260,7 +247,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 약을 먹기 힘들어요...",
                 timeRestriction: nil
             ),
-
+            
             PetAction(
                 id: "vitamins",
                 icon: "capsule.fill",
@@ -274,7 +261,7 @@ class ActionManager {
                 failMessage: "컨디션이 안 좋아서 영양제를 거부해요...",
                 timeRestriction: nil
             ),
-
+            
             PetAction(
                 id: "check_health",
                 icon: "stethoscope",
@@ -288,7 +275,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 병원에 갈 수 없어요...",
                 timeRestriction: TimeRestriction(startHour: 9, endHour: 18, isInverted: false) // 병원 운영시간
             ),
-
+            
             // MARK: - 기타 관련 액션들
             PetAction(
                 id: "weather_sunny",
@@ -303,7 +290,7 @@ class ActionManager {
                 failMessage: "",
                 timeRestriction: TimeRestriction(startHour: 6, endHour: 18, isInverted: false) // 낮 시간만
             ),
-
+            
             PetAction(
                 id: "walk_together",
                 icon: "figure.walk",
@@ -317,7 +304,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 산책할 힘이 없어요...",
                 timeRestriction: nil
             ),
-
+            
             PetAction(
                 id: "rest_together",
                 icon: "figure.seated.side",
@@ -331,7 +318,7 @@ class ActionManager {
                 failMessage: "",
                 timeRestriction: nil
             ),
-
+            
             // MARK: - 장소 관련 액션들
             PetAction(
                 id: "go_home",
@@ -346,21 +333,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 집에 갈 힘이 없어요...",
                 timeRestriction: nil
             ),
-
-            PetAction(
-                id: "go_outside",
-                icon: "tree.fill",
-                name: "외출하기",
-                unlockPhase: .child,
-                phaseExclusive: false,
-                activityCost: 8,
-                effects: ["happiness": 12, "stamina": -3, "satiety": -5],
-                expGain: 4,
-                successMessage: "밖에 나가니까 신나요!",
-                failMessage: "너무 지쳐서 나갈 힘이 없어요...",
-                timeRestriction: TimeRestriction(startHour: 7, endHour: 19, isInverted: false) // 외출 가능 시간
-            ),
-
+            
             // MARK: - 감정 관리 액션들
             PetAction(
                 id: "comfort",
@@ -375,7 +348,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 달래기 어려워요...",
                 timeRestriction: nil
             ),
-
+            
             PetAction(
                 id: "encourage",
                 icon: "hands.clap.fill",
@@ -389,7 +362,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 응원받을 기력이 없어요...",
                 timeRestriction: nil
             ),
-
+            
             // MARK: - 청결 관리 액션들 (확장)
             PetAction(
                 id: "brush_fur",
@@ -404,7 +377,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 가만히 있을 수 없어요...",
                 timeRestriction: nil
             ),
-
+            
             PetAction(
                 id: "full_grooming",
                 icon: "sparkles",
@@ -418,8 +391,8 @@ class ActionManager {
                 failMessage: "너무 지쳐서 그루밍을 받을 수 없어요...",
                 timeRestriction: nil
             ),
-
-            // MARK: - 특별 액션들
+            
+            // 특별 액션들 중 특수 이벤트와 겹치지 않는 것만 유지
             PetAction(
                 id: "special_training",
                 icon: "figure.strengthtraining.traditional",
@@ -433,37 +406,68 @@ class ActionManager {
                 failMessage: "특별 훈련을 받기엔 너무 지쳐있어요...",
                 timeRestriction: TimeRestriction(startHour: 9, endHour: 17, isInverted: false) // 훈련소 운영시간
             ),
-
+            
+            // 다음 액션들은 제거 (특수 이벤트로 이동):
+            // - 파티하기 (party)
+            // - 온천가기 (hot_spring)
+            // - 캠핑가기
+            // - 놀이공원
+            // - 해변여행
+            // - 등산하기
+            
             PetAction(
-                id: "party",
-                icon: "party.popper.fill",
-                name: "파티하기",
+                id: "stretch_exercise",
+                icon: "figure.mixed.cardio",
+                name: "스트레칭",
                 unlockPhase: .child,
                 phaseExclusive: false,
-                activityCost: 12,
-                effects: ["happiness": 25, "stamina": -10, "satiety": -8],
-                expGain: 8,
-                successMessage: "파티가 너무 즐거워요!",
-                failMessage: "파티할 기력이 없어요...",
-                timeRestriction: TimeRestriction(startHour: 18, endHour: 22, isInverted: false) // 저녁 파티 시간
+                activityCost: 7,
+                effects: ["healthy": 10, "stamina": 8, "satiety": -3],
+                expGain: 6,
+                successMessage: "스트레칭으로 몸이 가벼워졌어요!",
+                failMessage: "지금은 운동할 기분이 아니에요...",
+                timeRestriction: TimeRestriction(startHour: 7, endHour: 21, isInverted: false)
             ),
-
             PetAction(
-                id: "hot_spring",
-                icon: "drop.fill",
-                name: "온천가기",
-                unlockPhase: .adult,
+                id: "teach_trick",
+                icon: "command",
+                name: "재주 가르치기",
+                unlockPhase: .adolescent,
                 phaseExclusive: false,
                 activityCost: 8,
-                effects: ["healthy": 20, "clean": 18, "happiness": 15, "stamina": 8],
-                expGain: 7,
-                successMessage: "온천에서 몸과 마음이 편안해졌어요!",
-                failMessage: "온천에 갈 컨디션이 아니에요...",
+                effects: ["happiness": 10, "stamina": -7, "satiety": -5],
+                expGain: 8,
+                successMessage: "새로운 재주를 배웠어요!",
+                failMessage: "지금은 집중할 수 없어요...",
                 timeRestriction: nil
-            )
-            // 여기에 더 많은 액션 추가 가능
-            // ..
-            // ..
+            ),
+            PetAction(
+                id: "pet_head",
+                icon: "hand.point.up.fill",
+                name: "머리 쓰다듬기",
+                unlockPhase: .infant,
+                phaseExclusive: false,
+                activityCost: 2,
+                effects: ["happiness": 10, "stamina": 3],
+                expGain: 3,
+                successMessage: "머리를 쓰다듬어주니 행복해요!",
+                failMessage: "지금은 쓰다듬기 싫어요...",
+                timeRestriction: nil
+            ),
+            
+            PetAction(
+                id: "scratch_belly",
+                icon: "hand.point.right.fill",
+                name: "배 긁어주기",
+                unlockPhase: .child,
+                phaseExclusive: false,
+                activityCost: 3,
+                effects: ["happiness": 15, "stamina": 2],
+                expGain: 4,
+                successMessage: "배를 긁어주니 너무 좋아요!",
+                failMessage: "지금은 배를 만지기 싫어요...",
+                timeRestriction: nil
+            ),
         ]
     }
 }
