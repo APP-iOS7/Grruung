@@ -1489,6 +1489,9 @@ class HomeViewModel: ObservableObject {
         case "bed.double":
             return "sleep"
             
+        case "drop.circle.fill":
+            return "milk_feeding"
+            
             // 건강 관리 액션들
         case "pills.fill":
             return "give_medicine"
