@@ -17,16 +17,19 @@ class CharacterDetailViewModel: ObservableObject {
     @Published var user: GRUser
     @Published var posts: [GRPost] = []
     @Published var growthStages: [GrowthStage] = []
-    private let storageService = GrowthStageService()
     
     // MARK: - Loading States
     @Published var isLoading = false
+    @Published var actionInProgress = false
+    @Published var errorMessage: String?
+    
     private var isLoadingCharacter = false
     private var isLoadingUser = false
     private var isLoadingPosts = false
     
-    // MARK: - Firebase Services
+    // MARK: - Services
     private let firebaseService = FirebaseService.shared
+    private let storageService = GrowthStageService()
     private var characterListener: ListenerRegistration?
     
     private var db = Firestore.firestore()
@@ -58,6 +61,12 @@ class CharacterDetailViewModel: ObservableObject {
         }
     }
     
+    deinit {
+        // 리소스 정리
+        characterListener?.remove()
+        print("🧹 CharacterDetailViewModel 정리 완료")
+    }
+    
     // Firebase에서 캐릭터 실시간 로딩 및 리스너 설정
     private func setupCharacterListener(characterUUID: String) {
         guard !isLoadingCharacter else { return }
@@ -71,6 +80,7 @@ class CharacterDetailViewModel: ObservableObject {
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ 캐릭터 로드 실패: \(error.localizedDescription)")
+                    self.errorMessage = "캐릭터 정보를 불러오는 데 실패했습니다."
                     self.isLoadingCharacter = false
                     self.updateLoadingState()
                     return
@@ -85,6 +95,7 @@ class CharacterDetailViewModel: ObservableObject {
                     self.loadGrowthStages()
                 } else {
                     print("❌ 캐릭터를 찾을 수 없습니다")
+                    self.errorMessage = "캐릭터를 찾을 수 없습니다."
                 }
                 
                 self.isLoadingCharacter = false
@@ -116,104 +127,6 @@ class CharacterDetailViewModel: ObservableObject {
             }
         }
     }
-    
-    //    func loadCharacter(characterUUID: String) {
-    //        guard !isLoadingCharacter else { return }
-    //        self.isLoadingCharacter = true
-    //        self.isLoading = true
-    //
-    //        db.collection("GRCharacter").document(characterUUID).getDocument{ [weak self] snapshot, error in
-    //            guard let self = self else { return }
-    //            guard let data = snapshot?.data() else {
-    //                self.isLoadingCharacter = false
-    //                self.checkLoadingComplete()
-    //                return
-    //            }
-    //
-    //            // 데이터 파싱 및 GRCharacter 생성
-    //            let species = PetSpecies(rawValue: data["species"] as? String ?? "") ?? .Undefined
-    //            let name = data["name"] as? String ?? "이름 없음"
-    //
-    //            // 이미지 이름 확인 및 수정
-    //            let imageName = data["imageName"] as? String ?? ""
-    //            // 이미지 이름이 비어있으면 species에 따라 기본 이미지 설정
-    //            let finalImageName = imageName.isEmpty ?
-    //                (species == .quokka ? "quokka" : "CatLion") : imageName
-    //
-    //            print("imageName: \(finalImageName)")
-    //
-    //            let birthDate = (data["birthDate"] as? Timestamp)?.dateValue() ?? Date()
-    //            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-    //
-    //            // status 맵에서 캐릭터 상태 정보 가져오기
-    //            var level = 1
-    //            var exp = 0
-    //            var expToNextLevel = 100
-    //            var phase: CharacterPhase = .egg
-    //            var address = "paradise"
-    //            var satiety = 100
-    //            var stamina = 100
-    //            var activity = 100
-    //
-    //            if let statusMap = data["status"] as? [String: Any] {
-    //                level = statusMap["level"] as? Int ?? 1
-    //                exp = statusMap["exp"] as? Int ?? 0
-    //                expToNextLevel = statusMap["expToNextLevel"] as? Int ?? 100
-    //                phase = CharacterPhase(rawValue: statusMap["phase"] as? String ?? "") ?? .egg
-    //                address = statusMap["address"] as? String ?? "paradise"
-    //                satiety = statusMap["satiety"] as? Int ?? 100
-    //                stamina = statusMap["stamina"] as? Int ?? 100
-    //                activity = statusMap["activity"] as? Int ?? 100
-    //
-    //                print("status 맵에서 가져온 phase 값: \(statusMap["phase"] as? String ?? "값 없음")")
-    //            }
-    //
-    //            print("변환된 phase 값: \(phase)")
-    //
-    //            let status = GRCharacterStatus(
-    //                level: level,
-    //                exp: exp,
-    //                expToNextLevel: expToNextLevel,
-    //                phase: phase,
-    //                satiety: satiety,
-    //                stamina: stamina,
-    //                activity: activity,
-    //                address: address
-    //            )
-    //
-    //            DispatchQueue.main.async {
-    //                self.characterStatus = GRCharacterStatus(
-    //                    level: level,
-    //                    exp: exp,
-    //                    expToNextLevel: expToNextLevel,
-    //                    phase: phase,
-    //                    satiety: satiety,
-    //                    stamina: stamina,
-    //                    activity: activity,
-    //                    address: address
-    //                )
-    //                self.character = GRCharacter(
-    //                    id: characterUUID,
-    //                    species: species,
-    //                    name: name,
-    //                    imageName: finalImageName,
-    //                    birthDate: birthDate,
-    //                    createdAt: createdAt,
-    //                    status: status
-    //                )
-    //
-    //                self.loadGrowthStages()
-    //            }
-    //
-    //            // 캐릭터 정보 로드 후 성장 단계 이미지 로드
-    //            print("Firebase에서 가져온 phase 값: \(data["phase"] as? String ?? "값 없음")")
-    //            print("변환된 phase 값: \(phase)")
-    //            // 로딩 완료 후 플래그 해제
-    //            self.isLoadingCharacter = false
-    //            self.checkLoadingComplete()
-    //        }
-    //    }
-    
     // 캐릭터 이름 업데이트
     func updateCharacterName(characterUUID: String, newName: String) {
         guard !newName.isEmpty else { return }
@@ -228,6 +141,7 @@ class CharacterDetailViewModel: ObservableObject {
             if let error = error {
                 print("❌ 캐릭터 로드 실패: \(error.localizedDescription)")
                 DispatchQueue.main.async {
+                    self.errorMessage = "캐릭터 정보를 불러오는 데 실패했습니다."
                     self.isLoadingCharacter = false
                     self.updateLoadingState()
                 }
@@ -237,6 +151,7 @@ class CharacterDetailViewModel: ObservableObject {
             guard var character = character else {
                 print("❌ 캐릭터를 찾을 수 없습니다")
                 DispatchQueue.main.async {
+                    self.errorMessage = "캐릭터를 찾을 수 없습니다."
                     self.isLoadingCharacter = false
                     self.updateLoadingState()
                 }
@@ -251,6 +166,7 @@ class CharacterDetailViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ 캐릭터 이름 업데이트 실패: \(error.localizedDescription)")
+                        self.errorMessage = "이름 변경에 실패했습니다."
                     } else {
                         print("✅ 캐릭터 이름 업데이트 성공: \(newName)")
                         
@@ -268,9 +184,11 @@ class CharacterDetailViewModel: ObservableObject {
             }
         }
     }
+
     
     // 캐릭터 주소(위치) 업데이트
     func updateAddress(characterUUID: String, newAddress: Address) {
+        actionInProgress = true
         isLoadingCharacter = true
         updateLoadingState()
         
@@ -281,7 +199,9 @@ class CharacterDetailViewModel: ObservableObject {
             if let error = error {
                 print("❌ 캐릭터 로드 실패: \(error.localizedDescription)")
                 DispatchQueue.main.async {
+                    self.errorMessage = "캐릭터 정보를 불러오는 데 실패했습니다."
                     self.isLoadingCharacter = false
+                    self.actionInProgress = false
                     self.updateLoadingState()
                 }
                 return
@@ -290,7 +210,9 @@ class CharacterDetailViewModel: ObservableObject {
             guard var character = character else {
                 print("❌ 캐릭터를 찾을 수 없습니다")
                 DispatchQueue.main.async {
+                    self.errorMessage = "캐릭터를 찾을 수 없습니다."
                     self.isLoadingCharacter = false
+                    self.actionInProgress = false
                     self.updateLoadingState()
                 }
                 return
@@ -305,10 +227,19 @@ class CharacterDetailViewModel: ObservableObject {
                 if mainCharacterID == characterUUID && newAddress != .userHome {
                     self.firebaseService.setMainCharacter(characterID: "") { _ in
                         // 메인 캐릭터 초기화 후 캐릭터 주소 업데이트
+                        print("✅✅✅✅✅✅ CharacterDetailViewModel - 캐릭터 주소 로드 성공: \(newAddress)")
+                        self.saveCharacterWithNewAddress(character)
+                    }
+                } else if newAddress == .userHome {
+                    // 새 주소가 userHome이면 메인 캐릭터로 설정
+                    self.firebaseService.setMainCharacter(characterID: characterUUID) { _ in
+                        print("✅✅✅✅✅✅ CharacterDetailViewModel - 캐릭터 주소 로드 성공: \(newAddress)")
+                        // 메인 캐릭터 설정 후 캐릭터 주소 업데이트
                         self.saveCharacterWithNewAddress(character)
                     }
                 } else {
                     // 메인 캐릭터가 아니면 바로 주소 업데이트
+                    print("✅✅✅✅✅✅ CharacterDetailViewModel - 캐릭터 주소 로드 성공: \(newAddress)")
                     self.saveCharacterWithNewAddress(character)
                 }
             }
@@ -323,9 +254,10 @@ class CharacterDetailViewModel: ObservableObject {
             
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ 캐릭터 주소 업데이트 실패: \(error.localizedDescription)")
+                    print("❌❌❌ 캐릭터 주소 업데이트 실패: \(error.localizedDescription)")
+                    self.errorMessage = "위치 변경에 실패했습니다."
                 } else {
-                    print("✅ 캐릭터 주소 업데이트 성공: \(character.status.address)")
+                    print("✅✅✅ 캐릭터 주소 업데이트 성공: \(character.status.address)")
                     
                     // NotificationCenter로 다른 뷰에 알림
                     NotificationCenter.default.post(
@@ -336,6 +268,7 @@ class CharacterDetailViewModel: ObservableObject {
                 }
                 
                 self.isLoadingCharacter = false
+                self.actionInProgress = false
                 self.updateLoadingState()
             }
         }
@@ -343,21 +276,106 @@ class CharacterDetailViewModel: ObservableObject {
     
     // 캐릭터를 메인으로 설정
     func setAsMainCharacter(characterUUID: String) {
+        actionInProgress = true
         isLoadingCharacter = true
         updateLoadingState()
         
+        // 메인 캐릭터로 설정
         firebaseService.setMainCharacter(characterID: characterUUID) { [weak self] error in
             guard let self = self else { return }
             
-            DispatchQueue.main.async {
+            if let error = error {
+                print("❌ 메인 캐릭터 설정 실패: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.errorMessage = "메인 캐릭터 설정에 실패했습니다."
+                    self.isLoadingCharacter = false
+                    self.actionInProgress = false
+                    self.updateLoadingState()
+                }
+                return
+            }
+            
+            // 주소도 userHome으로 변경
+            self.firebaseService.loadCharacterByID(characterID: characterUUID) { character, error in
                 if let error = error {
-                    print("❌ 메인 캐릭터 설정 실패: \(error.localizedDescription)")
-                } else {
-                    print("✅ 메인 캐릭터 설정 성공")
+                    print("❌ 캐릭터 로드 실패: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self.errorMessage = "캐릭터 정보를 불러오는 데 실패했습니다."
+                        self.isLoadingCharacter = false
+                        self.actionInProgress = false
+                        self.updateLoadingState()
+                    }
+                    return
                 }
                 
-                self.isLoadingCharacter = false
-                self.updateLoadingState()
+                guard var character = character else {
+                    print("❌ 캐릭터를 찾을 수 없습니다")
+                    DispatchQueue.main.async {
+                        self.errorMessage = "캐릭터를 찾을 수 없습니다."
+                        self.isLoadingCharacter = false
+                        self.actionInProgress = false
+                        self.updateLoadingState()
+                    }
+                    return
+                }
+                
+                // 주소 업데이트
+                character.status.address = "userHome"
+                
+                // 저장
+                self.firebaseService.saveCharacter(character) { error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            print("❌ 캐릭터 주소 업데이트 실패: \(error.localizedDescription)")
+                            self.errorMessage = "위치 변경에 실패했습니다."
+                        } else {
+                            print("✅ 메인 캐릭터 설정 및 주소 업데이트 성공")
+                            
+                            // NotificationCenter로 다른 뷰에 알림
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("CharacterSetAsMain"),
+                                object: nil,
+                                userInfo: ["characterUUID": characterUUID]
+                            )
+                        }
+                        
+                        self.isLoadingCharacter = false
+                        self.actionInProgress = false
+                        self.updateLoadingState()
+                    }
+                }
+            }
+        }
+    }
+    
+    func deleteCharacter(characterUUID: String, completion: @escaping (Bool) -> Void) {
+        actionInProgress = true
+        updateLoadingState()
+        
+        // 캐릭터 삭제 전에 메인 캐릭터인지 확인
+        firebaseService.getMainCharacterID { [weak self] mainCharacterID, error in
+            guard let self = self else { return }
+            
+            // 메인 캐릭터인 경우, 메인 캐릭터 설정 해제
+            if mainCharacterID == characterUUID {
+                self.firebaseService.setMainCharacter(characterID: "") { error in
+                    if let error = error {
+                        print("❌ 메인 캐릭터 설정 해제 실패: \(error.localizedDescription)")
+                        DispatchQueue.main.async {
+                            self.errorMessage = "메인 캐릭터 설정 해제에 실패했습니다."
+                            self.actionInProgress = false
+                            self.updateLoadingState()
+                            completion(false)
+                        }
+                        return
+                    }
+                    
+                    // 메인 캐릭터 설정 해제 후 삭제 진행
+                    self.performCharacterDeletion(characterUUID: characterUUID, completion: completion)
+                }
+            } else {
+                // 메인 캐릭터가 아닌 경우 바로 삭제
+                self.performCharacterDeletion(characterUUID: characterUUID, completion: completion)
             }
         }
     }
@@ -497,6 +515,7 @@ class CharacterDetailViewModel: ObservableObject {
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ 게시물 삭제 실패: \(error.localizedDescription)")
+                    self.errorMessage = "게시물 삭제에 실패했습니다."
                 } else {
                     print("✅ 게시물 삭제 성공")
                     self.posts.removeAll { $0.postID == postID }
@@ -504,6 +523,35 @@ class CharacterDetailViewModel: ObservableObject {
                 
                 self.isLoadingPosts = false
                 self.updateLoadingState()
+            }
+        }
+    }
+    
+    private func performCharacterDeletion(characterUUID: String, completion: @escaping (Bool) -> Void) {
+        firebaseService.deleteCharacter(id: characterUUID) { [weak self] error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ 캐릭터 삭제 실패: \(error.localizedDescription)")
+                    self.errorMessage = "캐릭터 삭제에 실패했습니다."
+                    self.actionInProgress = false
+                    self.updateLoadingState()
+                    completion(false)
+                } else {
+                    print("✅ 캐릭터를 우주로 보냈습니다")
+                    
+                    // NotificationCenter로 다른 뷰에 알림
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("CharacterAddressChanged"),
+                        object: nil,
+                        userInfo: ["characterUUID": characterUUID, "address": "space"]
+                    )
+                    
+                    self.actionInProgress = false
+                    self.updateLoadingState()
+                    completion(true)
+                }
             }
         }
     }
@@ -541,6 +589,7 @@ class CharacterDetailViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ 게시물 로드 실패: \(error.localizedDescription)")
+                        self.errorMessage = "게시물을 불러오는 데 실패했습니다."
                         self.isLoadingPosts = false
                         self.updateLoadingState()
                         return
@@ -596,9 +645,5 @@ class CharacterDetailViewModel: ObservableObject {
         }
     }
     
-    deinit {
-        characterListener?.remove()
-        print("🧹 CharacterDetailViewModel 정리 완료")
-    }
     
 } // end of class

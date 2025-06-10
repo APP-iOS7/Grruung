@@ -38,7 +38,7 @@ struct AlertView: View {
             VStack(spacing: 20) {
                 // 아이콘
                 Circle()
-                    .fill(Color.cyan)
+                    .fill(GRColor.buttonColor_1)
                     .frame(width: 75, height: 75)
                     .overlay(
                         Image(product.itemImage)

@@ -49,7 +49,7 @@ struct GRCharacterStatus {
          affectionCycle: Int = 0, // 시작값 0
          healthy: Int = 50, // 시작값 50
          clean: Int = 50, // 시작값 50
-         address: String = "usersHome",
+         address: String = "userHome",
          birthDate: Date = Date(),
          appearance: [String: String] = [:],
          evolutionStatus: EvolutionStatus = .eggComplete) {
@@ -183,10 +183,11 @@ enum CharacterPhase: String, Codable, Comparable, CaseIterable {
 }
 
 // 캐릭터 거주지 종류
+
 enum Address: String, Codable, CaseIterable {
-    case userHome = "메인"
-    case paradise = "동산"
-    case space = "우주"
+    case userHome = "userHome"
+    case paradise = "paradise"
+    case space = "space"
 }
 
 // MARK: - 진화 상태 열거형
