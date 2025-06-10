@@ -15,7 +15,8 @@ class HomeViewModel: ObservableObject {
     // 캐릭터 관련
     @Published var character: GRCharacter?
     @Published var statusMessage: String = "안녕하세요!" // 상태 메시지
-    
+    @Published var goldMessage: String = ""
+
     // 레벨 관련
     @Published var level: Int = 1
     @Published var expValue: Int = 0
@@ -63,6 +64,10 @@ class HomeViewModel: ObservableObject {
     private var isUpdatingFromFirebase: Bool = false
     private var saveDebounceTimer: Timer?
     
+    @Published var isDataReady: Bool = false
+    @Published var userViewModel = UserViewModel()
+    @Published var isAnimationRunning: Bool = false
+
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -112,10 +117,10 @@ class HomeViewModel: ObservableObject {
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
         ("cart.fill", true, "상점"),
-        ("mountain.2.fill", true, "동산"),
+        ("fireworks", true, "특수 이벤트"),
         ("book.fill", true, "일기"),
         ("microphone.fill", true, "채팅"),
-        ("gearshape.fill", true, "설정")
+        ("lock.fill", true, "잠금")
     ]
     
     @Published var actionButtons: [(icon: String, unlocked: Bool, name: String)] = [
@@ -161,6 +166,8 @@ class HomeViewModel: ObservableObject {
         setupAppStateObservers()
         startStatDecreaseTimers()
         
+        userViewModel = UserViewModel()
+        
         // 캐릭터 주소 변경 이벤트 구독
         NotificationCenter.default.addObserver(
             self,
@@ -195,7 +202,62 @@ class HomeViewModel: ObservableObject {
         print("🔥 Firebase 연동 초기화 시작")
         
         // 메인 캐릭터 로드
-        loadMainCharacterFromFirebase()
+        Task {
+            await loadMainCharacterFromFirebaseAsync()
+        }
+    }
+    
+    // 비동기 방식으로 메인 캐릭터 로드
+    private func loadMainCharacterFromFirebaseAsync() async {
+        // 기존 메서드 호출 대신 비동기 방식으로 구현
+        do {
+            let character = try await loadMainCharacterAsync()
+            
+            if let character = character {
+                // 메인 스레드에서 UI 업데이트
+                await MainActor.run {
+                    // Firebase에서 로드한 캐릭터 설정
+                    setupCharacterFromFirebase(character)
+                    isLoadingFromFirebase = false
+                    isDataReady = true
+                }
+                
+                // 실시간 리스너 설정
+                setupRealtimeListener(characterID: character.id)
+                
+                // 오프라인 보상 처리
+                processOfflineTime()
+                
+                print("✅ Firebase에서 캐릭터 로드 완료: \(character.name)")
+            } else {
+                // 캐릭터가 없는 경우
+                await MainActor.run {
+                    isLoadingFromFirebase = false
+                    isDataReady = true
+                }
+                print("📝 메인 캐릭터가 없습니다.")
+            }
+        } catch {
+            await MainActor.run {
+                firebaseError = "캐릭터 로드 실패: \(error.localizedDescription)"
+                isLoadingFromFirebase = false
+                isDataReady = true
+            }
+            print("❌ Firebase 캐릭터 로드 실패: \(error.localizedDescription)")
+        }
+    }
+    
+    // 비동기 방식으로 메인 캐릭터 로드 (Firebase 서비스 확장 필요)
+    private func loadMainCharacterAsync() async throws -> GRCharacter? {
+        return try await withCheckedThrowingContinuation { continuation in
+            firebaseService.loadMainCharacter { character, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: character)
+                }
+            }
+        }
     }
     
     private func setupAppStateObservers() {
@@ -316,10 +378,10 @@ class HomeViewModel: ObservableObject {
         sideButtons = [
             ("backpack.fill", true, "인벤토리"),
             ("cart.fill", true, "상점"),
-            ("mountain.2.fill", true, "동산"),
+            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
             ("book.fill", false, "일기"),
             ("microphone.fill", false, "채팅"),
-            ("gearshape.fill", true, "설정")
+            ("lock.fill", true, "잠금")
         ]
         
         // 상태 메시지 업데이트
@@ -377,55 +439,6 @@ class HomeViewModel: ObservableObject {
             }
         }
     }
-    
-    // 기본 캐릭터를 생성하고 Firebase에 저장
-    /*
-    private func createDefaultCharacter() {
-        print("🆕 기본 캐릭터 생성 중...")
-        
-        let status = GRCharacterStatus(
-            level: 0,
-            exp: 0,
-            expToNextLevel: 50,
-            phase: .egg,
-            satiety: 100,
-            stamina: 100,
-            activity: 100,
-            affection: 0,
-            affectionCycle: 0,
-            healthy: 50,
-            clean: 50
-        )
-        
-        let newCharacter = GRCharacter(
-            species: .quokka,
-            name: "냥냥이",
-            imageName: "Quokka",
-            birthDate: Date(),
-            status: status
-        )
-        
-        // Firebase에 캐릭터 생성 및 메인으로 설정
-        firebaseService.createAndSetMainCharacter(character: newCharacter) { [weak self] characterID, error in
-            guard let self = self else { return }
-            
-            DispatchQueue.main.async {
-                if let error = error {
-                    self.firebaseError = "캐릭터 생성 실패: \(error.localizedDescription)"
-                    print("❌ 기본 캐릭터 생성 실패: \(error.localizedDescription)")
-                    return
-                }
-                
-                if let characterID = characterID {
-                    print("✅ 기본 캐릭터 생성 완료: \(characterID)")
-                    
-                    // 생성된 캐릭터로 설정
-                    self.setupCharacterFromFirebase(newCharacter)
-                    self.setupRealtimeListener(characterID: characterID)
-                }
-            }
-        }
-    }*/
     
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
@@ -1116,9 +1129,13 @@ class HomeViewModel: ObservableObject {
             statusMessage = "레벨 업! 이제 레벨 \(level)입니다!"
         }
         
-#if DEBUG
+        // 레벨업 시 골드 획득 추가
+        let goldReward = calculateLevelUpGoldReward()
+        addGold(goldReward)
+        
+    #if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
-#endif
+    #endif
     }
     
     // 현재 레벨에 맞는 성장 단계를 업데이트
@@ -1308,6 +1325,12 @@ class HomeViewModel: ObservableObject {
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
     func performAction(at index: Int) {
+        // 애니메이션 중이면 액션 수행하지 않음
+        guard !isAnimationRunning else {
+            print("🚫 애니메이션 실행 중: 액션 무시됨")
+            return
+        }
+        
         // 액션 버튼 배열의 유효한 인덱스인지 확인
         guard index < actionButtons.count else {
             print("⚠️ 잘못된 액션 인덱스: \(index)")
@@ -1328,6 +1351,10 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // 애니메이션 시작 (액션에 따라 적절한 지속 시간 설정)
+        let animationDuration = 1.0 // 기본 1초
+        startAnimation(duration: animationDuration)
+        
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
         case "bed.double":
@@ -1346,6 +1373,7 @@ class HomeViewModel: ObservableObject {
         // 액션 실행 후 액션 버튼 갱신
         refreshActionButtons()
     }
+
     
     // ActionManager를 통해 액션을 실행합니다.
     /// - Parameter actionId: 실행할 액션 ID
@@ -1406,9 +1434,9 @@ class HomeViewModel: ObservableObject {
             let oldExp = expValue
             addExp(action.expGain)
             
-#if DEBUG
+        #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-#endif
+        #endif
         }
         
         // 성공 메시지 표시
@@ -1424,12 +1452,18 @@ class HomeViewModel: ObservableObject {
         // Firebase에 스탯 변화 기록
         recordAndSaveStatChanges(statChanges, reason: "action_\(actionId)")
         
+        // 골드 획득 처리 추가
+        let goldReward = calculateGoldReward(for: actionId)
+        if goldReward > 0 {
+            addGold(goldReward)
+        }
+        
         print("✅ '\(action.name)' 액션을 실행했습니다")
         
-#if DEBUG
+    #if DEBUG
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
-#endif
+    #endif
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -1454,6 +1488,9 @@ class HomeViewModel: ObservableObject {
             return "wash"
         case "bed.double":
             return "sleep"
+            
+        case "drop.circle.fill":
+            return "milk_feeding"
             
             // 건강 관리 액션들
         case "pills.fill":
@@ -1618,5 +1655,171 @@ class HomeViewModel: ObservableObject {
             character.name = newName
             self.character = character
         }
+    }
+    
+    // MARK: - 골드 보상 관련 메서드 추가
+    func calculateGoldReward(for actionId: String) -> Int {
+        // 재우기, 깨우기 액션은 골드 획득 제외
+        if actionId == "sleep" {
+            return 0
+        }
+        
+        // 액션별 골드 획득량 설정
+        let goldRewards: [String: Int] = [
+            // 운석 전용 액션
+            "tap_egg": 5,
+            "warm_egg": 7,
+            "talk_egg": 4,
+            
+            // 유아기 이상 액션
+            "feed": 10,
+            "play": 15,
+            "wash": 8,
+            "give_medicine": 12,
+            
+            // 아동기 이상 액션
+            "vitamins": 10,
+            
+            // 청소년기 이상 액션
+            "check_health": 20,
+            
+            // 기본값
+            "default": 5
+        ]
+        
+        // 해당 액션의 골드 획득량 반환, 없으면 기본값 반환
+        return goldRewards[actionId] ?? goldRewards["default"]!
+    }
+    
+    // 레벨업 시 골드 획득량 계산
+    func calculateLevelUpGoldReward() -> Int {
+        // 레벨에 따른 보상량 설정 (레벨이 높을수록 더 많은 골드 획득)
+        return level * 50
+    }
+    
+    // 골드 획득 및 Firebase 업데이트
+    func addGold(_ amount: Int) {
+        guard let userId = firebaseService.getCurrentUserID(), !userId.isEmpty else {
+            print("⚠️ 사용자 ID가 없어 골드를 추가할 수 없습니다.")
+            return
+        }
+        
+        // 더미 ID 처리
+        let realUserId = userId == "" ? "23456" : userId
+        
+        Task {
+            do {
+                // 사용자 정보 가져오기
+                try await userViewModel.fetchUser(userId: realUserId)
+                
+                guard let currentUser = userViewModel.user else {
+                    print("⚠️ 사용자 정보가 없어 골드를 추가할 수 없습니다.")
+                    return
+                }
+                
+                let newGoldAmount = currentUser.gold + amount
+                
+                // Firebase에 업데이트
+                userViewModel.updateCurrency(userId: currentUser.id, gold: newGoldAmount)
+                
+                print("💰 골드 획득: \(amount) (현재: \(newGoldAmount))")
+                
+                // 성공 메시지 표시
+                if amount > 0 {
+                    await MainActor.run {
+                        // statusMessage = "💰 \(amount) 골드를 획득했습니다!"
+                        goldMessage = "💰 \(amount) 골드를 획득했습니다!"
+                        
+                        // 일정 시간 후 메시지 초기화 (옵션)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                            self?.goldMessage = ""
+                        }
+                    }
+                }
+            } catch {
+                print("⚠️ 골드 업데이트 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    // MARK: - 애니메이션 중 버튼 클릭 비활성화 기능 추가
+
+    // 애니메이션 시작/종료 메서드
+    func startAnimation(duration: Double = 1.0) {
+        isAnimationRunning = true
+        
+        // 애니메이션 완료 후 상태 변경
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isAnimationRunning = false
+        }
+    }
+    
+    // MARK: 특수 이벤트 관련
+    public func participateInSpecialEvent(
+        eventId: String,
+        name: String,
+        activityCost: Int,
+        effects: [String: Int],
+        expGain: Int,
+        successMessage: String,
+        failMessage: String
+    ) -> Bool {
+        // 활동력 확인
+        if activityValue < activityCost {
+            statusMessage = failMessage
+            return false
+        }
+        
+        // 이벤트 효과 적용
+        var statChanges: [String: Int] = [:]
+        
+        // 활동력 소모
+        let oldActivity = activityValue
+        activityValue = max(0, activityValue - activityCost)
+        statChanges["activity"] = activityValue - oldActivity
+        
+        // 이벤트 효과 적용
+        for (statName, value) in effects {
+            switch statName {
+            case "satiety":
+                let oldValue = satietyValue
+                satietyValue = max(0, min(100, satietyValue + value))
+                statChanges["satiety"] = satietyValue - oldValue
+            case "stamina":
+                let oldValue = staminaValue
+                staminaValue = max(0, min(100, staminaValue + value))
+                statChanges["stamina"] = staminaValue - oldValue
+            case "happiness", "affection":
+                let oldValue = weeklyAffectionValue
+                weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(value)))
+                statChanges["affection"] = weeklyAffectionValue - oldValue
+            case "clean":
+                let oldValue = cleanValue
+                cleanValue = max(0, min(100, cleanValue + value))
+                statChanges["clean"] = cleanValue - oldValue
+            case "healthy":
+                let oldValue = healthyValue
+                healthyValue = max(0, min(100, healthyValue + value))
+                statChanges["healthy"] = healthyValue - oldValue
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득
+        addExp(expGain)
+        
+        // 성공 메시지 표시
+        statusMessage = successMessage
+        
+        // UI 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+        updateLastActivityDate()
+        
+        // Firebase에 스탯 변화 기록
+        recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
+        
+        return true
     }
 }

@@ -163,6 +163,62 @@ class QuokkaController: ObservableObject {
         }
     }
     
+    /// 기존 메타데이터에서 프레임들을 로드합니다
+    private func loadExistingFramesFromMetadata(_ metadataList: [GRAnimationMetadata]) async {
+        await MainActor.run {
+            downloadMessage = "기존 데이터 로드 중..."
+            downloadProgress = 0.2
+        }
+        
+        // 메타데이터를 프레임 인덱스 순으로 정렬
+        let sortedMetadata = metadataList.sorted { $0.frameIndex < $1.frameIndex }
+        var loadedFrames: [UIImage] = []
+        
+        for (index, metadata) in sortedMetadata.enumerated() {
+            // Documents 폴더에서 이미지 로드
+            if let image = loadImageFromDocuments(fileName: URL(fileURLWithPath: metadata.filePath).lastPathComponent) {
+                loadedFrames.append(image)
+            } else {
+                print("⚠️ 프레임 \(metadata.frameIndex) 로드 실패: \(metadata.filePath)")
+            }
+            
+            // 진행률 업데이트 (20% ~ 80%)
+            let progress = 0.2 + (Double(index + 1) / Double(sortedMetadata.count)) * 0.6
+            await MainActor.run {
+                downloadProgress = progress
+                downloadMessage = "기존 데이터 로드 중... (\(index + 1)/\(sortedMetadata.count))"
+            }
+        }
+        
+        // 로드된 프레임들을 설정
+        await MainActor.run {
+            self.animationFrames = loadedFrames
+            
+            // 첫 번째 프레임을 현재 프레임으로 설정
+            if !loadedFrames.isEmpty {
+                self.currentFrame = loadedFrames[0]
+            }
+            
+            downloadProgress = 0.9
+            downloadMessage = "데이터 설정 완료"
+        }
+        
+        print("✅ 기존 메타데이터에서 \(loadedFrames.count)개 프레임 로드 완료")
+    }
+
+    /// Documents 폴더에서 이미지를 로드합니다
+    private func loadImageFromDocuments(fileName: String) -> UIImage? {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let fileURL = documentsDirectory.appendingPathComponent(fileName)
+        
+        guard let imageData = try? Data(contentsOf: fileURL),
+              let image = UIImage(data: imageData) else {
+            return nil
+        }
+        
+        return image
+    }
+    
     // MARK: - 다운로드 상태 확인
     func isPhaseDataDownloaded(phase: CharacterPhase) -> Bool {
         guard let context = modelContext, phase != .egg else {
@@ -221,73 +277,137 @@ extension QuokkaController {
             return
         }
         
-        // 다운로드 시작
-        await MainActor.run {
-            updateDownloadState(isDownloading: true, progress: 0.0, message: "부화에 필요한 데이터를 받아오는 중...")
-        }
+        let characterType = "quokka"
+        let phase = CharacterPhase.infant
+        let animationType = "normal"
+        let expectedFrameCount = 122 // 예상 프레임 수
         
-        let animationTypes = ["normal", "sleeping", "eating"]
-        var totalFramesToDownload = 0
-        
-        // 총 프레임 수 계산
-        for animationType in animationTypes {
-            totalFramesToDownload += frameCountMap[animationType] ?? 0
-        }
-        
-        print("📥 Infant 데이터 병렬 다운로드 시작 - 총 \(totalFramesToDownload)개 프레임")
-        
-        // 병렬 다운로드를 위한 TaskGroup 사용
-        await withTaskGroup(of: Bool.self) { taskGroup in
-            var completedFrames = 0
-            
-            // 모든 프레임을 병렬로 다운로드
-            for animationType in animationTypes {
-                let frameCount = frameCountMap[animationType] ?? 0
+        do {
+            // 기존 메타데이터 확인 및 검증
+            let phaseString = BundleAnimationLoader.phaseToString(phase)
+            let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                metadata.characterType == characterType &&
+                metadata.phase == phaseString &&
+                metadata.animationType == animationType
+            }
+            let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+            let existingMetadata = try context.fetch(fetchDescriptor)
+
+            // 메타데이터 검증 및 정리
+            if !existingMetadata.isEmpty {
+                let frameCount = existingMetadata.count
+                print("기존 메타데이터 발견: \(frameCount)개 프레임")
                 
-                for frameIndex in 1...frameCount {
-                    taskGroup.addTask { [weak self] in
-                        guard let self = self else { return false }
-                        
-                        return await self.downloadSingleFrame(
-                            animationType: animationType,
-                            frameIndex: frameIndex,
-                            context: context
-                        )
+                // 예상 프레임 수와 다르면 기존 메타데이터 삭제
+                if frameCount != expectedFrameCount {
+                    print("⚠️ 프레임 수 불일치 (예상: \(expectedFrameCount), 실제: \(frameCount)) - 메타데이터 정리")
+                    
+                    await MainActor.run {
+                        downloadMessage = "기존 데이터 정리 중..."
+                        downloadProgress = 0.1
+                    }
+                    
+                    // 기존 메타데이터 삭제
+                    for metadata in existingMetadata {
+                        context.delete(metadata)
+                    }
+                    try context.save()
+                    
+                    print("🗑️ 잘못된 메타데이터 \(frameCount)개 삭제 완료")
+                } else {
+                    // 올바른 메타데이터가 이미 있음
+                    print("✅ 올바른 메타데이터가 이미 존재함 - 다운로드 생략")
+                    
+                    await MainActor.run {
+                        downloadMessage = "이미 다운로드됨 - 로드 중..."
+                        downloadProgress = 0.8
+                    }
+                    
+                    // 기존 프레임 로드 (개선된 버전)
+                    await loadExistingFramesFromMetadata(existingMetadata)
+                    
+                    await MainActor.run {
+                        downloadProgress = 1.0
+                        downloadMessage = "로드 완료!"
+                    }
+                    return
+                }
+            }
+            
+            
+            // 다운로드 시작
+            await MainActor.run {
+                updateDownloadState(isDownloading: true, progress: 0.0, message: "부화에 필요한 데이터를 받아오는 중...")
+            }
+            
+            let animationTypes = ["normal", "sleeping", "eating"]
+            var totalFramesToDownload = 0
+            
+            // 총 프레임 수 계산
+            for animationType in animationTypes {
+                totalFramesToDownload += frameCountMap[animationType] ?? 0
+            }
+            
+            print("📥 Infant 데이터 병렬 다운로드 시작 - 총 \(totalFramesToDownload)개 프레임")
+            
+            // 병렬 다운로드를 위한 TaskGroup 사용
+            await withTaskGroup(of: Bool.self) { taskGroup in
+                var completedFrames = 0
+                
+                // 모든 프레임을 병렬로 다운로드
+                for animationType in animationTypes {
+                    let frameCount = frameCountMap[animationType] ?? 0
+                    
+                    for frameIndex in 1...frameCount {
+                        taskGroup.addTask { [weak self] in
+                            guard let self = self else { return false }
+                            
+                            return await self.downloadSingleFrame(
+                                animationType: animationType,
+                                frameIndex: frameIndex,
+                                context: context
+                            )
+                        }
+                    }
+                }
+                
+                // 완료된 작업들 수집 및 진행률 업데이트
+                for await success in taskGroup {
+                    if success {
+                        completedFrames += 1
+                    }
+                    
+                    // 진행률 업데이트 (메인 스레드에서)
+                    let progress = Double(completedFrames) / Double(totalFramesToDownload)
+                    let message = completedFrames < totalFramesToDownload * 3 / 4
+                    ? "부화에 필요한 데이터를 받아오는 중..."
+                    : "곧 부화가 완료됩니다..."
+                    
+                    await MainActor.run {
+                        updateDownloadState(progress: progress, message: message)
                     }
                 }
             }
             
-            // 완료된 작업들 수집 및 진행률 업데이트
-            for await success in taskGroup {
-                if success {
-                    completedFrames += 1
-                }
+            // 다운로드 완료
+            await MainActor.run {
+                updateDownloadState(
+                    isDownloading: false,
+                    progress: 1.0,
+                    message: "부화가 완료되었습니다! 귀여운 쿼카가 태어났어요!"
+                )
                 
-                // 진행률 업데이트 (메인 스레드에서)
-                let progress = Double(completedFrames) / Double(totalFramesToDownload)
-                let message = completedFrames < totalFramesToDownload * 3 / 4
-                    ? "부화에 필요한 데이터를 받아오는 중..."
-                    : "곧 부화가 완료됩니다..."
-                
-                await MainActor.run {
-                    updateDownloadState(progress: progress, message: message)
-                }
+                // 첫 번째 프레임 로드
+                loadFirstFrame(phase: .infant, animationType: "normal")
             }
-        }
-        
-        // 다운로드 완료
-        await MainActor.run {
-            updateDownloadState(
-                isDownloading: false,
-                progress: 1.0,
-                message: "부화가 완료되었습니다! 귀여운 쿼카가 태어났어요!"
-            )
             
-            // 첫 번째 프레임 로드
-            loadFirstFrame(phase: .infant, animationType: "normal")
+            print("✅ Infant 데이터 병렬 다운로드 완료")
+        } catch {
+            await MainActor.run {
+                downloadMessage = "다운로드 실패: \(error.localizedDescription)"
+            }
+            print("❌ 다운로드 실패: \(error)")
         }
-        
-        print("✅ Infant 데이터 병렬 다운로드 완료")
     }
     
     // MARK: - 개별 프레임 다운로드
@@ -451,6 +571,71 @@ extension QuokkaController {
             stopAnimation()
         } else {
             startPingPongAnimation()
+        }
+    }
+    
+    // MARK: - 메타데이터 관리 메서드 (삭제 구현)
+    /// 모든 애니메이션 메타데이터를 삭제합니다 (디버그용)
+    func clearAllMetadata() {
+        guard let modelContext = modelContext else {
+            print("❌ SwiftData 컨텍스트가 설정되지 않음")
+            return
+        }
+        
+        do {
+            // 모든 메타데이터 조회
+            let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>()
+            let allMetadata = try modelContext.fetch(fetchDescriptor)
+            
+            print("🗑️ 총 \(allMetadata.count)개 메타데이터 삭제 시작")
+            
+            // 모든 메타데이터 삭제
+            for metadata in allMetadata {
+                modelContext.delete(metadata)
+            }
+            
+            // 변경사항 저장
+            try modelContext.save()
+            
+            print("✅ 모든 메타데이터 삭제 완료")
+            
+        } catch {
+            print("❌ 메타데이터 삭제 실패: \(error)")
+        }
+    }
+
+    /// 특정 캐릭터/단계/애니메이션의 메타데이터만 삭제
+    func clearSpecificMetadata(characterType: String, phase: CharacterPhase, animationType: String) {
+        guard let modelContext = modelContext else {
+            print("❌ SwiftData 컨텍스트가 설정되지 않음")
+            return
+        }
+        
+        do {
+            // 특정 조건의 메타데이터 조회
+            let phaseString = BundleAnimationLoader.phaseToString(phase)
+            let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                metadata.characterType == characterType &&
+                metadata.phase == phaseString &&
+                metadata.animationType == animationType
+            }
+            
+            let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+            let specificMetadata = try modelContext.fetch(fetchDescriptor)
+            
+            print("🗑️ \(characterType) \(phaseString) \(animationType) 메타데이터 \(specificMetadata.count)개 삭제")
+            
+            // 해당 메타데이터들 삭제
+            for metadata in specificMetadata {
+                modelContext.delete(metadata)
+            }
+            
+            try modelContext.save()
+            
+            print("✅ 특정 메타데이터 삭제 완료")
+            
+        } catch {
+            print("❌ 특정 메타데이터 삭제 실패: \(error)")
         }
     }
 }
