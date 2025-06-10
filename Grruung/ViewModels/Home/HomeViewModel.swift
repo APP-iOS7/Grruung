@@ -120,7 +120,7 @@ class HomeViewModel: ObservableObject {
         ("mountain.2.fill", true, "동산"),
         ("book.fill", true, "일기"),
         ("microphone.fill", true, "채팅"),
-        ("gearshape.fill", true, "설정")
+        ("lock.fill", true, "잠금")
     ]
     
     @Published var actionButtons: [(icon: String, unlocked: Bool, name: String)] = [
@@ -381,7 +381,7 @@ class HomeViewModel: ObservableObject {
             ("mountain.2.fill", true, "동산"),
             ("book.fill", false, "일기"),
             ("microphone.fill", false, "채팅"),
-            ("gearshape.fill", true, "설정")
+            ("lock.fill", true, "잠금")
         ]
         
         // 상태 메시지 업데이트

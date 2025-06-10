@@ -22,6 +22,7 @@ struct HomeView: View {
     @State private var isShowingSettings = false
     @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     @State private var isShowingOnboarding = false
+    @State private var showUpdateAlert = false // 업데이트 예정 알림창 표시 여부
 
     // MARK: - Body
     var body: some View {
@@ -100,7 +101,11 @@ struct HomeView: View {
                 viewModel.loadCharacter()
             }
         }
-        
+        .alert("안내", isPresented: $showUpdateAlert) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("추후 업데이트 예정입니다.")
+        }
         .sheet(isPresented: $showInventory) {
             //            InventoryView(character: viewModel.character)
         }
@@ -469,9 +474,9 @@ struct HomeView: View {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "gearshape.fill": // 설정
+        case "lock.fill": // 설정
             // 설정 시트 표시
-            isShowingSettings.toggle()
+            showUpdateAlert = true
         default:
             break
         }
@@ -503,9 +508,9 @@ struct HomeView: View {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "gearshape.fill": // 설정
+        case "lock.fill": // 설정
             // 설정 시트 표시
-            isShowingSettings.toggle()
+            showUpdateAlert = true
         default:
             break
         }
