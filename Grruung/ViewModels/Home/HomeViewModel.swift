@@ -15,7 +15,8 @@ class HomeViewModel: ObservableObject {
     // 캐릭터 관련
     @Published var character: GRCharacter?
     @Published var statusMessage: String = "안녕하세요!" // 상태 메시지
-    
+    @Published var goldMessage: String = ""
+
     // 레벨 관련
     @Published var level: Int = 1
     @Published var expValue: Int = 0
@@ -1723,7 +1724,13 @@ class HomeViewModel: ObservableObject {
                 // 성공 메시지 표시
                 if amount > 0 {
                     await MainActor.run {
-                        statusMessage = "💰 \(amount) 골드를 획득했습니다!"
+                        // statusMessage = "💰 \(amount) 골드를 획득했습니다!"
+                        goldMessage = "💰 \(amount) 골드를 획득했습니다!"
+                        
+                        // 일정 시간 후 메시지 초기화 (옵션)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                            self?.goldMessage = ""
+                        }
                     }
                 }
             } catch {

@@ -50,14 +50,28 @@ struct HomeView: View {
                         
                         // 상태 바 섹션
                         statsSection
-                        
+#if DEBUG
                         // 캐릭터 상태 메시지
-                        Text(viewModel.statusMessage)
-                            .font(viewModel.character?.status.phase == .egg ? .system(.headline, design: .monospaced) : .headline)
-                            .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
-                            .multilineTextAlignment(.center)
-                            .padding(.vertical, 5)
-                            .foregroundColor(getMessageColor())
+                        VStack(spacing: 5) {
+                            // 상태 메시지
+                            Text(viewModel.statusMessage)
+                                .font(viewModel.character?.status.phase == .egg ?
+                                    .system(.headline, design: .monospaced) : .headline)
+                                .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
+                                .multilineTextAlignment(.center)
+                                .padding(.vertical, 5)
+                                .foregroundColor(getMessageColor())
+                            
+                            // 골드 획득 메시지 (비어있지 않을 때만 표시)
+                            if !viewModel.goldMessage.isEmpty {
+                                Text(viewModel.goldMessage)
+                                    .font(.headline)
+                                    .foregroundColor(.yellow)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.vertical, 5)
+                            }
+                        }
+#endif
                         
                         Spacer()
                         
