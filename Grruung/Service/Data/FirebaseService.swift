@@ -69,7 +69,7 @@ class FirebaseService: ObservableObject {
                     let affection = statusData["affection"] as? Int ?? 50
                     let healthy = statusData["healthy"] as? Int ?? 50
                     let clean = statusData["clean"] as? Int ?? 50
-                    let address = statusData["address"] as? String ?? "usersHome"
+                    let address = statusData["address"] as? String ?? "userHome"
                     let birthDateTimestamp = statusData["birthDate"] as? Timestamp
                     let birthDate = birthDateTimestamp?.dateValue() ?? Date()
                     let createdAtTimestamp = statusData["createdAt"] as? Timestamp
@@ -994,7 +994,7 @@ class FirebaseService: ObservableObject {
         let affectionCycle = statusData["affectionCycle"] as? Int ?? 0
         let healthy = statusData["healthy"] as? Int ?? 50
         let clean = statusData["clean"] as? Int ?? 50
-        let address = statusData["address"] as? String ?? "usersHome"
+        let address = statusData["address"] as? String ?? "userHome"
         let birthDateTimestamp = statusData["birthDate"] as? Timestamp
         let birthDate = birthDateTimestamp?.dateValue() ?? Date()
         let appearance = statusData["appearance"] as? [String: String] ?? [:]
@@ -1036,60 +1036,154 @@ class FirebaseService: ObservableObject {
     ///   - setAsMain: 메인 캐릭터로 설정할지 여부
     ///   - completion: 완료 콜백 (생성된 캐릭터 ID, 에러)
     func createAndSetMainCharacter(
-        character: GRCharacter,
-        setAsMain: Bool = true,
-        completion: @escaping (String?, Error?) -> Void
-    ) {
-        // 먼저 같은 address를 가진 캐릭터가 있는지 확인
-        findCharactersByAddress(address: "userHome") { [weak self] existingCharacters, error in
-            guard let self = self else { return }
-            
+           character: GRCharacter,
+           setAsMain: Bool = true,
+           completion: @escaping (String?, Error?) -> Void
+       ) {
+           // 먼저 같은 address를 가진 캐릭터가 있는지 확인
+           findCharactersByAddress(address: "userHome") { [weak self] existingCharacters, error in
+               guard let self = self else { return }
+               
+               if let error = error {
+                   completion(nil, error)
+                   return
+               }
+               
+               // 이미 userHome 주소를 가진 캐릭터가 있는 경우
+               if let existingCharacters = existingCharacters, !existingCharacters.isEmpty {
+                   // 이미 있는 캐릭터를 메인으로 설정
+                   if setAsMain {
+                       self.setMainCharacter(characterID: existingCharacters[0].id) { error in
+                           if let error = error {
+                               completion(nil, error)
+                           } else {
+                               completion(existingCharacters[0].id, nil)
+                           }
+                       }
+                   } else {
+                       completion(existingCharacters[0].id, nil)
+                   }
+                   return
+               }
+               
+               // 없으면 새 캐릭터 저장
+               self.saveCharacter(character) { [weak self] error in
+                   guard let self = self else { return }
+                   
+                   if let error = error {
+                       completion(nil, error)
+                       return
+                   }
+                   
+                   // 메인 캐릭터로 설정할지 확인
+                   if setAsMain {
+                       self.setMainCharacter(characterID: character.id) { error in
+                           if let error = error {
+                               completion(nil, error)
+                           } else {
+                               completion(character.id, nil)
+                           }
+                       }
+                   } else {
+                       completion(character.id, nil)
+                   }
+               }
+           }
+       }
+    
+    /// 모든 캐릭터 중 사용 가능한 수 (해금된 슬롯 수) 확인
+    /// - Parameter completion: 완료 콜백 (사용 가능 슬롯 수, 전체 캐릭터 수, 에러)
+    func getAvailableSlotCount(completion: @escaping (Int, Int, Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(0, 0, NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        // 캐릭터 도감 정보 조회
+        db.collection("charDex").document(userID).getDocument { (snapshot, error) in
             if let error = error {
-                completion(nil, error)
+                completion(0, 0, error)
                 return
             }
             
-            // 이미 userHome 주소를 가진 캐릭터가 있는 경우
-            if let existingCharacters = existingCharacters, !existingCharacters.isEmpty {
-                // 이미 있는 캐릭터를 메인으로 설정
-                if setAsMain {
-                    self.setMainCharacter(characterID: existingCharacters[0].id) { error in
-                        if let error = error {
-                            completion(nil, error)
-                        } else {
-                            completion(existingCharacters[0].id, nil)
-                        }
+            // 도감 정보에서 해금된 슬롯 수 확인
+            let unlockCount = snapshot?.data()?["unlockCount"] as? Int ?? 2 // 기본값 2
+            
+            // 전체 캐릭터 수 확인 (space 주소 제외)
+            self.db.collection("users").document(userID).collection("characters")
+                .whereField("status.address", isNotEqualTo: "space")
+                .getDocuments { (snapshot, error) in
+                    if let error = error {
+                        completion(unlockCount, 0, error)
+                        return
                     }
-                } else {
-                    completion(existingCharacters[0].id, nil)
+                    
+                    let characterCount = snapshot?.documents.count ?? 0
+                    completion(unlockCount, characterCount, nil)
                 }
+        }
+    }
+    
+    /// 새 캐릭터 생성 가능 여부 확인
+    /// - Parameter completion: 완료 콜백 (생성 가능 여부, 에러 메시지)
+    func canCreateNewCharacter(completion: @escaping (Bool, String?) -> Void) {
+        getAvailableSlotCount { unlockCount, characterCount, error in
+            if let error = error {
+                completion(false, "슬롯 정보를 확인하는 데 실패했습니다: \(error.localizedDescription)")
                 return
             }
             
-            // 없으면 새 캐릭터 저장
-            self.saveCharacter(character) { [weak self] error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    completion(nil, error)
-                    return
-                }
-                
-                // 메인 캐릭터로 설정할지 확인
-                if setAsMain {
-                    self.setMainCharacter(characterID: character.id) { error in
-                        if let error = error {
-                            completion(nil, error)
-                        } else {
-                            completion(character.id, nil)
-                        }
-                    }
-                } else {
-                    completion(character.id, nil)
-                }
+            if characterCount >= unlockCount {
+                completion(false, "사용 가능한 슬롯이 부족합니다. 슬롯을 해금하거나 기존 캐릭터를 동산으로 보내주세요.")
+            } else {
+                completion(true, nil)
             }
         }
     }
+    
+    /// 캐릭터 성장 단계 설정
+    /// - Parameters:
+    ///   - characterID: 캐릭터 ID
+    ///   - phase: 설정할 성장 단계
+    ///   - completion: 완료 콜백
+    func setCharacterPhase(characterID: String, phase: CharacterPhase, completion: @escaping (Error?) -> Void) {
+        loadCharacterByID(characterID: characterID) { [weak self] character, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            guard var character = character else {
+                completion(NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터를 찾을 수 없습니다."]))
+                return
+            }
+            
+            // 성장 단계 업데이트
+            character.status.phase = phase
+            
+            // 레벨도 함께 업데이트
+            switch phase {
+            case .egg:
+                character.status.level = 0
+            case .infant:
+                character.status.level = max(1, character.status.level)
+            case .child:
+                character.status.level = max(3, character.status.level)
+            case .adolescent:
+                character.status.level = max(6, character.status.level)
+            case .adult:
+                character.status.level = max(9, character.status.level)
+            case .elder:
+                character.status.level = max(16, character.status.level)
+            }
+            
+            // 저장
+            self.saveCharacter(character, completion: completion)
+        }
+    }
+    
     // End - HomeViewModel Character 연결을 위한 메서드 정의
 
     // MARK: - 캐릭터 중복 생성 방지를 위한 함수 추가
@@ -1138,10 +1232,10 @@ class FirebaseService: ObservableObject {
                     let affection = statusData["affection"] as? Int ?? 50
                     let healthy = statusData["healthy"] as? Int ?? 50
                     let clean = statusData["clean"] as? Int ?? 50
-                    let address = statusData["address"] as? String ?? "usersHome"
+                    let address = statusData["address"] as? String ?? "userHome"
                     let birthDateTimestamp = statusData["birthDate"] as? Timestamp
                     let birthDate = birthDateTimestamp?.dateValue() ?? Date()
-                    let createdAtTimestamp = statusData["createdAt"] as? Timestamp
+                    let createdAtTimestamp = data["createdAt"] as? Timestamp
                     let createdAt = createdAtTimestamp?.dateValue() ?? Date()
                     let appearance = statusData["appearance"] as? [String: String] ?? [:]
                     let evolutionStatusRaw = statusData["evolutionStatus"] as? String ?? "eggComplete"
@@ -1179,5 +1273,54 @@ class FirebaseService: ObservableObject {
                 
                 completion(characters, nil)
             }
+    }
+    
+    func preFetchInitialData(userID: String) async {
+        print("🔥 초기 데이터 프리페치 시작")
+        
+        // 병렬로 데이터 로드
+        async let charDexTask = prefetchCharDex(userID: userID)
+        async let inventoryTask = prefetchInventory(userID: userID)
+        async let mainCharacterTask = prefetchMainCharacter(userID: userID)
+        
+        // 모든 작업 완료까지 대기
+        _ = await [try? charDexTask, try? inventoryTask, try? mainCharacterTask]
+        
+        print("✅ 초기 데이터 프리페치 완료")
+    }
+    
+    // 동산 데이터 프리페치
+    private func prefetchCharDex(userID: String) async throws {
+        let docRef = db.collection("charDex").document(userID)
+        let _ = try await docRef.getDocument()
+        print("✅ 동산 데이터 프리페치 완료")
+    }
+    
+    // 인벤토리 데이터 프리페치
+    private func prefetchInventory(userID: String) async throws {
+        let collectionRef = db.collection("users").document(userID).collection("inventory")
+        let _ = try await collectionRef.getDocuments()
+        print("✅ 인벤토리 데이터 프리페치 완료")
+    }
+    
+    // 메인 캐릭터 프리페치
+    private func prefetchMainCharacter(userID: String) async throws {
+        // 사용자 정보 로드
+        let userRef = db.collection("users").document(userID)
+        let userDoc = try await userRef.getDocument()
+        
+        // 메인 캐릭터 ID 가져오기
+        guard let userData = userDoc.data(),
+              let chosenCharacterUUID = userData["chosenCharacterUUID"] as? String,
+              !chosenCharacterUUID.isEmpty else {
+            print("❌ 메인 캐릭터 ID를 찾을 수 없습니다")
+            return
+        }
+        
+        // 메인 캐릭터 데이터 로드
+        let characterRef = db.collection("users").document(userID).collection("characters").document(chosenCharacterUUID)
+        let _ = try await characterRef.getDocument()
+        
+        print("✅ 메인 캐릭터 데이터 프리페치 완료")
     }
 }
