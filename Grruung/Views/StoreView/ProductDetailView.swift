@@ -34,11 +34,13 @@ struct ProductDetailView: View {
                         Text(product.itemName)
                             .font(.largeTitle)
                             .bold()
+                            .foregroundStyle(.black)
                         HStack(spacing: 8) {
                             if product.itemCurrencyType == .won {
                                 Text("₩")
                                     .font(.title)
                                     .bold()
+                                    .foregroundStyle(.black)
                             } else {
                                 if product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue {
                                     Image(systemName: "diamond.fill")
@@ -56,6 +58,7 @@ struct ProductDetailView: View {
                             Text("\(product.itemPrice)")
                                 .font(.title)
                                 .bold()
+                                .foregroundStyle(.black)
                         }
                     }
                     .padding(.horizontal)

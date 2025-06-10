@@ -16,11 +16,19 @@ struct StoreView: View {
     @StateObject var userInventoryViewModel = UserInventoryViewModel()
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
+    @Environment(\.colorScheme) var colorScheme
+    
     @State var realUserId = ""
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                Text("Store")
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.largeTitle)
+                    .foregroundStyle(.black)
+                    .bold()
                 HStack {
                     HStack {
                         // 다이아
@@ -31,6 +39,7 @@ struct StoreView: View {
                                 .foregroundColor(.cyan)
                             Text("\(diamond)")
                                 .font(.title3)
+                                .foregroundStyle(.black)
                         }
                         .padding(.leading, 50)
                         
@@ -44,6 +53,7 @@ struct StoreView: View {
                                 .foregroundColor(.yellow)
                             Text("\(gold)")
                                 .font(.title3)
+                                .foregroundStyle(.black)
                         }
                         .padding(.trailing, 50)
                     }
@@ -61,7 +71,7 @@ struct StoreView: View {
                                 VStack {
                                     Text(tabs[index])
                                         .font(.headline)
-                                        .foregroundColor(selectedTab == index ? .primary : .secondary)
+                                        .foregroundColor(selectedTab == index ? .black : .gray)
                                     Capsule()
                                         .fill(selectedTab == index ? GRColor.buttonColor_2 : Color.clear)
                                         .frame(height: 3)
@@ -100,10 +110,15 @@ struct StoreView: View {
                     }
                 }
             }
-            .navigationTitle("Store")
-            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .navigationBarTitleDisplayMode(.inline) // 기본 타이틀 공간 최소화
+            .scrollContentBackground(.hidden)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    EmptyView() // 기본 타이틀 제거
+                }
+            }
             .background(
-                    LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
             ) // 원하는 색상 지정
         } //
         .onAppear {
@@ -159,7 +174,7 @@ struct SectionView: View {
                 Text(title)
                     .font(.title2)
                     .bold()
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black)
             }
             .id(id)
             .padding(.horizontal)
