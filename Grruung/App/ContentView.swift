@@ -21,7 +21,8 @@ struct ContentView: View {
                     OnboardingView()
                 } else {
                     // 로그인된 상태 = 홈 화면 표시
-                    MainTabView()
+//                    MainTabView()
+                    MainView()
                 }
             } else {
                 // 비로그인 상태 = 로그인 화면 표시

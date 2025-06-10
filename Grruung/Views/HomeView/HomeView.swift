@@ -22,66 +22,92 @@ struct HomeView: View {
     @State private var isShowingSettings = false
     @State private var showEvolutionScreen = false // 진화 화면 표시 여부
     @State private var isShowingOnboarding = false
+    @State private var showUpdateAlert = false // 업데이트 예정 알림창 표시 여부
 
     // MARK: - Body
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Spacer()
-                
-                // 레벨 프로그레스 바
-                levelProgressBar
-                
-                Spacer()
-                
-                // 메인 캐릭터 섹션
-                characterSection
-                
-                Spacer()
-                
-                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                if let character = viewModel.character,
-                   character.status.evolutionStatus.needsEvolution {
-                    evolutionButton
+            NavigationStack {
+                ZStack {
+                    // FIXME: - Start 배경 이미지 전체 화면에 적용
+                    // 배경 이미지 설정
+                    GeometryReader { geometry in
+                        Image("roomBasic1Big")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .edgesIgnoringSafeArea(.all)
+                    }
+                    .edgesIgnoringSafeArea(.all)
+                    // FIXME: - END
+                    
+                    // 원래 콘텐츠는 그대로 유지
+                    if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {
+                        // 로딩 중 표시
+                        LoadingView()
+                    } else {
+                        VStack(spacing: 20) {
+                            Spacer()
+                            
+                            // 레벨 프로그레스 바
+                            levelProgressBar
+                            
+                            // 메인 캐릭터 섹션
+                            characterSection
+                            
+                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                            if let character = viewModel.character,
+                               character.status.evolutionStatus.needsEvolution {
+                                evolutionButton
+                            }
+                            
+                            // 액션 버튼 그리드
+                            actionButtonsGrid
+                            
+                            // 상태 바 섹션
+                            statsSection
+                            
+                            // 캐릭터 상태 메시지
+                            VStack(spacing: 5) {
+                                // 상태 메시지
+                                Text(viewModel.statusMessage)
+                                    .font(viewModel.character?.status.phase == .egg ?
+                                          .system(.headline, design: .monospaced) : .headline)
+                                    .italic(viewModel.character?.status.phase == .egg)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.vertical, 5)
+                                    .foregroundColor(getMessageColor())
+                                
+                                // 골드 획득 메시지 (비어있지 않을 때만 표시)
+                                if !viewModel.goldMessage.isEmpty {
+                                    Text(viewModel.goldMessage)
+                                        .font(.headline)
+                                        .foregroundColor(.yellow)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.vertical, 5)
+                                }
+                            }
+                            
+                            Spacer()
+                            Spacer()
+                            
+                            // 커스텀 탭바를 위한 여백
+                            Color.clear
+                                .frame(height: 40)
+                        }
+                        .padding()
+                    }
                 }
-                
-                // 상태 바 섹션
-                statsSection
-                
-                // 캐릭터 상태 메시지
-                Text(viewModel.statusMessage)
-                    .font(viewModel.character?.status.phase == .egg ? .system(.headline, design: .monospaced) : .headline)
-                    .italic(viewModel.character?.status.phase == .egg) // 운석 상태일 때는 이탤릭체로 표시
-                    .multilineTextAlignment(.center)
-                    .padding(.vertical, 5)
-                    .foregroundColor(getMessageColor())
-                
-                Spacer()
-                
-                // 액션 버튼 그리드
-                actionButtonsGrid
-            }
-            .padding()
-            .scrollContentBackground(.hidden) // 기본 배경 숨기기
-            .background(
-                // 배경 이미지 설정
-                Image("roomBasic1Big")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 200)
-                    .scaleEffect(1.1) // 줌인 줌아웃
-                    .offset(x: -10, y: -35) // 위치 조정
-
-                    // .clipped() // 넘치는 부분 잘라내기
-                    //.ignoresSafeArea(.all)
-            )
-//            .navigationTitle("나의 \(viewModel.character?.name ?? "캐릭터")")
-            .navigationBarBackButtonHidden(true)
+                .scrollContentBackground(.hidden) // 기본 배경 숨기기
+                .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
             }
         }
-        
+        .alert("안내", isPresented: $showUpdateAlert) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("추후 업데이트 예정입니다.")
+        }
         .sheet(isPresented: $showInventory) {
             //            InventoryView(character: viewModel.character)
         }
@@ -200,6 +226,7 @@ struct HomeView: View {
         if message.contains("배고파") || message.contains("아파") || message.contains("지쳐") {
             return .red
         } else if message.contains("피곤") || message.contains("더러워") || message.contains("외로워") {
+         
             return .orange
         } else if message.contains("행복") || message.contains("좋은") || message.contains("감사") {
             return .green
@@ -340,12 +367,13 @@ struct HomeView: View {
                                 
                                 Text(action.name)
                                     .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? .gray : .primary)
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? Color.gray : Color.primary)
                             }
                         }
                     }
                 }
-                .disabled(!action.unlocked || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
+                // 애니메이션 실행 중이거나, 잠자는 상태에서 재우기/깨우기 버튼이 아닌 경우 버튼 비활성화
+                .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
             }
         }
     }
@@ -399,20 +427,65 @@ struct HomeView: View {
                 }
             } else {
                 Button(action: {
-                    handleSideButtonAction(systemName: systemName)
-                }) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .frame(width: 60, height: 60)
-                            .foregroundColor(viewModel.isSleeping ? Color.gray.opacity(0.1) : Color.gray.opacity(0.6))
-                        
-                        Image(systemName: systemName)
-                            .font(.system(size: 24))
-                            .foregroundColor(viewModel.isSleeping ? .gray : .black) // .primary에서 .black으로 변경
-                    }
-                }
-                .disabled(viewModel.isSleeping)
+                       handleButtonAction(systemName: systemName)
+                   }) {
+                       ZStack {
+                           Circle()
+                               .frame(width: 55, height: 55)
+                               .foregroundColor(unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                           
+                           if !unlocked {
+                               Image(systemName: "lock.fill")
+                                   .foregroundColor(.gray)
+                           } else {
+                               Image(systemName: systemName)
+                                   .font(.system(size: 24))
+                                   .foregroundColor(viewModel.isSleeping ? .gray : .primary)
+                           }
+                       }
+                   }
+                   // 애니메이션 실행 중이거나 잠자는 상태일 때 버튼 비활성화
+                   .disabled(viewModel.isAnimationRunning || viewModel.isSleeping)
             }
+        }
+    }
+    
+    private func handleButtonAction(systemName: String) {
+        // 애니메이션 실행 중일 때는 액션 처리하지 않음
+        guard !viewModel.isAnimationRunning else {
+            return
+        }
+        
+        // 기존 handleSideButtonAction 메서드 내용...
+        switch systemName {
+        case "backpack.fill": // 인벤토리
+            showInventory.toggle()
+        case "cart.fill": // 상점
+            // NavigationLink는 이미 처리됨
+            break
+        case "mountain.2.fill": // 동산
+            showPetGarden.toggle()
+        case "book.fill": // 일기
+            if let character = viewModel.character {
+                // 스토리 작성 시트 표시
+                isShowingWriteStory = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "microphone.fill": // 채팅
+            if let character = viewModel.character {
+                // 챗펫 시트 표시
+                isShowingChatPet = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
+        case "lock.fill": // 설정
+            // 설정 시트 표시
+            showUpdateAlert = true
+        default:
+            break
         }
     }
     
@@ -442,9 +515,9 @@ struct HomeView: View {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "gearshape.fill": // 설정
+        case "lock.fill": // 설정
             // 설정 시트 표시
-            isShowingSettings.toggle()
+            showUpdateAlert = true
         default:
             break
         }
