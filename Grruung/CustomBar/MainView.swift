@@ -21,8 +21,15 @@ struct MainView: View {
             ZStack(alignment: .bottom) {
                 // 현재 선택된 탭에 따른 컨텐츠 표시
                 TabContent(selectedTab: tabBarController.selectedTab)
+                    .padding(.bottom, tabBarController.selectedTab == 2 ? 90 : 0)
                     .edgesIgnoringSafeArea(.all)
                 
+                if tabBarController.selectedTab == 2 {
+                    Rectangle()
+                        .fill(GRColor.mainColor2_2)
+                        .frame(height: 90)
+                        .ignoresSafeArea(edges: .bottom)
+                }
                 // 커스텀 탭바
                 CustomTabBar(selectedTab: $tabBarController.selectedTab)
                     .edgesIgnoringSafeArea(.bottom)
