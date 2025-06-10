@@ -192,17 +192,17 @@ enum Address: String, Codable, CaseIterable {
 
 // MARK: - 진화 상태 열거형
 enum EvolutionStatus: String, Codable, CaseIterable {
-    case eggComplete = "운석완료"          // 운석 단계 완료
-    case toInfant = "유아기진화중"         // 유아기로 진화 중 (레벨 1 달성했지만 부화 진행 안함)
-    case completeInfant = "유아기완료"     // 유아기 진화 완료 (부화 완료)
-    case toChild = "소아기진화중"          // 소아기로 진화 중
-    case completeChild = "소아기완료"      // 소아기 진화 완료
-    case toAdolescent = "청년기진화중"     // 청년기로 진화 중
-    case completeAdolescent = "청년기완료" // 청년기 진화 완료
-    case toAdult = "성년기진화중"          // 성년기로 진화 중
-    case completeAdult = "성년기완료"      // 성년기 진화 완료
-    case toElder = "노년기진화중"          // 노년기로 진화 중
-    case completeElder = "노년기완료"      // 노년기 진화 완료
+    case eggComplete = "eggComplete"          // 운석 단계 완료
+    case toInfant = "toInfant"         // 유아기로 진화 중 (레벨 1 달성했지만 부화 진행 안함)
+    case completeInfant = "completeInfant"     // 유아기 진화 완료 (부화 완료)
+    case toChild = "toChild"          // 소아기로 진화 중
+    case completeChild = "completeChild"      // 소아기 진화 완료
+    case toAdolescent = "toAdolescent"     // 청년기로 진화 중
+    case completeAdolescent = "completeAdolescent" // 청년기 진화 완료
+    case toAdult = "toAdult"          // 성년기로 진화 중
+    case completeAdult = "completeAdult"      // 성년기 진화 완료
+    case toElder = "toElder"          // 노년기로 진화 중
+    case completeElder = "completeElder"      // 노년기 진화 완료
     
     // 진화가 필요한 상태인지 확인
     var needsEvolution: Bool {

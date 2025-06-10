@@ -51,7 +51,6 @@ struct HomeView: View {
                         
                         // 상태 바 섹션
                         statsSection
-#if DEBUG
                         // 캐릭터 상태 메시지
                         VStack(spacing: 5) {
                             // 상태 메시지
@@ -72,7 +71,6 @@ struct HomeView: View {
                                     .padding(.vertical, 5)
                             }
                         }
-#endif
                         
                         Spacer()
                         
@@ -85,12 +83,12 @@ struct HomeView: View {
             .scrollContentBackground(.hidden) // 기본 배경 숨기기
             .background(
                 // 배경 이미지 설정
-                Image("forest1")
+                Image("roomBasic1Big")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(height: 200)
                     .scaleEffect(1.1) // 줌인 줌아웃
-                    .offset(x: -10, y: -145) // 위치 조정
+                    .offset(x: -10, y: -35) // 위치 조정
 
                     // .clipped() // 넘치는 부분 잘라내기
                     //.ignoresSafeArea(.all)
@@ -224,6 +222,7 @@ struct HomeView: View {
         if message.contains("배고파") || message.contains("아파") || message.contains("지쳐") {
             return .red
         } else if message.contains("피곤") || message.contains("더러워") || message.contains("외로워") {
+         
             return .orange
         } else if message.contains("행복") || message.contains("좋은") || message.contains("감사") {
             return .green
@@ -279,14 +278,18 @@ struct HomeView: View {
             Spacer()
             
             // 캐릭터 이미지
-            ScreenView(
-                character: viewModel.character,
-                isSleeping: viewModel.isSleeping,
-                onCreateCharacterTapped: {
-                    // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
-                    isShowingOnboarding = true
-                }
-            )
+            VStack {
+                Spacer()
+                
+                ScreenView(
+                    character: viewModel.character,
+                    isSleeping: viewModel.isSleeping,
+                    onCreateCharacterTapped: {
+                        // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
+                        isShowingOnboarding = true
+                    }
+                )
+            }
             
             Spacer()
             
