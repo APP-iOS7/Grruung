@@ -158,12 +158,11 @@ struct SpecialEventView: View {
     
     /// 이벤트 카드 뷰 (이전 구현 유지)
     private var eventCardView: some View {
-        // 기존 코드 유지...
         ZStack {
             // 이벤트 이미지
             if let event = getCurrentEvent() {
-                // 실제 이미지가 없으므로 임시로 시스템 이미지 표시
                 ZStack {
+                    // 이미지 배경
                     RoundedRectangle(cornerRadius: 20)
                         .fill(
                             LinearGradient(
@@ -173,12 +172,16 @@ struct SpecialEventView: View {
                             )
                         )
                         .frame(width: 280, height: 200)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 3)
                     
-                    Image(systemName: event.icon)
+                    // 이벤트 ID에 따라 실제 이미지 표시
+                    // 실제 앱 출시 시에는 이미지 직접 그리던가 사진찍어서 해야합니다!!
+                    // 저작권에 걸립니다. (pixabay에서 구해온 이미지 입니다.)
+                    getEventImage(for: event)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: 80, height: 80)
-                        .foregroundColor(GRColor.fontMainColor)
+                        .scaledToFill()
+                        .frame(width: 260, height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
                     
                     // 잠금 상태 표시
                     if !event.unlocked {
@@ -190,7 +193,7 @@ struct SpecialEventView: View {
                                 .frame(width: 50, height: 50)
                                 .foregroundColor(.white)
                         }
-                        .cornerRadius(20)
+                        .cornerRadius(15)
                     }
                 }
             }
@@ -204,8 +207,8 @@ struct SpecialEventView: View {
                 }) {
                     Image(systemName: "chevron.left.circle.fill")
                         .font(.largeTitle)
-                        .foregroundColor(GRColor.fontMainColor)
-                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2)
                 }
                 .padding(.leading, 20)
                 
@@ -218,8 +221,8 @@ struct SpecialEventView: View {
                 }) {
                     Image(systemName: "chevron.right.circle.fill")
                         .font(.largeTitle)
-                        .foregroundColor(GRColor.fontMainColor)
-                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 2)
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2)
                 }
                 .padding(.trailing, 20)
             }
@@ -314,5 +317,24 @@ struct SpecialEventView: View {
         }
         
         return result
+    }
+    
+    // 이벤트에 맞는 이미지 반환
+    private func getEventImage(for event: SpecialEvent) -> Image {
+        switch event.id {
+        case "hot_spring":
+            return Image("spevent_onsen")
+        case "camping":
+            return Image("spevent_camp")
+        case "beach":
+            return Image("spevent_beach")
+        case "amusement_park":
+            return Image("spevent_amuspark")
+        case "mountain_hiking":
+            return Image("spevent_mountain")
+        default:
+            // 기본 이미지가 없는 경우 시스템 아이콘 사용
+            return Image(systemName: event.icon)
+        }
     }
 }

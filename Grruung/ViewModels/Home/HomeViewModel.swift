@@ -378,7 +378,7 @@ class HomeViewModel: ObservableObject {
         sideButtons = [
             ("backpack.fill", true, "인벤토리"),
             ("cart.fill", true, "상점"),
-            ("fireworks", true, "특수 이벤트"),
+            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
             ("book.fill", false, "일기"),
             ("microphone.fill", false, "채팅"),
             ("lock.fill", true, "잠금")

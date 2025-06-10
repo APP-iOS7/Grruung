@@ -360,27 +360,41 @@ struct HomeView: View {
                     }
                 }) {
                     ZStack {
+                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(action.unlocked ? 0.25 : 0.15))
                             .frame(width: 75, height: 75)
-                            .foregroundColor(action.unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                         
                         if !action.unlocked {
                             Image(systemName: "lock.fill")
-                                .foregroundColor(.gray)
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                         } else {
                             VStack(spacing: 5) {
+                                // 아이콘 크기 증가 및 그림자 추가
                                 Image(systemName: action.icon)
-                                    .font(.system(size: 24))
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? .gray : .primary)
+                                    .font(.system(size: 28))
+                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ?
+                                        .gray : GRColor.buttonColor_2)
+                                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                                 
+                                // 텍스트에 그림자 추가
                                 Text(action.name)
-                                    .font(.caption2)
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ? Color.gray : Color.primary)
+                                    .font(.caption)
+                                    .bold()
+                                    .foregroundColor(.white)
+                                    .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                             }
+                            .padding(8)
                         }
                     }
+                    // 버튼에 테두리 추가
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
                 }
-                // 애니메이션 실행 중이거나, 잠자는 상태에서 재우기/깨우기 버튼이 아닌 경우 버튼 비활성화
                 .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
             }
         }
@@ -393,56 +407,108 @@ struct HomeView: View {
             // 잠긴 버튼
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.15))
                     .frame(width: 60, height: 60)
-                    .foregroundColor(Color.gray.opacity(0.6))
+                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                 
                 Image(systemName: "lock.fill")
                     .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            )
         } else {
             if systemName == "cart.fill" {
                 NavigationLink(destination: StoreView()) {
                     ZStack {
+                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.25))
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.6))
-                        Image(systemName: systemName)
-                            .font(.system(size: 24))
-                            .foregroundColor(.black) // 회색에서 검은색으로 변경
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        VStack(spacing: 3) {
+                            // 아이콘 크기 증가 및 그림자 추가
+                            Image(systemName: systemName)
+                                .font(.system(size: 28))
+                                .foregroundColor(GRColor.buttonColor_2)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            // 텍스트 추가
+                            Text(name)
+                                .font(.system(size: 9))
+                                .bold()
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
                     }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
                 }
             } else if systemName == "backpack.fill" {
                 NavigationLink(destination: UserInventoryView()) {
                     ZStack {
+                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.25))
                             .frame(width: 60, height: 60)
-                            .foregroundColor(Color.gray.opacity(0.2))
-                        Image(systemName: systemName)
-                            .font(.system(size: 24))
-                            .foregroundColor(.black) // 회색에서 검은색으로 변경
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        VStack(spacing: 3) {
+                            // 아이콘 크기 증가 및 그림자 추가
+                            Image(systemName: systemName)
+                                .font(.system(size: 28))
+                                .foregroundColor(GRColor.buttonColor_2)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            // 텍스트 추가
+                            Text(name)
+                                .font(.system(size: 9))
+                                .bold()
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
                     }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
                 }
             } else {
                 Button(action: {
-                       handleButtonAction(systemName: systemName)
-                   }) {
-                       ZStack {
-                           Circle()
-                               .frame(width: 55, height: 55)
-                               .foregroundColor(unlocked ? Color.gray.opacity(0.1) : Color.gray.opacity(0.05))
-                           
-                           if !unlocked {
-                               Image(systemName: "lock.fill")
-                                   .foregroundColor(.gray)
-                           } else {
-                               Image(systemName: systemName)
-                                   .font(.system(size: 24))
-                                   .foregroundColor(viewModel.isSleeping ? .gray : .primary)
-                           }
-                       }
-                   }
-                   // 애니메이션 실행 중이거나 잠자는 상태일 때 버튼 비활성화
-                   .disabled(viewModel.isAnimationRunning || viewModel.isSleeping)
+                    handleButtonAction(systemName: systemName)
+                }) {
+                    ZStack {
+                        // 배경 블러 효과와 불투명도 증가
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(0.25))
+                            .frame(width: 60, height: 60)
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        VStack(spacing: 3) {
+                            // 아이콘 크기 증가 및 그림자 추가
+                            Image(systemName: systemName)
+                                .font(.system(size: 28))
+                                .foregroundColor(GRColor.buttonColor_2)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            // 텍스트 추가
+                            Text(name)
+                                .font(.system(size: 9))
+                                .bold()
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
+                    }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                }
             }
         }
     }
@@ -453,15 +519,14 @@ struct HomeView: View {
             return
         }
         
-        // 기존 handleSideButtonAction 메서드 내용...
         switch systemName {
         case "backpack.fill": // 인벤토리
             showInventory.toggle()
         case "cart.fill": // 상점
             // NavigationLink는 이미 처리됨
             break
-        case "fireworks": // 특수 이벤트
-            withAnimation { // 애니메이션 추가
+        case "fireworks": // 특수 이벤트 (아이콘 변경)
+            withAnimation {
                 showSpecialEvent = true
             }
         case "book.fill": // 일기
