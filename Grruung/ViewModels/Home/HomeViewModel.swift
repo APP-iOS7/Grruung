@@ -116,8 +116,8 @@ class HomeViewModel: ObservableObject {
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
-        ("cart.fill", false, "상점"),
-        ("mountain.2.fill", true, "동산"),
+        ("cart.fill", true, "상점"),
+        ("fireworks", true, "특수 이벤트"),
         ("book.fill", true, "일기"),
         ("microphone.fill", true, "채팅"),
         ("lock.fill", true, "잠금")
@@ -378,7 +378,7 @@ class HomeViewModel: ObservableObject {
         sideButtons = [
             ("backpack.fill", true, "인벤토리"),
             ("cart.fill", true, "상점"),
-            ("mountain.2.fill", true, "동산"),
+            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
             ("book.fill", false, "일기"),
             ("microphone.fill", false, "채팅"),
             ("lock.fill", true, "잠금")
@@ -1754,5 +1754,72 @@ class HomeViewModel: ObservableObject {
         }
     }
     
-    
+    // MARK: 특수 이벤트 관련
+    public func participateInSpecialEvent(
+        eventId: String,
+        name: String,
+        activityCost: Int,
+        effects: [String: Int],
+        expGain: Int,
+        successMessage: String,
+        failMessage: String
+    ) -> Bool {
+        // 활동력 확인
+        if activityValue < activityCost {
+            statusMessage = failMessage
+            return false
+        }
+        
+        // 이벤트 효과 적용
+        var statChanges: [String: Int] = [:]
+        
+        // 활동력 소모
+        let oldActivity = activityValue
+        activityValue = max(0, activityValue - activityCost)
+        statChanges["activity"] = activityValue - oldActivity
+        
+        // 이벤트 효과 적용
+        for (statName, value) in effects {
+            switch statName {
+            case "satiety":
+                let oldValue = satietyValue
+                satietyValue = max(0, min(100, satietyValue + value))
+                statChanges["satiety"] = satietyValue - oldValue
+            case "stamina":
+                let oldValue = staminaValue
+                staminaValue = max(0, min(100, staminaValue + value))
+                statChanges["stamina"] = staminaValue - oldValue
+            case "happiness", "affection":
+                let oldValue = weeklyAffectionValue
+                weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(value)))
+                statChanges["affection"] = weeklyAffectionValue - oldValue
+            case "clean":
+                let oldValue = cleanValue
+                cleanValue = max(0, min(100, cleanValue + value))
+                statChanges["clean"] = cleanValue - oldValue
+            case "healthy":
+                let oldValue = healthyValue
+                healthyValue = max(0, min(100, healthyValue + value))
+                statChanges["healthy"] = healthyValue - oldValue
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득
+        addExp(expGain)
+        
+        // 성공 메시지 표시
+        statusMessage = successMessage
+        
+        // UI 업데이트
+        updateAllPercents()
+        updateCharacterStatus()
+        updateLastActivityDate()
+        
+        // Firebase에 스탯 변화 기록
+        recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
+        
+        return true
+    }
 }
