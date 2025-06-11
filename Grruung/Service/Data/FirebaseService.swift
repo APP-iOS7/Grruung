@@ -1323,4 +1323,55 @@ class FirebaseService: ObservableObject {
         
         print("✅ 메인 캐릭터 데이터 프리페치 완료")
     }
+    
+    func addExpAndGold(characterID: String, exp: Int, gold: Int) async throws {
+        guard let userID = getCurrentUserID() else {
+            throw NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."])
+        }
+        
+        // 사용자 문서 참조
+        let userRef = db.collection("users").document(userID)
+        
+        // 캐릭터 문서 참조
+        let characterRef = userRef.collection("characters").document(characterID)
+        
+        // 1. 사용자 골드 업데이트
+        let userDoc = try await userRef.getDocument()
+        if let userData = userDoc.data() {
+            let currentGold = userData["gold"] as? Int ?? 0
+            try await userRef.updateData(["gold": currentGold + gold])
+        }
+        
+        // 2. 캐릭터 경험치 업데이트 및 레벨업 처리
+        let characterDoc = try await characterRef.getDocument()
+        if let characterData = characterDoc.data(),
+           var statusData = characterData["status"] as? [String: Any] {
+            
+            // 현재 값 가져오기
+            var level = statusData["level"] as? Int ?? 1
+            var currentExp = statusData["exp"] as? Int ?? 0
+            var expToNextLevel = statusData["expToNextLevel"] as? Int ?? 100
+            
+            // 경험치 추가
+            currentExp += exp
+            
+            // 레벨업 체크
+            if currentExp >= expToNextLevel {
+                level += 1
+                currentExp -= expToNextLevel
+                expToNextLevel = level * 100 // 간단한 레벨업 계산식
+            }
+            
+            // 상태 객체 업데이트
+            statusData["level"] = level
+            statusData["exp"] = currentExp
+            statusData["expToNextLevel"] = expToNextLevel
+            
+            // 전체 status 객체를 한 번에 업데이트
+            try await characterRef.updateData(["status": statusData])
+            
+            print("💰 보상 획득: 경험치 \(exp), 골드 \(gold)")
+        }
+    }
+
 }
