@@ -67,7 +67,12 @@ class HomeViewModel: ObservableObject {
     @Published var isDataReady: Bool = false
     @Published var userViewModel = UserViewModel()
     @Published var isAnimationRunning: Bool = false
-
+    
+    // 건강/청결 상태 표시 관련 변수
+    @Published var showHealthStatus: Bool = false
+    @Published var showCleanStatus: Bool = false
+    @Published var isHealthActionInProgress: Bool = false
+    @Published var isCleanActionInProgress: Bool = false
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -1473,71 +1478,63 @@ class HomeViewModel: ObservableObject {
         switch icon {
             // 운석 전용 액션들 (phaseExclusive = true)
         case "hand.tap.fill":
-            return "tap_egg"
+            return "tap_egg"               // 알 두드리기 - 경험치 적게 증가
         case "flame.fill":
-            return "warm_egg"
+            return "warm_egg"              // 알 데우기 - 경험치 중간 증가
         case "bubble.left.fill":
-            return "talk_egg"
-            
+            return "talk_egg"              // 알에게 말하기 - 경험치 소량 증가
+                
             // 기본 액션들 (유아기 이상)
         case "fork.knife":
-            return "feed"
+            return "feed"                  // 밥 주기 - 포만감 증가
         case "gamecontroller.fill":
-            return "play"
+            return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
         case "shower.fill":
-            return "wash"
+            return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
         case "bed.double":
-            return "sleep"
-            
+            return "sleep"                 // 재우기/깨우기 - 활동량 회복
+                
         case "drop.circle.fill":
-            return "milk_feeding"
-            
-            // 건강 관리 액션들
-        case "pills.fill":
-            return "give_medicine"
-        case "capsule.fill":
-            return "vitamins"
-        case "stethoscope":
-            return "check_health"
-            
+            return "milk_feeding"          // 우유 먹이기 - 포만감 소량 증가 (유아기)
+                
             // 기타 관련 액션들
         case "sun.max.fill":
-            return "weather_sunny"
+            return "weather_sunny"         // 햇빛 쬐기 - 건강 소량 증가
         case "figure.walk":
-            return "walk_together"
+            return "walk_together"         // 산책하기 - 체력 감소, 건강 증가
         case "figure.seated.side":
-            return "rest_together"
-            
+            return "rest_together"         // 함께 쉬기 - 활동량 회복, 애정도 증가
+                
             // 장소 관련 액션들
         case "house.fill":
-            return "go_home"
+            return "go_home"               // 집으로 이동 - 위치 변경
         case "tree.fill":
-            return "go_outside"
-            
+            return "go_outside"            // 외출하기 - 위치 변경
+                
             // 감정 관리 액션들
         case "hand.raised.fill":
-            return "comfort"
+            return "comfort"               // 안아주기 - 애정도 증가
         case "hands.clap.fill":
-            return "encourage"
-            
+            return "encourage"             // 칭찬하기 - 애정도 중간 증가
+                
             // 청결 관리 액션들
         case "comb.fill":
-            return "brush_fur"
-        case "sparkles":
-            return "full_grooming"
-            
-            // 특별 액션들
-        case "figure.strengthtraining.traditional":
-            return "special_training"
-        case "party.popper.fill":
-            return "party"
-        case "drop.fill":
-            return "hot_spring"
-            
+            return "brush_fur"             // 빗질하기 - 청결도 소량 증가 (기본 빗질)
+        
+            // 추가 액션들
+        case "figure.mixed.cardio":
+            return "stretch_exercise"      // 스트레칭 - 건강 증가, 체력 회복
+        case "command":
+            return "teach_trick"           // 재주 가르치기 - 애정도 증가, 경험치 획득
+        case "hand.point.up.fill":
+            return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
+        case "hand.point.right.fill":
+            return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
+                
         default:
-#if DEBUG
+    #if DEBUG
             print("❓ 알 수 없는 액션 아이콘: \(icon)")
-#endif
+    #endif
             return nil
         }
     }
@@ -1890,5 +1887,104 @@ class HomeViewModel: ObservableObject {
         }
         
         return nil
+    }
+    
+    // 골드 차감
+    func spendGold(amount: Int, completion: @escaping (Bool) -> Void) {
+        guard let userId = firebaseService.getCurrentUserID() else {
+            statusMessage = "사용자 정보를 찾을 수 없습니다."
+            completion(false)
+            return
+        }
+        
+        // 더미 ID 처리
+        let realUserId = userId.isEmpty ? "23456" : userId
+        
+        // 현재 골드 확인
+        Task {
+            do {
+                // 사용자 정보 가져오기
+                try await userViewModel.fetchUser(userId: realUserId)
+                
+                guard let currentUser = userViewModel.user else {
+                    statusMessage = "사용자 정보를 찾을 수 없습니다."
+                    completion(false)
+                    return
+                }
+                
+                // 골드가 충분한지 확인
+                if currentUser.gold < amount {
+                    // 골드 부족
+                    await MainActor.run {
+                        statusMessage = "골드가 부족합니다 (보유: \(currentUser.gold), 필요: \(amount))"
+                        completion(false)
+                    }
+                    return
+                }
+                
+                // 골드 차감
+                let newGoldAmount = currentUser.gold - amount
+                
+                // Firebase에 업데이트
+                userViewModel.updateCurrency(userId: currentUser.id, gold: newGoldAmount)
+                
+                // 성공 메시지 표시
+                await MainActor.run {
+                    goldMessage = "💰 \(amount) 골드를 사용했습니다."
+                    
+                    // 일정 시간 후 메시지 초기화
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                        self?.goldMessage = ""
+                    }
+                    
+                    completion(true)
+                }
+            } catch {
+                await MainActor.run {
+                    statusMessage = "골드 차감 중 오류가 발생했습니다."
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    // 건강 상태 표시 함수
+    func showHealthStatusFor(minutes: Int) {
+        showHealthStatus = true
+        
+        // 타이머를 사용하여 지정된 시간 후 상태 숨기기
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(minutes * 60)) { [weak self] in
+            self?.showHealthStatus = false
+        }
+    }
+
+    // 청결 상태 표시 함수
+    func showCleanStatusFor(minutes: Int) {
+        showCleanStatus = true
+        
+        // 타이머를 사용하여 지정된 시간 후 상태 숨기기
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(minutes * 60)) { [weak self] in
+            self?.showCleanStatus = false
+        }
+    }
+    
+    // 건강 액션 시작 및 종료
+    func startHealthAction(duration: Double = 1.5) {
+        isHealthActionInProgress = true
+        
+        // 지정된 시간 후 액션 종료
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isHealthActionInProgress = false
+        }
+    }
+
+    // 청결 액션 시작 및 종료
+    func startCleanAction(duration: Double = 1.5) {
+        isCleanActionInProgress = true
+        
+        // 지정된 시간 후 액션 종료
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isCleanActionInProgress = false
+        }
     }
 }

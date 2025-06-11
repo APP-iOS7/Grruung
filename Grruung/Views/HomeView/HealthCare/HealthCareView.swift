@@ -13,8 +13,6 @@ struct HealthCareView: View {
     @Binding var isPresented: Bool
     
     @State private var selectedTab = 0
-    @State private var showHealthStatus = false // 건강 상태 표시 여부
-    @State private var showCleanStatus = false // 청결 상태 표시 여부
     
     // MARK: - Body
     var body: some View {
@@ -90,7 +88,7 @@ struct HealthCareView: View {
         ScrollView {
             VStack(spacing: 20) {
                 // 현재 건강 상태 표시 (체크 시에만 표시)
-                if showHealthStatus {
+                if viewModel.showHealthStatus {
                     statusCard(
                         title: "현재 건강 상태",
                         value: viewModel.healthyValue,
@@ -217,7 +215,7 @@ struct HealthCareView: View {
         ScrollView {
             VStack(spacing: 20) {
                 // 현재 청결 상태 표시 (체크 시에만 표시)
-                if showCleanStatus {
+                if viewModel.showCleanStatus {
                     statusCard(
                         title: "현재 청결 상태",
                         value: viewModel.cleanValue,
@@ -225,7 +223,7 @@ struct HealthCareView: View {
                         icon: "shower.fill",
                         color: GRColor.grColorOcean
                     )
-                } else {
+                }  else {
                     cleanStatusHiddenView
                 }
                 
@@ -396,14 +394,7 @@ struct HealthCareView: View {
             Text(getStatusMessage(value: value, isHealth: icon == "heart.fill"))
                 .font(.subheadline)
                 .foregroundColor(Color.black.opacity(0.8))
-                
-            // 남은 시간 표시
-            HStack {
-                Spacer()
-                Text("남은 시간: 5분")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
+
         }
         .padding()
         .background(GRColor.mainColor1_1)
@@ -453,6 +444,11 @@ struct HealthCareView: View {
                     .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
             )
         }
+        .disabled(icon.contains("heart") ? viewModel.isHealthActionInProgress : viewModel.isCleanActionInProgress)
+        .opacity(
+            (icon.contains("heart") ? viewModel.isHealthActionInProgress : viewModel.isCleanActionInProgress)
+            ? 0.6 : 1.0
+        )
     }
     
     // 팁 카드
@@ -522,6 +518,11 @@ struct HealthCareView: View {
     
     // 건강 관련 액션 처리
     private func performHealthAction(_ actionId: String) {
+        // 액션 진행 중이면 실행 방지
+        guard !viewModel.isHealthActionInProgress else {
+            return
+        }
+        
         var healthValue = 0
         var goldCost = 0
         
@@ -529,16 +530,6 @@ struct HealthCareView: View {
         case "checkup":
             healthValue = 0 // 체크만 하고 회복은 없음
             goldCost = 100
-            // 체크 시 5분 동안 상태 표시
-            withAnimation {
-                showHealthStatus = true
-            }
-            // 5분 후 상태 숨기기
-            DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
-                withAnimation {
-                    showHealthStatus = false
-                }
-            }
         case "vitamin":
             healthValue = 10
             goldCost = 200
@@ -552,37 +543,39 @@ struct HealthCareView: View {
             return
         }
         
-        // TODO: 골드 차감 로직 추가
-        // 실제 액션 수행
-        if actionId == "checkup" {
-            // 건강 체크만 수행 (상태 메시지만 업데이트)
-            viewModel.statusMessage = "건강 상태 확인 결과: \(viewModel.healthyValue)/100"
-        } else {
-            // 회복 액션 수행
-            if let character = viewModel.character {
-                // 캐릭터 상태 업데이트
-                viewModel.updateCharacterHealthStatus(healthValue: healthValue)
-                viewModel.statusMessage = "건강 상태가 회복되었습니다!"
-                
-                // 건강 회복 시 상태 표시
-                withAnimation {
-                    showHealthStatus = true
-                }
-                
-                // 5분 후 상태 숨기기
-                DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
-                    withAnimation {
-                        showHealthStatus = false
-                    }
-                }
-            }
-        }
+        // 액션 시작 (쿨타임 적용)
+        viewModel.startHealthAction()
         
-        // 액션 수행 후 닫기
-        if actionId != "checkup" {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation {
-                    isPresented = false
+        // 골드 차감 로직 적용 (비동기)
+        viewModel.spendGold(amount: goldCost) { success in
+            if !success {
+                // 골드 차감 실패 시 종료
+                return
+            }
+            
+            // 골드 차감 성공 시 액션 수행
+            if actionId == "checkup" {
+                // 건강 체크만 수행
+                self.viewModel.statusMessage = "건강 상태 확인 결과: \(self.viewModel.healthyValue)/100"
+                
+                // 건강 상태 5분 동안 표시
+                self.viewModel.showHealthStatusFor(minutes: 5)
+            } else {
+                // 회복 액션 수행
+                if self.viewModel.character != nil {
+                    // 캐릭터 상태 업데이트
+                    self.viewModel.updateCharacterHealthStatus(healthValue: healthValue)
+                    self.viewModel.statusMessage = "건강 상태가 회복되었습니다!"
+                    
+                    // 건강 상태 5분 동안 표시
+                    self.viewModel.showHealthStatusFor(minutes: 5)
+                    
+                    // 회복 액션 후 팝업 닫기 (약간의 딜레이 적용)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        withAnimation {
+                            self.isPresented = false
+                        }
+                    }
                 }
             }
         }
@@ -590,6 +583,11 @@ struct HealthCareView: View {
     
     // 청결 관련 액션 처리
     private func performCleanAction(_ actionId: String) {
+        // 액션 진행 중이면 실행 방지
+        guard !viewModel.isCleanActionInProgress else {
+            return
+        }
+        
         var cleanValue = 0
         var goldCost = 0
         
@@ -597,16 +595,6 @@ struct HealthCareView: View {
         case "check":
             cleanValue = 0 // 체크만 하고 회복은 없음
             goldCost = 100
-            // 체크 시 5분 동안 상태 표시
-            withAnimation {
-                showCleanStatus = true
-            }
-            // 5분 후 상태 숨기기
-            DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
-                withAnimation {
-                    showCleanStatus = false
-                }
-            }
         case "brush":
             cleanValue = 15
             goldCost = 200
@@ -620,36 +608,39 @@ struct HealthCareView: View {
             return
         }
         
-        // TODO: 골드 차감 로직 추가
-        // 실제 액션 수행
-        if actionId == "check" {
-            // 청결 체크만 수행 (상태 메시지만 업데이트)
-            viewModel.statusMessage = "청결 상태 확인 결과: \(viewModel.cleanValue)/100"
-        } else {
-            if let character = viewModel.character {
-                // 캐릭터 상태 업데이트
-                viewModel.updateCharacterCleanStatus(cleanValue: cleanValue)
-                viewModel.statusMessage = "청결 상태가 개선되었습니다!"
-                
-                // 청결 회복 시 상태 표시
-                withAnimation {
-                    showCleanStatus = true
-                }
-                
-                // 5분 후 상태 숨기기
-                DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
-                    withAnimation {
-                        showCleanStatus = false
-                    }
-                }
-            }
-        }
+        // 액션 시작 (쿨타임 적용)
+        viewModel.startCleanAction()
         
-        // 액션 수행 후 닫기
-        if actionId != "check" {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation {
-                    isPresented = false
+        // 골드 차감 로직 적용 (비동기)
+        viewModel.spendGold(amount: goldCost) { success in
+            if !success {
+                // 골드 차감 실패 시 종료
+                return
+            }
+            
+            // 골드 차감 성공 시 액션 수행
+            if actionId == "check" {
+                // 청결 체크만 수행
+                self.viewModel.statusMessage = "청결 상태 확인 결과: \(self.viewModel.cleanValue)/100"
+                
+                // 청결 상태 5분 동안 표시
+                self.viewModel.showCleanStatusFor(minutes: 5)
+            } else {
+                // 회복 액션 수행
+                if self.viewModel.character != nil {
+                    // 캐릭터 상태 업데이트
+                    self.viewModel.updateCharacterCleanStatus(cleanValue: cleanValue)
+                    self.viewModel.statusMessage = "청결 상태가 개선되었습니다!"
+                    
+                    // 청결 상태 5분 동안 표시
+                    self.viewModel.showCleanStatusFor(minutes: 5)
+                    
+                    // 회복 액션 후 팝업 닫기 (약간의 딜레이 적용)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        withAnimation {
+                            self.isPresented = false
+                        }
+                    }
                 }
             }
         }
