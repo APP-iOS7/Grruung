@@ -21,18 +21,14 @@ struct EvolutionView: View {
     // 진화 상태 관리
     @State private var evolutionStep: EvolutionStep = .preparing
     @State private var statusMessage: String = ""
+    @State private var targetPhase: CharacterPhase = .infant // 진화 목표 단계
     
     // 컨트롤러 연결
     @StateObject private var quokkaController = QuokkaController()
     
     // 진화 단계 열거형
     enum EvolutionStep {
-        case preparing      // 준비 중
-        case downloading    // 다운로드 중
-        case hatching      // 부화 중 (메타데이터 저장)
-        case updating       // 업데이트 중
-        case completed     // 완료
-        case unavailable   // 지원하지 않는 캐릭터
+        case preparing, downloading, updating, completed, unavailable
     }
     
     // 초기화에서 업데이트 모드 파라미터 추가
@@ -78,7 +74,7 @@ struct EvolutionView: View {
             }
             .navigationTitle(isUpdateMode ? "업데이트" : "진화")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(evolutionStep == .downloading || evolutionStep == .hatching || evolutionStep == .updating) // 진행 상태에서 뒤로 가기 막기
+            .navigationBarBackButtonHidden(evolutionStep == .downloading || evolutionStep == .updating) // 진행 상태에서 뒤로 가기 막기
         }
     }
     
@@ -106,10 +102,7 @@ struct EvolutionView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.red)
                 } else {
-                    // 진행 중에는 알 이미지 표시
-                    Image(systemName: "oval.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.brown)
+                    Image(systemName: "sparkles").font(.system(size: 60)).foregroundColor(.yellow)
                 }
             }
         }
@@ -117,18 +110,14 @@ struct EvolutionView: View {
     
     private var progressSection: some View {
         VStack(spacing: 15) {
-            if evolutionStep == .downloading || evolutionStep == .hatching || evolutionStep == .updating {
+            if evolutionStep == .downloading || evolutionStep == .updating {
                 // 진행률 바 (QuokkaController에서 진행률 가져오기)
                 ProgressView(value: quokkaController.downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
-                    .frame(height: 10)
-                    .scaleEffect(x: 1, y: 2, anchor: .center)
                 
                 // 퍼센트 표시
                 Text("\(Int(quokkaController.downloadProgress * 100))%")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.blue)
+                    .font(.caption).fontWeight(.medium).foregroundColor(.blue)
             }
         }
     }
@@ -137,99 +126,82 @@ struct EvolutionView: View {
         Group {
             switch evolutionStep {
             case .preparing:
-                Button(isUpdateMode ? "업데이트 시작" : "부화 시작") {
-                    startEvolution()
-                }
-                .buttonStyle(.borderedProminent)
-                
-            case .downloading, .hatching, .updating:
-                // 진행 중에는 버튼 비활성화
-                Button("진행 중...") { }
-                    .disabled(true)
-                    .buttonStyle(.bordered)
-                
+                Button(isUpdateMode ? "업데이트 시작" : "진화 시작") { startProcess() }
+                    .buttonStyle(.borderedProminent)
+            case .downloading, .updating:
+                Button("진행 중...") { }.disabled(true).buttonStyle(.bordered)
             case .completed:
-                Button("완료") {
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                
+                Button("완료") { dismiss() }.buttonStyle(.borderedProminent)
             case .unavailable:
-                Button("확인") {
-                    dismiss()
-                }
-                .buttonStyle(.bordered)
+                Button("확인") { dismiss() }.buttonStyle(.bordered)
             }
-        }
-        .font(.body)
-        .padding(.horizontal, 40)
+        }.font(.body).padding(.horizontal, 40)
     }
     
     // MARK: - 헬퍼 메서드들
     
     private func getScreenTitle() -> String {
+        if isUpdateMode { return "데이터 업데이트" }
+        
         switch evolutionStep {
-        case .preparing:
-            return isUpdateMode ? "업데이트 준비" : "부화 준비"
-        case .downloading, .hatching, .updating:
-            return isUpdateMode ? "업데이트 중" : "부화 중"
-        case .completed:
-            return isUpdateMode ? "업데이트 완료!" : "부화 완료!"
-        case .unavailable:
-            return "지원 예정"
+        case .preparing: return "진화 준비"
+        case .downloading: return "진화 중"
+        case .completed: return "진화 완료!"
+        default: return "진화"
         }
     }
     
     private func setupInitialState() {
-        // 캐릭터 종류에 따른 초기 상태 설정
-        if character.species == .quokka {
-            evolutionStep = .preparing
-            
-            if isUpdateMode {
-                statusMessage = "새로운 애니메이션 데이터를 다운로드할 준비가 되었습니다!"
-            } else {
-                statusMessage = "쿼카로 부화할 준비가 되었습니다!"
-            }
-        } else {
+        guard character.species == .quokka else {
             evolutionStep = .unavailable
-            statusMessage = "이 캐릭터는 아직 부화를 진행할 수 없습니다.\n(업데이트 예정)"
+            statusMessage = "이 캐릭터는 아직 진화를 지원하지 않습니다."
+            return
+        }
+        evolutionStep = .preparing
+        
+        if isUpdateMode {
+            targetPhase = character.status.phase
+            statusMessage = "새로운 애니메이션 데이터를 다운로드할 준비가 되었습니다."
+        } else {
+            // 진화 상태에 따라 목표 단계와 메시지 설정
+            switch character.status.evolutionStatus {
+            case .toInfant:
+                targetPhase = .infant
+                statusMessage = "알이 부화할 준비가 되었습니다!"
+            case .toChild:
+                targetPhase = .child
+                statusMessage = "더 큰 모습으로 성장할 준비가 되었습니다!"
+            case .toAdolescent:
+                targetPhase = .adolescent
+                statusMessage = "더 성숙한 모습으로 성장할 준비가 되었습니다!"
+            default:
+                evolutionStep = .unavailable
+                statusMessage = "현재는 진화할 수 없습니다."
+            }
         }
     }
     
-    private func startEvolution() {
+    private func startProcess() {
         guard character.species == .quokka else { return }
         
-        // 1단계: 다운로드 시작
-        if isUpdateMode {
-            evolutionStep = .updating
-            statusMessage = "업데이트 시작!"
-        } else {
-            evolutionStep = .downloading
-            statusMessage = "부화 시작!"
-        }
+        evolutionStep = isUpdateMode ? .updating : .downloading
+        statusMessage = isUpdateMode ? "업데이트 시작!" : "진화 시작!"
         
-        // 2단계: 다운로드 실행
         Task {
-            await quokkaController.downloadInfantData()
+            await quokkaController.downloadData(for: targetPhase)
             
-            // 다운로드 완료 후 처리
             await MainActor.run {
                 evolutionStep = .completed
-                
                 if isUpdateMode {
                     statusMessage = "업데이트 완료!"
-                    // 업데이트 완료 처리 추가
                     homeViewModel.completeAnimationUpdate()
                 } else {
-                    statusMessage = "부화 완료!"
-                    
-                    // HomeViewModel에 진화 완료 알림
-                    homeViewModel.completeEvolution(to: .infant)
+                    statusMessage = "진화 완료!"
+                    homeViewModel.completeEvolution(to: targetPhase)
                 }
             }
         }
     }
-    
 }
 
 // MARK: - 프리뷰

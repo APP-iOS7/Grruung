@@ -76,19 +76,10 @@ struct HomeView: View {
                                 }
                             }
                             
+                            Spacer()
+                            
                             // 메인 캐릭터 섹션
                             characterSection
-                            
-                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                            if let character = viewModel.character,
-                               character.status.evolutionStatus.needsEvolution {
-                                evolutionButton
-                            }
-                            
-                            // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
-                            if viewModel.needsAnimationUpdate {
-                                updateButton
-                            }
                             
                             // 액션 버튼 그리드
                             actionButtonsGrid
@@ -96,7 +87,7 @@ struct HomeView: View {
                             // 상태 바 섹션
                             statsSection
                             
-                            Spacer()
+
                             Spacer()
                             
                             // 커스텀 탭바를 위한 여백
@@ -367,6 +358,21 @@ struct HomeView: View {
                         let button = viewModel.sideButtons[index]
                         iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
                     }
+                }
+            }
+            
+            VStack {
+                Spacer()
+                
+                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                if let character = viewModel.character,
+                   character.status.evolutionStatus.needsEvolution {
+                    evolutionButton
+                }
+                
+                // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
+                if viewModel.needsAnimationUpdate {
+                    updateButton
                 }
             }
         }

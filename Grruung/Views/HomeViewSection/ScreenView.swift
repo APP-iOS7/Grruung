@@ -60,9 +60,7 @@ struct ScreenView: View {
             // 뷰가 사라질 때 애니메이션 정리
             cleanupControllers()
         }
-        .onChange(of: character?.status.evolutionStatus) { oldValue, newValue in
-            print("🔄 진화 상태 변경: \(oldValue?.rawValue ?? "nil") → \(newValue?.rawValue ?? "nil")")
-            // 진화 상태가 변경되면 애니메이션 다시 설정
+        .onChange(of: character?.id) { _, _ in
             setupControllers()
             startAppropriateAnimation()
         }
@@ -227,31 +225,10 @@ struct ScreenView: View {
         quokkaController.setModelContext(modelContext)
         
         // 캐릭터가 있고 egg가 아닌 경우 애니메이션 프레임 로드
-        if let character = character, character.status.phase != .egg {
-            //loadCharacterAnimationFrames(character: character)
+        if let character = character, !shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
             quokkaController.loadFirstFrame(phase: character.status.phase, animationType: "normal")
         }
     }
-    
-//    // 캐릭터 애니메이션 프레임 로드
-//    private func loadCharacterAnimationFrames(character: GRCharacter) {
-//        switch character.species {
-//        case .quokka:
-//            // 쿼카의 경우 현재 단계의 normal 애니메이션 로드
-//            quokkaController.loadAllAnimationFrames(
-//                phase: character.status.phase,
-//                animationType: "normal"
-//            )
-//            print("🐨 쿼카 \(character.status.phase.rawValue) 애니메이션 프레임 로드")
-//            
-//        case .CatLion:
-//            // CatLion은 아직 구현되지 않음
-//            print("🦁 CatLion 애니메이션은 아직 지원되지 않습니다")
-//            
-//        case .Undefined:
-//            print("❓ 정의되지 않은 캐릭터 종류")
-//        }
-//    }
     
     // 적절한 애니메이션 시작
     private func startAppropriateAnimation() {
@@ -269,40 +246,39 @@ struct ScreenView: View {
         } else if character.species == .quokka {
             // isSleeping 상태를 확인하여 초기 애니메이션 결정
             handleSleepStateChange(isSleeping: self.isSleeping)
-//            // 다른 단계 - QuokkaController 핑퐁 애니메이션 시작
-//            if character.species == .quokka {
-//                quokkaController.startPingPongAnimation()
-//                print("쿼카 핑퐁 애니메이션 시작")
-//            }
         }
     }
     
     // isSleeping 상태 변화에 따른 애니메이션 처리
     private func handleSleepStateChange(isSleeping: Bool) {
-        guard let character = character, character.species == .quokka, character.status.phase == .infant else {
-            // quokka, infant 단계가 아닐 경우 기본 normal 애니메이션 처리
-            if let char = character, char.species == .quokka {
-                 quokkaController.playAnimation(type: "normal", phase: char.status.phase, mode: .pingPong)
-            }
-            return
-        }
+        guard let character = character, character.species == .quokka else { return }
         
-        if isSleeping {
-            // 재우기: sleep1Start (once) -> sleep2Pingpong (pingPong)
-            print("😴 재우기 애니메이션 시퀀스 시작")
-            quokkaController.playAnimation(type: "sleep1Start", phase: .infant, mode: .once) {
-                // sleep1Start가 끝나면 실행됨
-                print(" transitioning to sleep2Pingpong")
-                quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
+        let currentPhase = character.status.phase
+        
+        // 현재는 infant 단계만 특별한 수면/기상 애니메이션을 가짐
+        if currentPhase == .infant {
+            if isSleeping {
+                // 재우기: sleep1Start (once) -> sleep2Pingpong (pingPong)
+                print("😴 재우기 애니메이션 시퀀스 시작")
+                quokkaController.playAnimation(type: "sleep1Start", phase: .infant, mode: .once) {
+                    // sleep1Start가 끝나면 실행됨
+                    print(" transitioning to sleep2Pingpong")
+                    quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
+                }
+            } else {
+                // 깨우기: sleep4WakeUp (once) -> normal (pingPong)
+                print("☀️ 깨우기 애니메이션 시퀀스 시작")
+                quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once) {
+                    // sleep4WakeUp이 끝나면 실행
+                    print(" --> normal 애니메이션으로 전환")
+                    self.quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
+                }
             }
         } else {
-            // 깨우기: sleep4WakeUp (once) -> normal (pingPong)
-            print("☀️ 깨우기 애니메이션 시퀀스 시작")
-            quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once) {
-                // sleep4WakeUp이 끝나면 실행
-                print(" --> normal 애니메이션으로 전환")
-                self.quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
-            }
+            // 일단 child 단계 이상에서는 isSleeping 상태와 관계없이 항상 normal 애니메이션 재생
+            // 추후 애니메이션이 추가되는대로 업데이트 예정
+             print("▶️ \(currentPhase.rawValue) 단계의 normal 애니메이션 재생")
+             quokkaController.playAnimation(type: "normal", phase: currentPhase, mode: .pingPong)
         }
     }
     
@@ -326,15 +302,17 @@ struct ScreenView: View {
     private func handleTap() {
         guard let character = character else { return }
         
-        if character.status.phase == .egg {
+        if shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
             // 운석 단계 - EggController 토글
-            eggController.toggleAnimation()
+            eggController.isAnimating ? eggController.stopAnimation() : eggController.startAnimation()
             print("운석 애니메이션 토글: \(eggController.isAnimating ? "재생" : "정지")")
-        } else {
-            // 다른 단계 - QuokkaController 토글
-            if character.species == .quokka {
-                quokkaController.toggleAnimation()
-                print("쿼카 애니메이션 토글: \(quokkaController.isAnimating ? "재생" : "정지")")
+        } else if character.species == .quokka {
+            if quokkaController.isAnimating {
+                quokkaController.stopAnimation()
+                print("⏹️ 탭으로 애니메이션 정지")
+            } else {
+                print("▶️ 탭으로 애니메이션 재시작")
+                startAppropriateAnimation()
             }
         }
     }
@@ -345,7 +323,7 @@ struct ScreenView: View {
         switch evolutionStatus {
         case .eggComplete, .toInfant:
             return true  // 운석 애니메이션 계속 표시
-        case .completeInfant, .toChild, .completeChild, .toAdolescent, .completeAdolescent, .toAdult, .completeAdult, .toElder, .completeElder:
+        default:
             return false // 진화 완료된 애니메이션 표시
         }
     }
