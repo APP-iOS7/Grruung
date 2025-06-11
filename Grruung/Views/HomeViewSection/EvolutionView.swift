@@ -188,7 +188,10 @@ struct EvolutionView: View {
         statusMessage = isUpdateMode ? "업데이트 시작!" : "진화 시작!"
         
         Task {
-            await quokkaController.downloadData(for: targetPhase)
+            await quokkaController.downloadData(
+                for: targetPhase,
+                evolutionStatus: character.status.evolutionStatus
+            )
             
             await MainActor.run {
                 evolutionStep = .completed

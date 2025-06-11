@@ -60,7 +60,8 @@ struct ScreenView: View {
             // 뷰가 사라질 때 애니메이션 정리
             cleanupControllers()
         }
-        .onChange(of: character?.id) { _, _ in
+        .onChange(of: character?.status.evolutionStatus) { _, _ in
+            print("🔄 진화 상태 변경 감지! -> 뷰를 새로고침하고 애니메이션을 다시 시작합니다.")
             setupControllers()
             startAppropriateAnimation()
         }

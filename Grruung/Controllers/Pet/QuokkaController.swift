@@ -52,7 +52,9 @@ class QuokkaController: ObservableObject {
             "sleep4WakeUp": 173
         ],
         .child: [
-            "normal": 182
+            "normal": 182,
+            "sleeping": 1,  // 임시 값
+            "eating": 1,     // 임시 값
         ],
         // .adolescent, .adult, .elder 등 다른 단계도 이곳에 추가 가능
         .adolescent: [
@@ -291,11 +293,11 @@ class QuokkaController: ObservableObject {
     
     // MARK: - 데이터 완전성 확인
     /// [HomeViewModel] checkAnimationDataCompleteness 메서드에 사용
-    func isPhaseDataComplete(phase: CharacterPhase) -> Bool {
+    func isPhaseDataComplete(phase: CharacterPhase, evolutionStatus: EvolutionStatus) -> Bool {
         guard phase != .egg else { return true }
         
         // 진화 상태에 따라 필요한 애니메이션 타입 결정
-        let requiredAnimationTypes = getAnimationTypesForPhase(phase)
+        let requiredAnimationTypes = getRequiredAnimationTypes(phase: phase, evolutionStatus: evolutionStatus)
         
         // 각 애니메이션 타입의 완전성 확인
         for animationType in requiredAnimationTypes {
@@ -305,7 +307,7 @@ class QuokkaController: ObservableObject {
             }
         }
         
-        print("✅ \(phase.rawValue) 단계 모든 데이터 다운로드 완료")
+        print("✅ \(phase.rawValue) 단계 모든 데이터 다운로드 완료 (상태: \(evolutionStatus.rawValue))")
         return true
     }
     
@@ -390,7 +392,7 @@ class QuokkaController: ObservableObject {
 // MARK: - 다운로드 기능
 extension QuokkaController {
     // MARK: - 데이터 다운로드 (일반화된 버전)
-    func downloadData(for phase: CharacterPhase) async {
+    func downloadData(for phase: CharacterPhase, evolutionStatus: EvolutionStatus) async {
         guard phase != .egg, let context = modelContext, let phaseAnimations = frameCountMap[phase] else {
             await updateDownloadState(message: "다운로드할 데이터가 없거나, 컨텍스트가 설정되지 않았습니다.")
             return
@@ -398,7 +400,7 @@ extension QuokkaController {
         
         let phaseString = phase.toEnglishString()
         
-        if isPhaseDataComplete(phase: phase) {
+        if isPhaseDataComplete(phase: phase, evolutionStatus: evolutionStatus) {
             await updateDownloadState(progress: 1.0, message: "이미 모든 데이터가 존재합니다.")
             print("✅ \(phaseString) 데이터는 이미 완전합니다. 다운로드를 건너뜁니다.")
             return
@@ -414,17 +416,11 @@ extension QuokkaController {
         
         await withTaskGroup(of: Bool.self) { taskGroup in
             var completedFrames = 0
-            
             for (animationType, frameCount) in phaseAnimations {
                 for frameIndex in 1...frameCount {
                     taskGroup.addTask { [weak self] in
                         guard let self = self else { return false }
-                        return await self.downloadSingleFrame(
-                            phase: phase,
-                            animationType: animationType,
-                            frameIndex: frameIndex,
-                            context: context
-                        )
+                        return await self.downloadSingleFrame(phase: phase, animationType: animationType, frameIndex: frameIndex, context: context)
                     }
                 }
             }

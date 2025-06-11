@@ -2028,7 +2028,8 @@ class HomeViewModel: ObservableObject {
         // QuokkaController를 통해 데이터 완전성 확인
         print("🔍 QuokkaController로 데이터 완전성 확인 중...")
         let isComplete = controller.isPhaseDataComplete(
-            phase: character.status.phase
+            phase: character.status.phase,
+            evolutionStatus: character.status.evolutionStatus
         )
         
         print("🔍 데이터 완전성 확인 결과: \(isComplete ? "완료" : "미완료")")
