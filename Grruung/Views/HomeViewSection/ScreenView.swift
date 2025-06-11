@@ -107,7 +107,7 @@ struct ScreenView: View {
                  .resizable()
                  .aspectRatio(contentMode: .fit)
                  .frame(height: 90) // 받침대 크기 조절
-                 .offset(x: 0, y: 67) // 운석 아래쪽에 위치하도록 조정
+                 .offset(x: 0, y: 45) // 운석 아래쪽에 위치하도록 조정
              
              // 운석
              if let currentFrame = eggController.currentFrame {
@@ -115,12 +115,14 @@ struct ScreenView: View {
                      .resizable()
                      .aspectRatio(contentMode: .fit)
                      .frame(height: 180) // 배경보다 작게
+                     .offset(x: 0, y: -40)
              } else {
                  // EggController가 로드되지 않았을 때 기본 이미지
                  Image("egg_normal_1")
                      .resizable()
                      .aspectRatio(contentMode: .fit)
                      .frame(height: 180)
+                     .offset(x: 0, y: -40)
              }
          }
      }
