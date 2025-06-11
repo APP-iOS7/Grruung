@@ -24,7 +24,8 @@ struct HomeView: View {
     @State private var isShowingOnboarding = false
     @State private var showUpdateAlert = false // 업데이트 예정 알림창 표시 여부
     @State private var showSpecialEvent = false // 특수 이벤트 표시 여부
-    
+    @State private var showHealthCare = false // 건강관리 화면 표시 여부
+
     // MARK: - Body
     var body: some View {
             NavigationStack {
@@ -176,6 +177,14 @@ struct HomeView: View {
                     .transition(.opacity)
                     .animation(.easeInOut(duration: 0.3), value: showSpecialEvent)
             }
+            
+            // 헬스케어
+            if showHealthCare {
+                    HealthCareView(
+                        viewModel: viewModel,
+                        isPresented: $showHealthCare
+                    )
+                }
         }
     }
     
@@ -522,9 +531,13 @@ struct HomeView: View {
         switch systemName {
         case "backpack.fill": // 인벤토리
             showInventory.toggle()
-        case "cart.fill": // 상점
-            // NavigationLink는 이미 처리됨
-            break
+        case "heart.text.square.fill": // 헬스케ㅇ
+            if let character = viewModel.character {
+                showHealthCare = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
         case "fireworks": // 특수 이벤트 (아이콘 변경)
             withAnimation {
                 showSpecialEvent = true
@@ -558,9 +571,13 @@ struct HomeView: View {
         switch systemName {
         case "backpack.fill": // 인벤토리
             showInventory.toggle()
-        case "cart.fill": // 상점
-            // NavigationLink는 이미 처리됨
-            break
+        case "heart.text.square.fill": // 헬스케어
+            if let character = viewModel.character {
+                showHealthCare = true
+            } else {
+                // 캐릭터가 없는 경우 경고 표시
+                viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
+            }
         case "fireworks": // 동산
             showSpecialEvent.toggle() // 특수 이벤트 표시
         case "book.fill": // 일기
