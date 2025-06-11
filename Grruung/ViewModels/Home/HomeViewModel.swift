@@ -9,9 +9,13 @@ import Foundation
 import SwiftUI
 import Combine
 import FirebaseFirestore
+import SwiftData 
 
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
+    // 컨트롤러
+    private var quokkaController: QuokkaController?
+    
     // 캐릭터 관련
     @Published var character: GRCharacter?
     @Published var statusMessage: String = "안녕하세요!" // 상태 메시지
@@ -52,6 +56,10 @@ class HomeViewModel: ObservableObject {
     private var hiddenStatDecreaseTimer: Timer? // 히든 스탯 감소용
     private var weeklyAffectionTimer: Timer?    // 주간 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
+    
+    // 애니메이션 업데이트 관련
+    @Published var needsAnimationUpdate: Bool = false // 애니메이션 업데이트 필요 여부
+    @Published var showUpdateScreen: Bool = false // 애니메이션 업데이트 화면 여부
     
     // Firebase 연동 상태
     @Published var isFirebaseConnected: Bool = false
@@ -394,7 +402,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // 기본 캐릭터를 생성하고 Firebase에 저장
-    private func createAndSaveDefaultCharacter() {
+    @MainActor private func createAndSaveDefaultCharacter() {
         print("🆕 기본 캐릭터 생성 중...")
         
         let status = GRCharacterStatus(
@@ -446,6 +454,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
+    @MainActor
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
         self.isUpdatingFromFirebase = true
         
@@ -472,6 +481,9 @@ class HomeViewModel: ObservableObject {
         
         isFirebaseConnected = true
         self.isUpdatingFromFirebase = false
+        
+        print("🔍 setupCharacterFromFirebase 완료 - 애니메이션 확인 시작")
+        checkAnimationDataCompleteness() // 애니메이션 데이터 완전성 확인
         
 #if DEBUG
         print("📊 Firebase 캐릭터 동기화 완료")
@@ -1586,6 +1598,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    @MainActor
     func loadCharacter() {
         // Firebase에서 로드하도록 변경
         if firebaseService.getCurrentUserID() != nil {
@@ -1987,4 +2000,69 @@ class HomeViewModel: ObservableObject {
             self?.isCleanActionInProgress = false
         }
     }
+    
+    // MARK: - 애니메이션 업데이트 확인
+    // 현재 캐릭터의 애니메이션 데이터가 완전한지 확인
+    @MainActor
+    private func checkAnimationDataCompleteness() {
+        guard let character = character else {
+            print("🔍 캐릭터 없음 - 업데이트 확인 생략")
+            return
+        }
+        
+        // quokkaController가 없으면 생략
+        guard let controller = quokkaController else {
+            print("🔍 QuokkaController가 아직 초기화되지 않음")
+            return
+        }
+        
+        print("🔍 애니메이션 데이터 완전성 확인 시작: \(character.status.phase.rawValue)")
+        
+        // egg 단계는 Bundle에 있으므로 확인 불필요
+        if character.status.phase == .egg {
+            print("🔍 egg 단계 - 업데이트 확인 불필요")
+            needsAnimationUpdate = false
+            return
+        }
+        
+        // QuokkaController를 통해 데이터 완전성 확인
+        print("🔍 QuokkaController로 데이터 완전성 확인 중...")
+        let isComplete = controller.isPhaseDataComplete(
+            phase: character.status.phase,
+            evolutionStatus: character.status.evolutionStatus
+        )
+        
+        print("🔍 데이터 완전성 확인 결과: \(isComplete ? "완료" : "미완료")")
+        
+        needsAnimationUpdate = !isComplete
+        
+        if needsAnimationUpdate {
+            print("📥 애니메이션 데이터 업데이트 필요: \(character.status.phase.rawValue)")
+            showUpdateScreen = true
+        } else {
+            print("✅ 애니메이션 데이터 업데이트 불필요")
+            showUpdateScreen = false
+        }
+    }
+    
+    // ModelContext를 QuokkaController에 전달하는 메서드
+    @MainActor
+    func setModelContext(_ context: ModelContext) {
+        // QuokkaController 초기화
+        if quokkaController == nil {
+            quokkaController = QuokkaController()
+        }
+        
+        quokkaController?.setModelContext(context)
+        print("✅ HomeViewModel: ModelContext 설정 완료")
+    }
+    
+    // 업데이트 완료 처리 메서드
+    @MainActor
+    func completeAnimationUpdate() {
+        needsAnimationUpdate = false
+        showUpdateScreen = false
+        print("✅ 애니메이션 업데이트 완료")
+    }
+    
 }
