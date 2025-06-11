@@ -116,7 +116,7 @@ class HomeViewModel: ObservableObject {
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
         ("backpack.fill", true, "인벤토리"),
-        ("cart.fill", true, "상점"),
+        ("heart.text.square.fill", true, "건강관리"),
         ("fireworks", true, "특수 이벤트"),
         ("book.fill", true, "일기"),
         ("microphone.fill", true, "채팅"),
@@ -377,7 +377,7 @@ class HomeViewModel: ObservableObject {
         // 사이드 버튼 비활성화
         sideButtons = [
             ("backpack.fill", true, "인벤토리"),
-            ("cart.fill", true, "상점"),
+            ("heart.text.square.fill", true, "건강관리"),
             ("fireworks", true, "특수 이벤트"), // 아이콘 변경
             ("book.fill", false, "일기"),
             ("microphone.fill", false, "채팅"),
@@ -1821,5 +1821,74 @@ class HomeViewModel: ObservableObject {
         recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
         
         return true
+    }
+    
+    // MARK: - 헬스케어 관련
+    
+    // 건강 상태 업데이트
+    func updateCharacterHealthStatus(healthValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 건강 상태 업데이트
+        let oldValue = character.status.healthy
+        let newValue = min(100, oldValue + healthValue)
+        character.updateStatus(healthy: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.healthyValue = character.status.healthy
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["healthy": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "health_care")
+        
+    #if DEBUG
+        print("💊 건강 상태 업데이트: \(oldValue) → \(newValue)")
+    #endif
+    }
+
+    // 청결 상태 업데이트
+    func updateCharacterCleanStatus(cleanValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 청결 상태 업데이트
+        let oldValue = character.status.clean
+        let newValue = min(100, oldValue + cleanValue)
+        character.updateStatus(clean: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.cleanValue = character.status.clean
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["clean": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "clean_care")
+        
+    #if DEBUG
+        print("🧼 청결 상태 업데이트: \(oldValue) → \(newValue)")
+    #endif
+    }
+
+    // 건강/청결 상태 체크 및 알림 메시지 업데이트
+    func checkHealthAndCleanStatus() -> String? {
+        guard let character = self.character else { return nil }
+        
+        // 건강 상태가 30 미만인 경우
+        if character.status.healthy < 30 {
+            return "펫이 아파 보입니다. 건강 관리가 필요해요!"
+        }
+        
+        // 청결 상태가 30 미만인 경우
+        if character.status.clean < 30 {
+            return "펫이 지저분해 보입니다. 청결 관리가 필요해요!"
+        }
+        
+        return nil
     }
 }
