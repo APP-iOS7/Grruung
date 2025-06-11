@@ -55,21 +55,6 @@ struct HomeView: View {
                             // 레벨 프로그레스 바
                             levelProgressBar
                             
-                            // 메인 캐릭터 섹션
-                            characterSection
-                            
-                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                            if let character = viewModel.character,
-                               character.status.evolutionStatus.needsEvolution {
-                                evolutionButton
-                            }
-                            
-                            // 액션 버튼 그리드
-                            actionButtonsGrid
-                            
-                            // 상태 바 섹션
-                            statsSection
-                            
                             // 캐릭터 상태 메시지
                             VStack(spacing: 5) {
                                 // 상태 메시지
@@ -90,6 +75,26 @@ struct HomeView: View {
                                         .padding(.vertical, 5)
                                 }
                             }
+                            
+                            // 메인 캐릭터 섹션
+                            characterSection
+                            
+                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                            if let character = viewModel.character,
+                               character.status.evolutionStatus.needsEvolution {
+                                evolutionButton
+                            }
+                            
+                            // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
+                            if viewModel.needsAnimationUpdate {
+                                updateButton
+                            }
+                            
+                            // 액션 버튼 그리드
+                            actionButtonsGrid
+                            
+                            // 상태 바 섹션
+                            statsSection
                             
                             Spacer()
                             Spacer()
