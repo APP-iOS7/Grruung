@@ -34,6 +34,7 @@ struct HealthCareView: View {
                     Text("건강 & 청결 관리")
                         .font(.headline)
                         .bold()
+                        .foregroundColor(.black)
                     
                     Spacer()
                     
@@ -43,7 +44,7 @@ struct HealthCareView: View {
                         }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
+                            .foregroundColor(GRColor.mainColor6_2)
                     }
                 }
                 .padding(.horizontal)
@@ -58,6 +59,7 @@ struct HealthCareView: View {
                 .padding(.top, 10)
                 
                 Divider()
+                    .background(GRColor.mainColor8_2.opacity(0.2))
                     .padding(.vertical, 5)
                 
                 // 탭 콘텐츠
@@ -70,9 +72,13 @@ struct HealthCareView: View {
                 Spacer(minLength: 20)
             }
             .frame(width: UIScreen.main.bounds.width * 0.85, height: UIScreen.main.bounds.height * 0.7)
-            .background(Color.white)
+            .background(GRColor.mainColor2_1)
             .cornerRadius(20)
-            .shadow(radius: 20)
+            .shadow(color: GRColor.mainColor8_2.opacity(0.3), radius: 15, x: 0, y: 5)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1)
+            )
         }
         .transition(.opacity)
     }
@@ -87,13 +93,14 @@ struct HealthCareView: View {
                     value: viewModel.healthyValue,
                     maxValue: 100,
                     icon: "heart.fill",
-                    color: .red
+                    color: GRColor.grColorRed
                 )
                 
                 // 건강 관리 액션 버튼들
                 VStack(alignment: .leading, spacing: 10) {
                     Text("건강 관리 액션")
                         .font(.headline)
+                        .foregroundColor(.black)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -137,7 +144,8 @@ struct HealthCareView: View {
                 // 건강 관련 팁
                 tipCard(
                     tip: "펫의 건강 상태가 30 미만으로 떨어지면 활동량 회복이 느려집니다.",
-                    icon: "exclamationmark.triangle.fill"
+                    icon: "exclamationmark.triangle.fill",
+                    isWarning: true
                 )
             }
             .padding(.horizontal)
@@ -155,13 +163,14 @@ struct HealthCareView: View {
                     value: viewModel.cleanValue,
                     maxValue: 100,
                     icon: "shower.fill",
-                    color: .blue
+                    color: GRColor.grColorOcean
                 )
                 
                 // 청결 관리 액션 버튼들
                 VStack(alignment: .leading, spacing: 10) {
                     Text("청결 관리 액션")
                         .font(.headline)
+                        .foregroundColor(.black)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -205,7 +214,14 @@ struct HealthCareView: View {
                 // 청결 관련 팁
                 tipCard(
                     tip: "펫의 청결 상태가 20 미만으로 떨어지면 건강 상태가 서서히 감소합니다.",
-                    icon: "exclamationmark.triangle.fill"
+                    icon: "exclamationmark.triangle.fill",
+                    isWarning: true
+                )
+                
+                tipCard(
+                    tip: "정기적인 목욕과 빗질로 펫의 청결을 유지하세요.",
+                    icon: "lightbulb.fill",
+                    isWarning: false
                 )
             }
             .padding(.horizontal)
@@ -225,10 +241,10 @@ struct HealthCareView: View {
             VStack(spacing: 8) {
                 Text(title)
                     .fontWeight(selectedTab == index ? .bold : .regular)
-                    .foregroundColor(selectedTab == index ? .primary : .gray)
+                    .foregroundColor(selectedTab == index ? GRColor.mainColor6_2 : Color.black.opacity(0.6))
                 
                 Rectangle()
-                    .fill(selectedTab == index ? Color.primary : Color.clear)
+                    .fill(selectedTab == index ? GRColor.mainColor6_2 : Color.clear)
                     .frame(height: 2)
             }
         }
@@ -243,9 +259,11 @@ struct HealthCareView: View {
                     .foregroundColor(color)
                 Text(title)
                     .font(.headline)
+                    .foregroundColor(.black)
                 Spacer()
                 Text("\(value)/\(maxValue)")
                     .fontWeight(.bold)
+                    .foregroundColor(getStatusColor(value: value, maxValue: maxValue))
             }
             
             // 상태 게이지 바
@@ -253,7 +271,7 @@ struct HealthCareView: View {
                 ZStack(alignment: .leading) {
                     // 배경 바
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(GRColor.mainColor8_1.opacity(0.3))
                         .frame(height: 12)
                     
                     // 상태 바
@@ -267,11 +285,16 @@ struct HealthCareView: View {
             // 상태 메시지
             Text(getStatusMessage(value: value, isHealth: icon == "heart.fill"))
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.black.opacity(0.8))
         }
         .padding()
-        .background(Color.gray.opacity(0.1))
+        .background(GRColor.mainColor1_1)
         .cornerRadius(15)
+        .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
+        )
     }
     
     // 액션 버튼
@@ -280,51 +303,60 @@ struct HealthCareView: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundColor(.primary)
+                    .foregroundColor(GRColor.mainColor6_2)
                     .frame(width: 40, height: 40)
-                    .background(Color.white.opacity(0.8))
+                    .background(GRColor.mainColor1_1)
                     .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    .shadow(color: GRColor.mainColor8_2.opacity(0.2), radius: 2, x: 0, y: 1)
                 
                 Text(title)
                     .font(.caption)
                     .bold()
+                    .foregroundColor(.black)
                     .multilineTextAlignment(.center)
                 
                 Text(description)
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.black.opacity(0.7))
                     .multilineTextAlignment(.center)
                 
                 Text(cost)
                     .font(.caption2)
-                    .foregroundColor(.orange)
+                    .foregroundColor(GRColor.grColorOrange)
                     .fontWeight(.bold)
             }
             .frame(width: 90, height: 140)
             .padding(8)
-            .background(Color.white)
+            .background(GRColor.mainColor1_1)
             .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
+            .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
+            )
         }
     }
     
     // 팁 카드
-    private func tipCard(tip: String, icon: String) -> some View {
+    private func tipCard(tip: String, icon: String, isWarning: Bool) -> some View {
         HStack(alignment: .top, spacing: 15) {
             Image(systemName: icon)
-                .foregroundColor(icon == "exclamationmark.triangle.fill" ? .orange : .blue)
+                .foregroundColor(isWarning ? GRColor.grColorOrange : GRColor.grColorGreen)
                 .frame(width: 24, height: 24)
             
             Text(tip)
                 .font(.footnote)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.black.opacity(0.8))
             
             Spacer()
         }
         .padding()
-        .background(Color.gray.opacity(0.1))
+        .background(isWarning ? GRColor.mainColor6_1.opacity(0.2) : GRColor.mainColor7_1.opacity(0.3))
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isWarning ? GRColor.mainColor6_2.opacity(0.3) : GRColor.mainColor7_2.opacity(0.3), lineWidth: 1)
+        )
         .padding(.horizontal)
     }
     
@@ -335,11 +367,11 @@ struct HealthCareView: View {
         let percentage = Double(value) / Double(maxValue)
         
         if percentage < 0.3 {
-            return .red
+            return GRColor.grColorRed
         } else if percentage < 0.7 {
-            return .orange
+            return GRColor.grColorOrange
         } else {
-            return .green
+            return GRColor.grColorGreen
         }
     }
     
