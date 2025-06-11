@@ -29,14 +29,12 @@ struct ScreenView: View {
             Color.clear
             
             // 캐릭터 애니메이션 영역
-            // 캐릭터 상태에 따라 다른 애니메이션 표시
             if let character = character {
                 if shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
                     // 운석 단계일 때 - EggController 사용
                     eggAnimationView
                 } else {
                     // 다른 단계일 때 - QuokkaController 사용
-                    // regularCharacterView
                     quokkaAnimationView
                 }
             } else {
@@ -67,6 +65,10 @@ struct ScreenView: View {
             // 진화 상태가 변경되면 애니메이션 다시 설정
             setupControllers()
             startAppropriateAnimation()
+        }
+        .onChange(of: isSleeping) { _, isNowSleeping in
+            // 잠자기 상태가 변경될 때 애니메이션 전환
+            handleSleepStateChange(isSleeping: isNowSleeping)
         }
         .onTapGesture {
             handleTap()
@@ -123,17 +125,6 @@ struct ScreenView: View {
          }
      }
     
-    // 일반 캐릭터 뷰 (운석이 아닌 단계)
-    @ViewBuilder
-    private var regularCharacterView: some View {
-        if let character = character {
-            Image(character.imageName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 180)
-        }
-    }
-    
     // 쿼카 애니메이션 뷰
     @ViewBuilder
     private var quokkaAnimationView: some View {
@@ -143,11 +134,9 @@ struct ScreenView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 180)
         } else {
-            // QuokkaController가 로드되지 않았을 때 기본 이미지
-            Image("quokka")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 180)
+            // 컨트롤러가 로드되지 않았을 때 기본 이미지 (e.g. 첫 프레임)
+            // loadFirstFrame을 통해 초기 프레임을 설정해주는 것이 좋음
+            ProgressView()
         }
     }
     
@@ -237,46 +226,80 @@ struct ScreenView: View {
         
         // 캐릭터가 있고 egg가 아닌 경우 애니메이션 프레임 로드
         if let character = character, character.status.phase != .egg {
-            loadCharacterAnimationFrames(character: character)
+            //loadCharacterAnimationFrames(character: character)
+            quokkaController.loadFirstFrame(phase: character.status.phase, animationType: "normal")
         }
     }
     
-    // 캐릭터 애니메이션 프레임 로드
-    private func loadCharacterAnimationFrames(character: GRCharacter) {
-        switch character.species {
-        case .quokka:
-            // 쿼카의 경우 현재 단계의 normal 애니메이션 로드
-            quokkaController.loadAllAnimationFrames(
-                phase: character.status.phase,
-                animationType: "normal"
-            )
-            print("🐨 쿼카 \(character.status.phase.rawValue) 애니메이션 프레임 로드")
-            
-        case .CatLion:
-            // CatLion은 아직 구현되지 않음
-            print("🦁 CatLion 애니메이션은 아직 지원되지 않습니다")
-            
-        case .Undefined:
-            print("❓ 정의되지 않은 캐릭터 종류")
-        }
-    }
+//    // 캐릭터 애니메이션 프레임 로드
+//    private func loadCharacterAnimationFrames(character: GRCharacter) {
+//        switch character.species {
+//        case .quokka:
+//            // 쿼카의 경우 현재 단계의 normal 애니메이션 로드
+//            quokkaController.loadAllAnimationFrames(
+//                phase: character.status.phase,
+//                animationType: "normal"
+//            )
+//            print("🐨 쿼카 \(character.status.phase.rawValue) 애니메이션 프레임 로드")
+//            
+//        case .CatLion:
+//            // CatLion은 아직 구현되지 않음
+//            print("🦁 CatLion 애니메이션은 아직 지원되지 않습니다")
+//            
+//        case .Undefined:
+//            print("❓ 정의되지 않은 캐릭터 종류")
+//        }
+//    }
     
     // 적절한 애니메이션 시작
     private func startAppropriateAnimation() {
-        guard let character = character else { return }
+        guard let character = character else {
+            stopAllAnimations()
+            return
+        }
         
         // 먼저 모든 애니메이션 정지
         stopAllAnimations()
         
-        if character.status.phase == .egg {
-            // 운석 단계 - EggController 애니메이션 시작
+        if shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
             eggController.startAnimation()
             print("운석 애니메이션 시작")
+        } else if character.species == .quokka {
+            // isSleeping 상태를 확인하여 초기 애니메이션 결정
+            handleSleepStateChange(isSleeping: self.isSleeping)
+//            // 다른 단계 - QuokkaController 핑퐁 애니메이션 시작
+//            if character.species == .quokka {
+//                quokkaController.startPingPongAnimation()
+//                print("쿼카 핑퐁 애니메이션 시작")
+//            }
+        }
+    }
+    
+    // isSleeping 상태 변화에 따른 애니메이션 처리
+    private func handleSleepStateChange(isSleeping: Bool) {
+        guard let character = character, character.species == .quokka, character.status.phase == .infant else {
+            // quokka, infant 단계가 아닐 경우 기본 normal 애니메이션 처리
+            if let char = character, char.species == .quokka {
+                 quokkaController.playAnimation(type: "normal", phase: char.status.phase, mode: .pingPong)
+            }
+            return
+        }
+        
+        if isSleeping {
+            // 재우기: sleep1Start (once) -> sleep2Pingpong (pingPong)
+            print("😴 재우기 애니메이션 시퀀스 시작")
+            quokkaController.playAnimation(type: "sleep1Start", phase: .infant, mode: .once) {
+                // sleep1Start가 끝나면 실행됨
+                print(" transitioning to sleep2Pingpong")
+                quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
+            }
         } else {
-            // 다른 단계 - QuokkaController 핑퐁 애니메이션 시작
-            if character.species == .quokka {
-                quokkaController.startPingPongAnimation()
-                print("쿼카 핑퐁 애니메이션 시작")
+            // 깨우기: sleep4WakeUp (once) -> normal (pingPong)
+            print("☀️ 깨우기 애니메이션 시퀀스 시작")
+            quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once) {
+                // sleep4WakeUp이 끝나면 실행
+                print(" --> normal 애니메이션으로 전환")
+                self.quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
             }
         }
     }

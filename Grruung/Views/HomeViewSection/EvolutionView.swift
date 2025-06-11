@@ -11,6 +11,8 @@ struct EvolutionView: View {
     // 전달받은 캐릭터 정보
     let character: GRCharacter
     
+    let isUpdateMode: Bool // 업데이트 모드 여부
+    
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
@@ -28,8 +30,16 @@ struct EvolutionView: View {
         case preparing      // 준비 중
         case downloading    // 다운로드 중
         case hatching      // 부화 중 (메타데이터 저장)
+        case updating       // 업데이트 중
         case completed     // 완료
         case unavailable   // 지원하지 않는 캐릭터
+    }
+    
+    // 초기화에서 업데이트 모드 파라미터 추가
+    init(character: GRCharacter, homeViewModel: HomeViewModel, isUpdateMode: Bool = false) {
+        self.character = character
+        self.homeViewModel = homeViewModel
+        self.isUpdateMode = isUpdateMode
     }
     
     var body: some View {
@@ -66,9 +76,9 @@ struct EvolutionView: View {
                 setupInitialState()
                 quokkaController.setModelContext(modelContext) // SwiftData 컨텍스트 설정
             }
-            .navigationTitle("진화")
+            .navigationTitle(isUpdateMode ? "업데이트" : "진화")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(evolutionStep == .downloading || evolutionStep == .hatching)
+            .navigationBarBackButtonHidden(evolutionStep == .downloading || evolutionStep == .hatching || evolutionStep == .updating) // 진행 상태에서 뒤로 가기 막기
         }
     }
     
@@ -107,7 +117,7 @@ struct EvolutionView: View {
     
     private var progressSection: some View {
         VStack(spacing: 15) {
-            if evolutionStep == .downloading || evolutionStep == .hatching {
+            if evolutionStep == .downloading || evolutionStep == .hatching || evolutionStep == .updating {
                 // 진행률 바 (QuokkaController에서 진행률 가져오기)
                 ProgressView(value: quokkaController.downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
@@ -127,12 +137,12 @@ struct EvolutionView: View {
         Group {
             switch evolutionStep {
             case .preparing:
-                Button("부화 시작") {
+                Button(isUpdateMode ? "업데이트 시작" : "부화 시작") {
                     startEvolution()
                 }
                 .buttonStyle(.borderedProminent)
                 
-            case .downloading, .hatching:
+            case .downloading, .hatching, .updating:
                 // 진행 중에는 버튼 비활성화
                 Button("진행 중...") { }
                     .disabled(true)
@@ -160,11 +170,11 @@ struct EvolutionView: View {
     private func getScreenTitle() -> String {
         switch evolutionStep {
         case .preparing:
-            return "부화 준비"
-        case .downloading, .hatching:
-            return "부화 중"
+            return isUpdateMode ? "업데이트 준비" : "부화 준비"
+        case .downloading, .hatching, .updating:
+            return isUpdateMode ? "업데이트 중" : "부화 중"
         case .completed:
-            return "부화 완료!"
+            return isUpdateMode ? "업데이트 완료!" : "부화 완료!"
         case .unavailable:
             return "지원 예정"
         }
@@ -174,7 +184,12 @@ struct EvolutionView: View {
         // 캐릭터 종류에 따른 초기 상태 설정
         if character.species == .quokka {
             evolutionStep = .preparing
-            statusMessage = "쿼카로 부화할 준비가 되었습니다!"
+            
+            if isUpdateMode {
+                statusMessage = "새로운 애니메이션 데이터를 다운로드할 준비가 되었습니다!"
+            } else {
+                statusMessage = "쿼카로 부화할 준비가 되었습니다!"
+            }
         } else {
             evolutionStep = .unavailable
             statusMessage = "이 캐릭터는 아직 부화를 진행할 수 없습니다.\n(업데이트 예정)"
@@ -185,8 +200,13 @@ struct EvolutionView: View {
         guard character.species == .quokka else { return }
         
         // 1단계: 다운로드 시작
-        evolutionStep = .downloading
-        statusMessage = "부화 시작!"
+        if isUpdateMode {
+            evolutionStep = .updating
+            statusMessage = "업데이트 시작!"
+        } else {
+            evolutionStep = .downloading
+            statusMessage = "부화 시작!"
+        }
         
         // 2단계: 다운로드 실행
         Task {
@@ -195,10 +215,17 @@ struct EvolutionView: View {
             // 다운로드 완료 후 처리
             await MainActor.run {
                 evolutionStep = .completed
-                statusMessage = "부화 완료!"
                 
-                // HomeViewModel에 진화 완료 알림
-                homeViewModel.completeEvolution(to: .infant)
+                if isUpdateMode {
+                    statusMessage = "업데이트 완료!"
+                    // 업데이트 완료 처리 추가
+                    homeViewModel.completeAnimationUpdate()
+                } else {
+                    statusMessage = "부화 완료!"
+                    
+                    // HomeViewModel에 진화 완료 알림
+                    homeViewModel.completeEvolution(to: .infant)
+                }
             }
         }
     }

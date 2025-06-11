@@ -32,6 +32,11 @@ class QuokkaController: ObservableObject {
     private var modelContext: ModelContext?             // SwiftData 컨텍스트
     private let frameRate: Double = 24.0                // 초당 프레임 수
     
+    // MARK: - 애니메이션 재생 로직 관련 프로퍼티
+    enum PlayMode { case once, pingPong }
+    private var currentPlayMode: PlayMode = .pingPong
+    private var onComplete: (() -> Void)? = nil
+    
     // MARK: - 고정 설정 (quokka만 처리)
     private let characterType = "quokka"
     
@@ -39,8 +44,24 @@ class QuokkaController: ObservableObject {
     private let frameCountMap: [String: Int] = [
         "normal": 122,
         "sleeping": 1,  // 임시 값
-        "eating": 1     // 임시 값
+        "eating": 1,     // 임시 값
+        "sleep1Start": 204,
+        "sleep2Pingpong": 60,
+        "sleep3mouth": 54,
+        "sleep4WakeUp": 173
     ]
+    
+    // 단계별 애니메이션 타입 매핑
+    private func getAnimationTypesForPhase(_ phase: CharacterPhase) -> [String] {
+        switch phase {
+        case .egg:
+            return ["normal"] // egg는 Bundle에 있으니 실제로는 사용 안함
+        case .infant:
+            return ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
+        case .child, .adolescent, .adult, .elder:
+            return ["normal", "sleeping", "eating"] // 기본 애니메이션만
+        }
+    }
     
     // MARK: - SwiftData 컨텍스트 설정
     func setModelContext(_ context: ModelContext) {
@@ -81,15 +102,10 @@ class QuokkaController: ObservableObject {
         
         do {
             let results = try context.fetch(descriptor)
-            if let metadata = results.first {
-                // 파일에서 이미지 로드
-                if let image = loadImageFromPath(metadata.filePath) {
-                    currentFrame = image
-                    currentFrameIndex = frameIndex - 1 // 0부터 시작하도록
-                    print("✅ 첫 번째 프레임 로드 성공: \(metadata.filePath)")
-                } else {
-                    print("❌ 이미지 파일 로드 실패: \(metadata.filePath)")
-                }
+            if let metadata = results.first, let image = loadImageFromPath(metadata.filePath) {
+                currentFrame = image
+                currentFrameIndex = frameIndex - 1 // 0부터 시작하도록
+                print("✅ 첫 번째 프레임 로드 성공: \(metadata.filePath)")
             } else {
                 print("❌ 메타데이터를 찾을 수 없음: \(phaseString)/\(animationType)/\(frameIndex)")
             }
@@ -120,7 +136,7 @@ class QuokkaController: ObservableObject {
     }
     
     // 전체 애니메이션 프레임 로드 (노멀 상태)
-    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String = "normal") {
+    func loadAllAnimationFrames(phase: CharacterPhase, animationType: String) {
         guard let context = modelContext else {
             print("❌ SwiftData 컨텍스트가 없음")
             return
@@ -140,7 +156,7 @@ class QuokkaController: ObservableObject {
         
         do {
             let metadataList = try context.fetch(descriptor)
-            print("📥 \(metadataList.count)개 프레임 메타데이터 발견")
+            print("📥 \(metadataList.count)개 프레임 메타데이터 발견 (\(animationType))")
             
             // 프레임들을 순서대로 로드
             var loadedFrames: [UIImage] = []
@@ -153,8 +169,6 @@ class QuokkaController: ObservableObject {
             animationFrames = loadedFrames
             
             if !animationFrames.isEmpty {
-                currentFrame = animationFrames[0]
-                currentFrameIndex = 0
                 print("✅ \(animationFrames.count)개 애니메이션 프레임 로드 완료")
             }
             
@@ -220,13 +234,14 @@ class QuokkaController: ObservableObject {
     }
     
     // MARK: - 다운로드 상태 확인
+    // 다운로드 여부 확인
     func isPhaseDataDownloaded(phase: CharacterPhase) -> Bool {
         guard let context = modelContext, phase != .egg else {
             return phase == .egg // egg는 Bundle에 있으므로 항상 true
         }
         
         let phaseString = phase.toEnglishString()
-        let animationTypes = ["normal", "sleeping", "eating"]
+        let animationTypes = getAnimationTypesForPhase(phase)
         
         // 모든 애니메이션 타입이 완전히 다운로드되었는지 확인
         for animationType in animationTypes {
@@ -256,10 +271,107 @@ class QuokkaController: ObservableObject {
         return true
     }
     
+    // MARK: - 데이터 완전성 확인
+    /// [HomeViewModel] checkAnimationDataCompleteness 메서드에 사용
+    func isPhaseDataComplete(phase: CharacterPhase, evolutionStatus: EvolutionStatus) -> Bool {
+        guard let context = modelContext, phase != .egg else {
+            return phase == .egg // egg는 Bundle에 있으므로 항상 완전함
+        }
+        
+        let phaseString = phase.toEnglishString()
+        
+        // 진화 상태에 따라 필요한 애니메이션 타입 결정
+        let requiredAnimationTypes = getRequiredAnimationTypes(
+            phase: phase,
+            evolutionStatus: evolutionStatus
+        )
+        
+        // 각 애니메이션 타입의 완전성 확인
+        for animationType in requiredAnimationTypes {
+            if !isAnimationTypeComplete(
+                phase: phaseString,
+                animationType: animationType
+            ) {
+                print("❌ 미완료 애니메이션: \(animationType)")
+                return false
+            }
+        }
+        
+        print("✅ 모든 애니메이션 데이터 완료: \(phaseString)")
+        return true
+    }
+    
+    // 진화 상태에 따른 필요 애니메이션 타입 반환
+    /// [QuokkaController] isPhaseDataComplete 메서드에 사용
+    private func getRequiredAnimationTypes(
+        phase: CharacterPhase,
+        evolutionStatus: EvolutionStatus
+    ) -> [String] {
+        // 기본 애니메이션들
+        var required = ["normal", "sleeping", "eating"]
+        
+        // infant 단계에서 수면 애니메이션 추가
+        if phase == .infant {
+            required.append(contentsOf: [
+                "sleep1Start",
+                "sleep2Pingpong",
+                "sleep3mouth",
+                "sleep4WakeUp"
+            ])
+        }
+        
+        return required
+    }
+    
+    // 특정 애니메이션 타입의 완전성 확인
+    /// [QuokkaController] isPhaseDataComplete 메서드에 사용
+    private func isAnimationTypeComplete(
+        phase: String,
+        animationType: String
+    ) -> Bool {
+        guard let context = modelContext else { return false }
+        
+        let expectedFrameCount = frameCountMap[animationType] ?? 0
+        
+        let descriptor = FetchDescriptor<GRAnimationMetadata>(
+            predicate: #Predicate { metadata in
+                metadata.characterType == "quokka" &&
+                metadata.phase == phase &&
+                metadata.animationType == animationType
+            }
+        )
+        
+        do {
+            let results = try context.fetch(descriptor)
+            return results.count >= expectedFrameCount
+        } catch {
+            print("❌ 완전성 확인 실패: \(error)")
+            return false
+        }
+    }
+    
+    // 메타데이터에 해당하는 실제 파일들이 존재하는지 확인
+    private func checkIfFilesExist(_ metadataList: [GRAnimationMetadata]) -> Bool {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // 처음 10개 파일만 샘플 체크 (성능상 이유)
+        let sampleMetadata = Array(metadataList.prefix(10))
+        
+        for metadata in sampleMetadata {
+            let fileURL = documentsDirectory.appendingPathComponent(metadata.filePath)
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                print("❌ 샘플 파일 없음: \(metadata.filePath)")
+                return false
+            }
+        }
+        
+        print("✅ 샘플 파일들 존재 확인됨")
+        return true
+    }
+    
     // MARK: - 정리 함수
     func cleanup() {
         stopAnimation()
-        isAnimating = false
         animationFrames.removeAll()
         currentFrame = nil
         print("🧹 QuokkaController 정리 완료")
@@ -279,60 +391,88 @@ extension QuokkaController {
         
         let characterType = "quokka"
         let phase = CharacterPhase.infant
-        let animationType = "normal"
-        let expectedFrameCount = 122 // 예상 프레임 수
+        let phaseString = "infant"
+        let animationTypes = ["normal", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
         
         do {
-            // 기존 메타데이터 확인 및 검증
-            let phaseString = BundleAnimationLoader.phaseToString(phase)
-            let predicate = #Predicate<GRAnimationMetadata> { metadata in
-                metadata.characterType == characterType &&
-                metadata.phase == phaseString &&
-                metadata.animationType == animationType
-            }
-            let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
-            let existingMetadata = try context.fetch(fetchDescriptor)
-
-            // 메타데이터 검증 및 정리
-            if !existingMetadata.isEmpty {
-                let frameCount = existingMetadata.count
-                print("기존 메타데이터 발견: \(frameCount)개 프레임")
+            // 모든 애니메이션 타입에 대해 확인
+            var needsDownload = false
+            var totalExpectedFrames = 0
+            var existingFrameCount = 0
+            
+            // 기존 메타데이터 확인 및 검증 (각 애니메이션 타입별로 확인)
+            for animationType in animationTypes {
+                let expectedFrameCount = frameCountMap[animationType] ?? 0
+                totalExpectedFrames += expectedFrameCount
                 
-                // 예상 프레임 수와 다르면 기존 메타데이터 삭제
-                if frameCount != expectedFrameCount {
-                    print("⚠️ 프레임 수 불일치 (예상: \(expectedFrameCount), 실제: \(frameCount)) - 메타데이터 정리")
-                    
-                    await MainActor.run {
-                        downloadMessage = "기존 데이터 정리 중..."
-                        downloadProgress = 0.1
-                    }
-                    
-                    // 기존 메타데이터 삭제
-                    for metadata in existingMetadata {
-                        context.delete(metadata)
-                    }
-                    try context.save()
-                    
-                    print("🗑️ 잘못된 메타데이터 \(frameCount)개 삭제 완료")
-                } else {
-                    // 올바른 메타데이터가 이미 있음
-                    print("✅ 올바른 메타데이터가 이미 존재함 - 다운로드 생략")
-                    
-                    await MainActor.run {
-                        downloadMessage = "이미 다운로드됨 - 로드 중..."
-                        downloadProgress = 0.8
-                    }
-                    
-                    // 기존 프레임 로드 (개선된 버전)
-                    await loadExistingFramesFromMetadata(existingMetadata)
-                    
-                    await MainActor.run {
-                        downloadProgress = 1.0
-                        downloadMessage = "로드 완료!"
-                    }
-                    return
+                let phaseString = BundleAnimationLoader.phaseToString(phase)
+                let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString &&
+                    metadata.animationType == animationType
+                }
+                let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+                let existingMetadata = try context.fetch(fetchDescriptor)
+                
+                let actualCount = existingMetadata.count
+                existingFrameCount += actualCount
+                
+                print("📊 \(animationType): \(actualCount)/\(expectedFrameCount)개 프레임")
+                
+                // 프레임 수가 다르거나 파일이 없으면 다운로드 필요
+                if actualCount != expectedFrameCount {
+                    needsDownload = true
+                    print("❌ \(animationType) 프레임 수 불일치")
+                } else if !checkIfFilesExist(existingMetadata) {
+                    needsDownload = true
+                    print("❌ \(animationType) 파일 없음")
                 }
             }
+            
+            // 다운로드가 필요하지 않으면 기존 데이터 로드
+            if !needsDownload {
+                print("✅ 모든 애니메이션 데이터 완료 - 로드만 진행")
+                
+                await MainActor.run {
+                    downloadMessage = "이미 다운로드됨 - 로드 중..."
+                    downloadProgress = 0.8
+                }
+                
+                // normal 애니메이션 로드
+                let normalPredicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString && 
+                    metadata.animationType == "normal"
+                }
+                let normalDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: normalPredicate)
+                let normalMetadata = try context.fetch(normalDescriptor)
+                
+                await loadExistingFramesFromMetadata(normalMetadata)
+                
+                await MainActor.run {
+                    downloadProgress = 1.0
+                    downloadMessage = "로드 완료!"
+                }
+                return
+            }
+
+            // 다운로드가 필요하면 기존 메타데이터 모두 삭제
+            print("🗑️ 불완전한 데이터 정리 중...")
+            for animationType in animationTypes {
+                let phaseString = BundleAnimationLoader.phaseToString(phase)
+                let predicate = #Predicate<GRAnimationMetadata> { metadata in
+                    metadata.characterType == characterType &&
+                    metadata.phase == phaseString &&
+                    metadata.animationType == animationType
+                }
+                let fetchDescriptor = FetchDescriptor<GRAnimationMetadata>(predicate: predicate)
+                let existingMetadata = try context.fetch(fetchDescriptor)
+                
+                for metadata in existingMetadata {
+                    context.delete(metadata)
+                }
+            }
+            try context.save()
             
             
             // 다운로드 시작
@@ -340,7 +480,7 @@ extension QuokkaController {
                 updateDownloadState(isDownloading: true, progress: 0.0, message: "부화에 필요한 데이터를 받아오는 중...")
             }
             
-            let animationTypes = ["normal", "sleeping", "eating"]
+            let animationTypes = ["normal", "sleeping", "eating", "sleep1Start", "sleep2Pingpong", "sleep3mouth", "sleep4WakeUp"]
             var totalFramesToDownload = 0
             
             // 총 프레임 수 계산
@@ -500,6 +640,113 @@ extension QuokkaController {
     
     
     // MARK: - 애니메이션 재생
+    
+    /// 애니메이션을 재생하는 메인 함수
+    /// - Parameters:
+    ///   - type: 재생할 애니메이션 종류 (e.g., "normal", "sleep1Start")
+    ///   - phase: 캐릭터 성장 단계
+    ///   - mode: 재생 방식 (.once 또는 .pingPong)
+    ///   - completion: .once 모드에서 재생이 끝났을 때 호출될 클로저
+    func playAnimation(type: String, phase: CharacterPhase, mode: PlayMode, completion: (() -> Void)? = nil) {
+        print("🎬 요청: \(type), 모드: \(mode)")
+        stopAnimation() // 기존 애니메이션 중지
+        
+        self.currentPlayMode = mode
+        self.onComplete = completion
+        
+        // 프레임 로드
+        loadAllAnimationFrames(phase: phase, animationType: type)
+        
+        // 프레임이 있으면 애니메이션 시작
+        if !animationFrames.isEmpty {
+            currentFrameIndex = 0
+            isReversing = false
+            currentFrame = animationFrames[currentFrameIndex]
+            startAnimationTimer()
+        } else {
+            print("⚠️ \(type) 애니메이션 프레임이 없어 재생할 수 없습니다.")
+        }
+    }
+    
+    // 타이머 시작
+    private func startAnimationTimer() {
+        guard !isAnimating else { return }
+        isAnimating = true
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
+            self?.updateFrame()
+        }
+        print("▶️ 애니메이션 타이머 시작")
+    }
+    
+    // 애니메이션 정지
+    func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        isAnimating = false
+        isReversing = false
+        onComplete = nil // 완료 핸들러 초기화
+        print("⏹️ 애니메이션 정지")
+    }
+    
+    // 프레임 업데이트 (재생 모드에 따라 분기)
+    private func updateFrame() {
+        guard !animationFrames.isEmpty else {
+            stopAnimation()
+            return
+        }
+        
+        switch currentPlayMode {
+        case .pingPong:
+            updatePingPongFrame()
+        case .once:
+            updateOnceFrame()
+        }
+        
+        // 현재 프레임 이미지 업데이트
+        if currentFrameIndex < animationFrames.count {
+            currentFrame = animationFrames[currentFrameIndex]
+        }
+    }
+    
+    // .once 모드 프레임 업데이트
+    private func updateOnceFrame() {
+        currentFrameIndex += 1
+        
+        // 마지막 프레임에 도달하면 애니메이션 중지 및 완료 핸들러 호출
+        if currentFrameIndex >= animationFrames.count {
+            let completionHandler = onComplete
+            stopAnimation()
+            completionHandler?()
+            print("✅ 'once' 애니메이션 완료")
+        }
+    }
+    
+    // .pingPong 모드 프레임 업데이트
+    private func updatePingPongFrame() {
+        if isReversing {
+            // 역순 재생 중
+            currentFrameIndex -= 1
+            if currentFrameIndex <= 0 {
+                currentFrameIndex = 0
+                isReversing = false
+                print("🔄 정순 재생으로 전환")
+            }
+        } else {
+            // 정순 재생 중
+            currentFrameIndex += 1
+            if currentFrameIndex >= animationFrames.count - 1 {
+                currentFrameIndex = animationFrames.count - 1
+                isReversing = true
+                print("🔄 역순 재생으로 전환")
+            }
+        }
+        
+        // 디버깅용 로그 (매 30프레임마다)
+        if currentFrameIndex % 30 == 0 {
+            print("🎬 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
+        }
+    }
+    
     // 핑퐁 애니메이션 시작
     func startPingPongAnimation() {
         guard !animationFrames.isEmpty, !isAnimating else {
@@ -516,52 +763,6 @@ extension QuokkaController {
         // 타이머 시작 (24fps = 약 0.042초 간격)
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / frameRate, repeats: true) { [weak self] _ in
             self?.updatePingPongFrame()
-        }
-    }
-    
-    // 핑퐁 애니메이션 정지
-    func stopAnimation() {
-        animationTimer?.invalidate()
-        animationTimer = nil
-        isAnimating = false
-        isReversing = false
-        
-        print("⏹️ 애니메이션 정지")
-    }
-    
-    // 핑퐁 프레임 업데이트
-    private func updatePingPongFrame() {
-        guard !animationFrames.isEmpty else { return }
-        
-        // 현재 프레임 이미지 업데이트
-        currentFrame = animationFrames[currentFrameIndex]
-        
-        // 다음 프레임 인덱스 계산
-        if isReversing {
-            // 역순 재생 중 (122 → 1)
-            currentFrameIndex -= 1
-            
-            // 첫 번째 프레임에 도달하면 정순으로 전환
-            if currentFrameIndex <= 0 {
-                currentFrameIndex = 0
-                isReversing = false
-                print("🔄 정순 재생으로 전환")
-            }
-        } else {
-            // 정순 재생 중 (1 → 122)
-            currentFrameIndex += 1
-            
-            // 마지막 프레임에 도달하면 역순으로 전환
-            if currentFrameIndex >= animationFrames.count - 1 {
-                currentFrameIndex = animationFrames.count - 1
-                isReversing = true
-                print("🔄 역순 재생으로 전환")
-            }
-        }
-        
-        // 디버깅용 로그 (매 30프레임마다)
-        if currentFrameIndex % 30 == 0 {
-            print("🎬 현재 프레임: \(currentFrameIndex + 1)/\(animationFrames.count) (\(isReversing ? "역순" : "정순"))")
         }
     }
     
