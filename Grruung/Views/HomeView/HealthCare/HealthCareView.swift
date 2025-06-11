@@ -13,6 +13,8 @@ struct HealthCareView: View {
     @Binding var isPresented: Bool
     
     @State private var selectedTab = 0
+    @State private var showHealthStatus = false // 건강 상태 표시 여부
+    @State private var showCleanStatus = false // 청결 상태 표시 여부
     
     // MARK: - Body
     var body: some View {
@@ -87,14 +89,18 @@ struct HealthCareView: View {
     private var healthCareContent: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // 현재 건강 상태 표시
-                statusCard(
-                    title: "현재 건강 상태",
-                    value: viewModel.healthyValue,
-                    maxValue: 100,
-                    icon: "heart.fill",
-                    color: GRColor.grColorRed
-                )
+                // 현재 건강 상태 표시 (체크 시에만 표시)
+                if showHealthStatus {
+                    statusCard(
+                        title: "현재 건강 상태",
+                        value: viewModel.healthyValue,
+                        maxValue: 100,
+                        icon: "heart.fill",
+                        color: GRColor.grColorRed
+                    )
+                } else {
+                    healthStatusHiddenView
+                }
                 
                 // 건강 관리 액션 버튼들
                 VStack(alignment: .leading, spacing: 10) {
@@ -106,35 +112,35 @@ struct HealthCareView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             actionButton(
-                                title: "병원 방문",
-                                icon: "cross.fill",
-                                description: "건강 상태 완전 회복",
-                                cost: "골드 500",
-                                action: { performHealthAction("hospital") }
-                            )
-                            
-                            actionButton(
-                                title: "약 먹이기",
-                                icon: "pills.fill",
-                                description: "건강 상태 30 회복",
+                                title: "건강 체크",
+                                icon: "stethoscope",
+                                description: "건강 상태 확인",
                                 cost: "골드 100",
-                                action: { performHealthAction("medicine") }
+                                action: { performHealthAction("checkup") }
                             )
                             
                             actionButton(
                                 title: "영양제",
                                 icon: "drop.fill",
                                 description: "건강 상태 10 회복",
-                                cost: "골드 50",
+                                cost: "골드 200",
                                 action: { performHealthAction("vitamin") }
                             )
                             
                             actionButton(
-                                title: "건강 체크",
-                                icon: "stethoscope",
-                                description: "건강 상태 확인",
-                                cost: "골드 20",
-                                action: { performHealthAction("checkup") }
+                                title: "약 먹이기",
+                                icon: "pills.fill",
+                                description: "건강 상태 30 회복",
+                                cost: "골드 500",
+                                action: { performHealthAction("medicine") }
+                            )
+                            
+                            actionButton(
+                                title: "병원 방문",
+                                icon: "cross.fill",
+                                description: "건강 상태 완전 회복",
+                                cost: "골드 1000",
+                                action: { performHealthAction("hospital") }
                             )
                         }
                         .padding(.horizontal)
@@ -147,24 +153,81 @@ struct HealthCareView: View {
                     icon: "exclamationmark.triangle.fill",
                     isWarning: true
                 )
+                
+                tipCard(
+                    tip: "건강 체크로 현재 상태를 확인하고, 필요한 경우 약을 먹이세요.",
+                    icon: "lightbulb.fill",
+                    isWarning: false
+                )
             }
             .padding(.horizontal)
         }
         .frame(maxHeight: .infinity)
     }
     
+    // 건강 상태가 숨겨져 있을 때 표시할 뷰
+    private var healthStatusHiddenView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(GRColor.mainColor6_2)
+                Text("건강 상태 정보")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                Spacer()
+                Text("? / 100")
+                    .fontWeight(.bold)
+                    .foregroundColor(Color.gray)
+            }
+            
+            // 상태 게이지 바 (잠김 상태)
+            GeometryReader { geometry in
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 12)
+                    .overlay(
+                        HStack(spacing: 5) {
+                            ForEach(0..<5) { _ in
+                                Image(systemName: "questionmark")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    )
+            }
+            .frame(height: 12)
+            
+            // 안내 메시지
+            Text("건강 체크를 통해 현재 상태를 확인할 수 있습니다.")
+                .font(.subheadline)
+                .foregroundColor(Color.black.opacity(0.7))
+        }
+        .padding()
+        .background(GRColor.mainColor1_1)
+        .cornerRadius(15)
+        .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
     // MARK: - 청결 관리 탭 콘텐츠
     private var cleanCareContent: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // 현재 청결 상태 표시
-                statusCard(
-                    title: "현재 청결 상태",
-                    value: viewModel.cleanValue,
-                    maxValue: 100,
-                    icon: "shower.fill",
-                    color: GRColor.grColorOcean
-                )
+                // 현재 청결 상태 표시 (체크 시에만 표시)
+                if showCleanStatus {
+                    statusCard(
+                        title: "현재 청결 상태",
+                        value: viewModel.cleanValue,
+                        maxValue: 100,
+                        icon: "shower.fill",
+                        color: GRColor.grColorOcean
+                    )
+                } else {
+                    cleanStatusHiddenView
+                }
                 
                 // 청결 관리 액션 버튼들
                 VStack(alignment: .leading, spacing: 10) {
@@ -176,35 +239,35 @@ struct HealthCareView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             actionButton(
-                                title: "미용실 방문",
-                                icon: "scissors",
-                                description: "청결 상태 완전 회복",
-                                cost: "골드 400",
-                                action: { performCleanAction("salon") }
-                            )
-                            
-                            actionButton(
-                                title: "목욕시키기",
-                                icon: "bathtub.fill",
-                                description: "청결 상태 40 회복",
-                                cost: "골드 80",
-                                action: { performCleanAction("bath") }
+                                title: "청결 체크",
+                                icon: "hand.wave.fill",
+                                description: "청결 상태 확인",
+                                cost: "골드 100",
+                                action: { performCleanAction("check") }
                             )
                             
                             actionButton(
                                 title: "빗질하기",
                                 icon: "comb.fill",
                                 description: "청결 상태 15 회복",
-                                cost: "골드 30",
+                                cost: "골드 200",
                                 action: { performCleanAction("brush") }
                             )
                             
                             actionButton(
-                                title: "손발 씻기",
-                                icon: "hand.wave.fill",
-                                description: "청결 상태 5 회복",
-                                cost: "골드 10",
-                                action: { performCleanAction("washHands") }
+                                title: "목욕시키기",
+                                icon: "bathtub.fill",
+                                description: "청결 상태 40 회복",
+                                cost: "골드 500",
+                                action: { performCleanAction("bath") }
+                            )
+                            
+                            actionButton(
+                                title: "미용실 방문",
+                                icon: "scissors",
+                                description: "청결 상태 완전 회복",
+                                cost: "골드 1000",
+                                action: { performCleanAction("salon") }
                             )
                         }
                         .padding(.horizontal)
@@ -227,6 +290,53 @@ struct HealthCareView: View {
             .padding(.horizontal)
         }
         .frame(maxHeight: .infinity)
+    }
+    
+    // 청결 상태가 숨겨져 있을 때 표시할 뷰
+    private var cleanStatusHiddenView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(GRColor.mainColor6_2)
+                Text("청결 상태 정보")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                Spacer()
+                Text("? / 100")
+                    .fontWeight(.bold)
+                    .foregroundColor(Color.gray)
+            }
+            
+            // 상태 게이지 바 (잠김 상태)
+            GeometryReader { geometry in
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 12)
+                    .overlay(
+                        HStack(spacing: 5) {
+                            ForEach(0..<5) { _ in
+                                Image(systemName: "questionmark")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    )
+            }
+            .frame(height: 12)
+            
+            // 안내 메시지
+            Text("청결 체크를 통해 현재 상태를 확인할 수 있습니다.")
+                .font(.subheadline)
+                .foregroundColor(Color.black.opacity(0.7))
+        }
+        .padding()
+        .background(GRColor.mainColor1_1)
+        .cornerRadius(15)
+        .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
+        )
     }
     
     // MARK: - 컴포넌트
@@ -286,6 +396,14 @@ struct HealthCareView: View {
             Text(getStatusMessage(value: value, isHealth: icon == "heart.fill"))
                 .font(.subheadline)
                 .foregroundColor(Color.black.opacity(0.8))
+                
+            // 남은 시간 표시
+            HStack {
+                Spacer()
+                Text("남은 시간: 5분")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
         }
         .padding()
         .background(GRColor.mainColor1_1)
@@ -408,18 +526,28 @@ struct HealthCareView: View {
         var goldCost = 0
         
         switch actionId {
-        case "hospital":
-            healthValue = 100 // 완전 회복
-            goldCost = 500
-        case "medicine":
-            healthValue = 30
-            goldCost = 100
-        case "vitamin":
-            healthValue = 10
-            goldCost = 50
         case "checkup":
             healthValue = 0 // 체크만 하고 회복은 없음
-            goldCost = 20
+            goldCost = 100
+            // 체크 시 5분 동안 상태 표시
+            withAnimation {
+                showHealthStatus = true
+            }
+            // 5분 후 상태 숨기기
+            DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
+                withAnimation {
+                    showHealthStatus = false
+                }
+            }
+        case "vitamin":
+            healthValue = 10
+            goldCost = 200
+        case "medicine":
+            healthValue = 30
+            goldCost = 500
+        case "hospital":
+            healthValue = 100 // 완전 회복
+            goldCost = 1000
         default:
             return
         }
@@ -435,6 +563,18 @@ struct HealthCareView: View {
                 // 캐릭터 상태 업데이트
                 viewModel.updateCharacterHealthStatus(healthValue: healthValue)
                 viewModel.statusMessage = "건강 상태가 회복되었습니다!"
+                
+                // 건강 회복 시 상태 표시
+                withAnimation {
+                    showHealthStatus = true
+                }
+                
+                // 5분 후 상태 숨기기
+                DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
+                    withAnimation {
+                        showHealthStatus = false
+                    }
+                }
             }
         }
         
@@ -454,34 +594,63 @@ struct HealthCareView: View {
         var goldCost = 0
         
         switch actionId {
-        case "salon":
-            cleanValue = 100 // 완전 회복
-            goldCost = 400
-        case "bath":
-            cleanValue = 40
-            goldCost = 80
+        case "check":
+            cleanValue = 0 // 체크만 하고 회복은 없음
+            goldCost = 100
+            // 체크 시 5분 동안 상태 표시
+            withAnimation {
+                showCleanStatus = true
+            }
+            // 5분 후 상태 숨기기
+            DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
+                withAnimation {
+                    showCleanStatus = false
+                }
+            }
         case "brush":
             cleanValue = 15
-            goldCost = 30
-        case "washHands":
-            cleanValue = 5
-            goldCost = 10
+            goldCost = 200
+        case "bath":
+            cleanValue = 40
+            goldCost = 500
+        case "salon":
+            cleanValue = 100 // 완전 회복
+            goldCost = 1000
         default:
             return
         }
         
         // TODO: 골드 차감 로직 추가
         // 실제 액션 수행
-        if let character = viewModel.character {
-            // 캐릭터 상태 업데이트
-            viewModel.updateCharacterCleanStatus(cleanValue: cleanValue)
-            viewModel.statusMessage = "청결 상태가 개선되었습니다!"
+        if actionId == "check" {
+            // 청결 체크만 수행 (상태 메시지만 업데이트)
+            viewModel.statusMessage = "청결 상태 확인 결과: \(viewModel.cleanValue)/100"
+        } else {
+            if let character = viewModel.character {
+                // 캐릭터 상태 업데이트
+                viewModel.updateCharacterCleanStatus(cleanValue: cleanValue)
+                viewModel.statusMessage = "청결 상태가 개선되었습니다!"
+                
+                // 청결 회복 시 상태 표시
+                withAnimation {
+                    showCleanStatus = true
+                }
+                
+                // 5분 후 상태 숨기기
+                DispatchQueue.main.asyncAfter(deadline: .now() + 300) { // 5분 = 300초
+                    withAnimation {
+                        showCleanStatus = false
+                    }
+                }
+            }
         }
         
         // 액션 수행 후 닫기
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            withAnimation {
-                isPresented = false
+        if actionId != "check" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation {
+                    isPresented = false
+                }
             }
         }
     }
