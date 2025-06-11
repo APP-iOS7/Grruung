@@ -121,8 +121,10 @@ struct ChatPetView: View {
     }
     
     private var remainingChatInfo: some View {
-            HStack {
-                Spacer()
+        HStack {
+            Spacer()
+            HStack(spacing: 8) {
+                // 무료 채팅 정보
                 HStack(spacing: 4) {
                     Image(systemName: "bubble.left.fill")
                         .font(.system(size: 12))
@@ -132,14 +134,26 @@ struct ChatPetView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Color(UIColor.systemGray6))
-                .cornerRadius(12)
-                .padding(.trailing, 16)
-                .padding(.top, 8)
+                
+                // 티켓 정보 추가
+                HStack(spacing: 4) {
+                    Image(systemName: "ticket.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.purple)
+                    
+                    Text("\(viewModel.ticketCount)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(12)
+            .padding(.trailing, 16)
+            .padding(.top, 8)
         }
+    }
     
     // MARK: - 대화 내역 영역
     private var chatMessagesArea: some View {

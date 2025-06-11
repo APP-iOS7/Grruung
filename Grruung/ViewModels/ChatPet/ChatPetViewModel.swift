@@ -15,7 +15,8 @@ class ChatPetViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    
+    @Published var ticketCount: Int = 0
+
     // 오류 해결을 위해 추가된 프로퍼티
     @Published var showSubtitle: Bool = true // 자막 표시 여부
     @Published var isListening: Bool = false // 음성 인식 상태
@@ -45,7 +46,8 @@ class ChatPetViewModel: ObservableObject {
         self.basePrompt = prompt
         
         self.remainingFreeChats = chatLimitManager.getRemainingChats()
-        
+        self.ticketCount = chatLimitManager.getTicketCount()
+
         initializeChat()
     }
     
@@ -292,10 +294,16 @@ class ChatPetViewModel: ObservableObject {
         return false
     }
     
+    // 티켓 수 업데이트 메서드
+    func updateTicketCount() {
+        self.ticketCount = chatLimitManager.getTicketCount()
+    }
+    
     // 채팅 티켓 사용
     func useChatTicket() -> Bool {
         if chatLimitManager.useChatTicket() {
-            // 티켓을 사용하여 대화를 계속
+            // 티켓 사용 후 개수 업데이트
+            updateTicketCount()
             return true
         }
         

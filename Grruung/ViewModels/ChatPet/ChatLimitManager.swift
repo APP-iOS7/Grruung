@@ -15,10 +15,14 @@ class ChatLimitManager {
     private enum UserDefaultsKeys {
         static let chatCountKey = "daily_chat_count"
         static let lastResetDateKey = "last_reset_date"
+        static let chatTicketsKey = "chat_tickets_count" // 추가: 챗팅 티켓 수를 저장할 키
     }
     
     // 최대 무료 채팅 횟수
     let maxFreeChatCount = 3
+    
+    // 최대 티켓 보유 가능 수
+    let maxTicketCount = 99
     
     private init() {
         // 일일 초기화 확인
@@ -29,6 +33,19 @@ class ChatLimitManager {
     func getRemainingChats() -> Int {
         let usedCount = UserDefaults.standard.integer(forKey: UserDefaultsKeys.chatCountKey)
         return max(0, maxFreeChatCount - usedCount)
+    }
+    
+    // 보유한 채팅 티켓 수를 반환
+    func getTicketCount() -> Int {
+        return UserDefaults.standard.integer(forKey: UserDefaultsKeys.chatTicketsKey)
+    }
+    
+    // 채팅 티켓 추가
+    func addChatTickets(_ count: Int) -> Int {
+        let currentTickets = getTicketCount()
+        let newTicketCount = min(maxTicketCount, currentTickets + count)
+        UserDefaults.standard.set(newTicketCount, forKey: UserDefaultsKeys.chatTicketsKey)
+        return newTicketCount
     }
     
     // 채팅 횟수 사용
@@ -47,10 +64,17 @@ class ChatLimitManager {
         return true
     }
     
-    // 채팅 티켓 사용 (추가 채팅 티켓)
+    // 채팅 티켓 사용
     func useChatTicket() -> Bool {
-        // TODO: 실제 구매한 티켓이 있는지 확인하는 로직 필요
-        // 임시로 true 반환 (티켓이 있다고 가정)
+        let ticketCount = getTicketCount()
+        
+        // 티켓이 없으면 사용 불가
+        if ticketCount <= 0 {
+            return false
+        }
+        
+        // 티켓 차감
+        UserDefaults.standard.set(ticketCount - 1, forKey: UserDefaultsKeys.chatTicketsKey)
         return true
     }
     
