@@ -68,6 +68,7 @@ enum ItemType: String, CaseIterable {
 }
 
 enum ItemCategory: String, CaseIterable {
+    case food = "음식"
     case drug = "약품"
     case toy = "장난감"
     case etc = "기타"

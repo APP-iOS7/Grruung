@@ -85,6 +85,22 @@ struct UserInventoryDetailView: View {
                     Button("확인", role: .destructive) {
                         isEdited = true
                         if useItemCount > 0 {
+                            // 아이템 효과 적용
+                            let result = ItemEffectApplier.shared.applyItemEffect(
+                                item: item,
+                                quantity: Int(useItemCount)
+                            )
+                            
+                            // 상태 메시지 업데이트 (NotificationCenter를 통해 전달)
+                            if result.success {
+                                NotificationCenter.default.post(
+                                    name: NSNotification.Name("ItemEffectApplied"),
+                                    object: nil,
+                                    userInfo: ["message": result.message]
+                                )
+                            }
+                            
+                            // 아이템 수량 감소 처리
                             item.userItemQuantity -= Int(useItemCount)
                             if item.userItemQuantity <= 0 {
                                 userInventoryViewModel.deleteItem(userId: realUserId, item: item)
@@ -97,8 +113,6 @@ struct UserInventoryDetailView: View {
                                 userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
                             }
                         }
-                        // TODO: - 캐릭터에게 아이템 효과 부여
-                        
                     }
                 }
                 .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
@@ -282,18 +296,3 @@ struct UserInventoryDetailView: View {
         }
     }
 }
-
-//#Preview {
-//    userInventoryDetailView(item: GRUserInventory(
-//        userItemNumber: "1",
-//        userItemName: "비타민 젤리",
-//        userItemType: .consumable,
-//        userItemImage: "pill",
-//        userIteamQuantity: Int.random(in: 1...10),
-//        userItemDescription: "피로 회복에 좋은 비타민 젤리예요.",
-//        userItemEffectDescription: "회복력 + 100",
-//        userItemCategory: .drug,
-//        purchasedAt: Date(timeIntervalSinceNow: -Double.random(in: 1...60) * 86400)
-//    ), realUserId: "23456")
-//    .environmentObject(AuthService())
-//}
