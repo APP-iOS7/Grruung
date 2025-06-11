@@ -23,7 +23,7 @@ struct CustomTabBar: View {
     
     // 탭바 배경색 (다크모드 대응)
     private var backgroundColor: Color {
-        return colorScheme == .dark ? Color.black.opacity(0.8) : Color.white.opacity(0.1)
+        return colorScheme == .dark ? Color.black.opacity(0.8) : selectedTab != 0 ? Color.white.opacity(0.3) : Color.white.opacity(0.1)
     }
     
     var body: some View {

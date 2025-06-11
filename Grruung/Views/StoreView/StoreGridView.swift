@@ -64,7 +64,8 @@ struct ProductItemView: View {
             
             HStack(spacing: 8) {
                 if product.itemCurrencyType == .won {
-                 Text("₩")
+                    Text("₩")
+                        .foregroundStyle(.black)
                 } else {
                     Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
                         .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
