@@ -28,10 +28,7 @@ struct MainView: View {
                 if tabBarController.selectedTab != 0 {
                     switch tabBarController.selectedTab {
                     case 1:
-                        Rectangle()
-                            .fill(GRColor.mainColor1_2)
-                            .frame(height: 90)
-                            .ignoresSafeArea(edges: .bottom)
+                        EmptyView()
                     case 2:
                         Rectangle()
                             .fill(GRColor.mainColor2_2)
