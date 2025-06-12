@@ -47,7 +47,7 @@ struct CharDexView: View {
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
     
     @State private var isDataLoaded: Bool = false
-
+    
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -166,6 +166,14 @@ struct CharDexView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [
+                    Color(GRColor.mainColor1_1),
+                    Color(GRColor.mainColor1_2)
+                ],
+                               startPoint: .top, endPoint: .bottom)
+            ) // 원하는 색상 지정
             .navigationTitle("캐릭터 동산")
             .toolbar {
                 // 검색 버튼
@@ -347,7 +355,7 @@ struct CharDexView: View {
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
+        .cornerRadius(UIConstants.cornerRadius)
         .foregroundColor(.gray)
         .padding(.bottom, 16)
     }

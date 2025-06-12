@@ -15,15 +15,20 @@ class ChatPetViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    
+
     // 오류 해결을 위해 추가된 프로퍼티
     @Published var showSubtitle: Bool = true // 자막 표시 여부
     @Published var isListening: Bool = false // 음성 인식 상태
     
+    @Published var remainingChats: Int = 0
+    @Published var showChatLimitAlert: Bool = false
+    @Published var showBuyTicketAlert: Bool = false
+    
     // 서비스
     private let vertexService = VertexAIService.shared
     private let firebaseService = FirebaseService.shared
-    
+    private let chatLimitManager = ChatLimitManager.shared
+
     // 대화 세션 관리
     private var currentSessionID: String?
     private var conversationContext: [ChatMessage] = []
@@ -39,6 +44,9 @@ class ChatPetViewModel: ObservableObject {
         self.character = character
         self.basePrompt = prompt
         
+        // 남은 채팅 횟수 초기화
+        self.remainingChats = chatLimitManager.getRemainingChats()
+
         initializeChat()
     }
     
@@ -254,6 +262,11 @@ class ChatPetViewModel: ObservableObject {
     func sendMessage() {
         guard !inputText.isEmpty else { return }
         
+        // 채팅 횟수 확인 및 사용
+        if !checkChatAvailability() {
+            return
+        }
+        
         // 사용자 메시지 추가
         let userMessage = ChatMessage(text: inputText, isFromPet: false)
         addMessage(userMessage)
@@ -263,6 +276,26 @@ class ChatPetViewModel: ObservableObject {
         
         // 챗펫 응답 생성
         generatePetResponse(to: userInput)
+        
+        // 남은 채팅 횟수 업데이트
+        self.remainingChats = chatLimitManager.getRemainingChats()
+    }
+    
+    // 채팅 가능 여부 확인
+    private func checkChatAvailability() -> Bool {
+        // 채팅 횟수가 남아있는 경우
+        if chatLimitManager.useChat() {
+            return true
+        }
+        
+        // 채팅 횟수를 모두 사용한 경우 알림 표시
+        showChatLimitAlert = true
+        return false
+    }
+    
+    // 남은 채팅 횟수 업데이트 메서드 추가
+    func updateRemainingChats() {
+        self.remainingChats = chatLimitManager.getRemainingChats()
     }
     
     // 챗펫 응답을 생성합니다.

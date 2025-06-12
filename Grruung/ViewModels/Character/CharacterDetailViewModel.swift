@@ -36,6 +36,7 @@ class CharacterDetailViewModel: ObservableObject {
     private var storage = Storage.storage()
     
     init(characterUUID: String = "") {
+//        print("CharacterDetailViewModel 초기화 - characterUUID: \(characterUUID)")
         // 기본 더미 캐릭터로 초기화
         self.character = GRCharacter(
             id: UUID().uuidString,
@@ -127,7 +128,6 @@ class CharacterDetailViewModel: ObservableObject {
             }
         }
     }
-    
     // 캐릭터 이름 업데이트
     func updateCharacterName(characterUUID: String, newName: String) {
         guard !newName.isEmpty else { return }
@@ -445,54 +445,54 @@ class CharacterDetailViewModel: ObservableObject {
         }
     }
     
-    func loadUser(characterUUID: String) {
-        guard !isLoadingUser else { return }
-        isLoadingUser = true
-        self.isLoading = true
-        
-        print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
-        db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
-            guard let self = self else { return }
-            
-            
-            if let error = error {
-                print("사용자 정보 가져오기 오류 : \(error)")
-                self.isLoadingUser = false
-                self.checkLoadingComplete()
-                return
-            }
-            
-            guard let documents = snapshot?.documents, !documents.isEmpty else {
-                print("No documents found")
-                self.isLoadingUser = false
-                self.checkLoadingComplete()
-                return
-            }
-            
-            let document = documents[0]
-            let data = document.data()
-            let userID = document.documentID
-            let userEmail = data["userEmail"] as? String ?? ""
-            let userName = data["userName"] as? String ?? ""
-            let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
-            
-            print("사용자 찾음 - User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
-            
-            // 메인 스레드에서 user 속성 업데이트
-            DispatchQueue.main.async {
-                self.user = GRUser(
-                    id : userID,
-                    userEmail: userEmail,
-                    userName: userName,
-                    chosenCharacterUUID: chosenCharacterUUID
-                )
-            }
-            
-            // 로딩 완료 후 플래그 해제
-            self.isLoadingUser = false
-            self.checkLoadingComplete()
-        }
-    }
+    //    func loadUser(characterUUID: String) {
+    //        guard !isLoadingUser else { return }
+    //        isLoadingUser = true
+    //        self.isLoading = true
+    //
+    //        print("loadUser 함수 호출 됨 - characterUUID: \(characterUUID)")
+    //        db.collection("GRUser").whereField("chosenCharacterUUID", isEqualTo: characterUUID).getDocuments { [weak self] snapshot, error in
+    //            guard let self = self else { return }
+    //
+    //
+    //            if let error = error {
+    //                print("사용자 정보 가져오기 오류 : \(error)")
+    //                self.isLoadingUser = false
+    //                self.checkLoadingComplete()
+    //                return
+    //            }
+    //
+    //            guard let documents = snapshot?.documents, !documents.isEmpty else {
+    //                print("No documents found")
+    //                self.isLoadingUser = false
+    //                self.checkLoadingComplete()
+    //                return
+    //            }
+    //
+    //            let document = documents[0]
+    //            let data = document.data()
+    //            let userID = document.documentID
+    //            let userEmail = data["userEmail"] as? String ?? ""
+    //            let userName = data["userName"] as? String ?? ""
+    //            let chosenCharacterUUID = data["chosenCharacterUUID"] as? String ?? ""
+    //
+    //            print("사용자 찾음 - User Name: \(userName), Chosen Character UUID: \(chosenCharacterUUID)")
+    //
+    //            // 메인 스레드에서 user 속성 업데이트
+    //            DispatchQueue.main.async {
+    //                self.user = GRUser(
+    //                    id : userID,
+    //                    userEmail: userEmail,
+    //                    userName: userName,
+    //                    chosenCharacterUUID: chosenCharacterUUID
+    //                )
+    //            }
+    //
+    //            // 로딩 완료 후 플래그 해제
+    //            self.isLoadingUser = false
+    //            self.checkLoadingComplete()
+    //        }
+    //    }
     
     // 특정 월의 게시물 로드
     func loadPost(characterUUID: String, searchDate: Date) {
