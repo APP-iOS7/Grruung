@@ -68,8 +68,15 @@ struct CharacterDetailView: View {
                 // 캐릭터 정보 영역
                 characterInfoSection
                 
-                // 성장 과정 영역
-                growthProgressSection
+                VStack(spacing: 20) {
+                    // 성장 과정 영역
+                    growthProgressSection
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
+                )
+                .padding(.horizontal ,UIConstants.horizontalPadding)
                 
                 VStack(spacing: 20) {
                     // 날짜 탐색 버튼
@@ -83,8 +90,8 @@ struct CharacterDetailView: View {
                 }
                 .padding(.vertical, UIConstants.verticalPadding)
                 .background(
-                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                        .fill(GRColor.mainColor2_1) // Color extension 사용
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
                 )
                 .padding(.horizontal ,UIConstants.horizontalPadding)
             }
@@ -235,62 +242,26 @@ struct CharacterDetailView: View {
     // MARK: - Growth Progress Section
     
     private var growthProgressSection: some View {
-        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
                     .foregroundColor(GRColor.pointColor)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
-                Spacer()
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: UIConstants.horizontalPadding) {
+                HStack(spacing: UIConstants.horizontalPadding / 4) {
                     ForEach(0...currentStageIndex, id: \.self) { index in
-                        VStack(spacing: UIConstants.verticalPadding / 2) {
+                        VStack {
                             // 성장 단계 이미지
-                            let imageUrl = getGrowthStageImageURL(for: index)
+                            let imageName = getGrowthStageImageName(for: index)
                             
-                            if let validUrl = imageUrl, !validUrl.absoluteString.isEmpty {
-                                AsyncImage(
-                                    url:validUrl
-                                ) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                                    .fill(GRColor.gray200Line)
-                                            )
-                                        
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
-                                    case .failure:
-                                        RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                            .fill(GRColor.gray200Line) // GRColor 사용
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .foregroundColor(GRColor.gray500) // GRColor 사용
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                            } else {
-                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                    .fill(GRColor.gray200Line)
-                                    .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .foregroundColor(GRColor.gray500)
-                                    )
-                            }
+                            Image(imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100 , height: 100)
                             
                             // 단계 이름
                             Text(getPhaseNameFor(index: index))
@@ -306,11 +277,10 @@ struct CharacterDetailView: View {
                                 .font(.caption)
                         }
                     }
+                    Spacer(minLength: 8)
                 }
-                .padding(.horizontal, UIConstants.horizontalPadding)
             }
         }
-        .padding(.horizontal, UIConstants.horizontalPadding)
         .padding(.vertical, UIConstants.verticalPadding)
         .background(
             RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
@@ -421,7 +391,7 @@ struct CharacterDetailView: View {
             .padding(.horizontal, UIConstants.horizontalPadding)
             
             if viewModel.posts.isEmpty {
-                VStack(spacing: 10) { // TODO: UIConstants에서 적절한 값으로 변경 고려
+                VStack(spacing: 10) {
                     Image(systemName: "book.closed")
                         .font(.system(size: UIIconSize.large))
                         .foregroundColor(GRColor.gray400)
@@ -481,9 +451,22 @@ struct CharacterDetailView: View {
     }
     
     // 성장 단계 이미지 URL 반환
-    private func getGrowthStageImageURL(for index: Int) -> URL? {
-        guard index < viewModel.growthStages.count else { return nil }
-        return viewModel.growthStages[index].imageURL
+    // 성장 단계 이미지 이름 반환 (Assets에서)
+    private func getGrowthStageImageName(for index: Int) -> String {
+        let characterStillImages: [String] = [
+            "egg",
+            "quokka_infant_still",
+            "quokka_child_still",
+            "quokka_adolescent_still",
+            "quokka_adult_still",
+            "quokka"
+        ]
+        
+        guard index < characterStillImages.count else {
+            return "egg" // 기본값
+        }
+        
+        return characterStillImages[index]
     }
     
     // 단계 인덱스에 따른 이름 반환
@@ -656,9 +639,38 @@ struct CharacterImageView: View {
                     .resizable()
                     .scaledToFit()
             } else if character.species == .quokka {
-                Image("quokka")
-                    .resizable()
-                    .scaledToFit()
+                switch character.status.phase {
+                    //                case egg = "운석"
+                    //                case infant = "유아기"
+                    //                case child = "소아기"
+                    //                case adolescent = "청년기"
+                    //                case adult = "성년기"
+                    //                case elder = "노년기"
+                case .egg:
+                    Image("egg")
+                        .resizable()
+                        .scaledToFit()
+                case .infant:
+                    Image("quokka_infant_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .child:
+                    Image("quokka_child_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adolescent:
+                    Image("quokka_adolescent_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adult:
+                    Image("quokka_adult_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .elder:
+                    Image("quokka")
+                        .resizable()
+                        .scaledToFit()
+                }
             } else {
                 Image("CatLion")
                     .resizable()
