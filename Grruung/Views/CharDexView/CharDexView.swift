@@ -166,7 +166,6 @@ struct CharDexView: View {
                     }
                 }
             }
-            .padding(.bottom, 48) // 하단 여백 추가
             .scrollContentBackground(.hidden) // 기본 배경을 숨기고
             .background(
                 LinearGradient(colors: [
