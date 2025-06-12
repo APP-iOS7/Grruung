@@ -14,6 +14,7 @@ struct HomeView: View {
     // MARK: - Properties
     @EnvironmentObject private var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
+    @Environment(\.modelContext) private var modelContext // SwiftData 컨텍스트
     
     @State private var showInventory = false
     @State private var showPetGarden = false
@@ -25,6 +26,7 @@ struct HomeView: View {
     @State private var showUpdateAlert = false // 업데이트 예정 알림창 표시 여부
     @State private var showSpecialEvent = false // 특수 이벤트 표시 여부
     @State private var showHealthCare = false // 건강관리 화면 표시 여부
+    @State private var showUpdateScreen = false // 업데이트 화면 표시 상태
 
     // MARK: - Body
     var body: some View {
@@ -53,21 +55,6 @@ struct HomeView: View {
                             // 레벨 프로그레스 바
                             levelProgressBar
                             
-                            // 메인 캐릭터 섹션
-                            characterSection
-                            
-                            // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                            if let character = viewModel.character,
-                               character.status.evolutionStatus.needsEvolution {
-                                evolutionButton
-                            }
-                            
-                            // 액션 버튼 그리드
-                            actionButtonsGrid
-                            
-                            // 상태 바 섹션
-                            statsSection
-                            
                             // 캐릭터 상태 메시지
                             VStack(spacing: 5) {
                                 // 상태 메시지
@@ -90,6 +77,17 @@ struct HomeView: View {
                             }
                             
                             Spacer()
+                            
+                            // 메인 캐릭터 섹션
+                            characterSection
+                            
+                            // 액션 버튼 그리드
+                            actionButtonsGrid
+                            
+                            // 상태 바 섹션
+                            statsSection
+                            
+
                             Spacer()
                             
                             // 커스텀 탭바를 위한 여백
@@ -141,15 +139,29 @@ struct HomeView: View {
         .sheet(isPresented: $isShowingSettings) {
             //            SettingsSheetView()
         }
+        
         // 진화 화면 시트
         .sheet(isPresented: $showEvolutionScreen) {
             if let character = viewModel.character {
                 EvolutionView(
                     character: character,
-                    homeViewModel: viewModel
+                    homeViewModel: viewModel,
+                    isUpdateMode: false  // 진화 모드
                 )
             }
         }
+        
+        // 업데이트 화면 시트
+        .sheet(isPresented: $showUpdateScreen) {
+            if let character = viewModel.character {
+                EvolutionView(
+                    character: character,
+                    homeViewModel: viewModel,
+                    isUpdateMode: true  // 업데이트 모드
+                )
+            }
+        }
+        
         // 온보딩 화면 시트
         .sheet(isPresented: $isShowingOnboarding) {
             OnboardingView()
@@ -208,6 +220,33 @@ struct HomeView: View {
             .background(
                 LinearGradient(
                     colors: [Color.orange, Color.red],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
+        }
+    }
+    
+    // 업데이트 버튼
+    private var updateButton: some View {
+        Button(action: {
+            showUpdateScreen = true
+        }) {
+            HStack {
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 16))
+                
+                Text("데이터 업데이트")
+                    .font(.body)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [Color.blue, Color.purple],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
@@ -287,17 +326,7 @@ struct HomeView: View {
     
     // 캐릭터 섹션
     private var characterSection: some View {
-        HStack {
-            // 왼쪽 버튼들
-            VStack(spacing: 15) {
-                ForEach(0..<3) { index in
-                    let button = viewModel.sideButtons[index]
-                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
-                }
-            }
-            
-            Spacer()
-            
+        ZStack {
             // 캐릭터 이미지
             VStack {
                 Spacer()
@@ -312,13 +341,38 @@ struct HomeView: View {
                 )
             }
             
-            Spacer()
+            HStack {
+                // 왼쪽 버튼들
+                VStack(spacing: 15) {
+                    ForEach(0..<3) { index in
+                        let button = viewModel.sideButtons[index]
+                        iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+                    }
+                }
+                
+                Spacer()
+                
+                // 오른쪽 버튼들
+                VStack(spacing: 15) {
+                    ForEach(3..<6) { index in
+                        let button = viewModel.sideButtons[index]
+                        iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+                    }
+                }
+            }
             
-            // 오른쪽 버튼들
-            VStack(spacing: 15) {
-                ForEach(3..<6) { index in
-                    let button = viewModel.sideButtons[index]
-                    iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
+            VStack {
+                Spacer()
+                
+                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
+                if let character = viewModel.character,
+                   character.status.evolutionStatus.needsEvolution {
+                    evolutionButton
+                }
+                
+                // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
+                if viewModel.needsAnimationUpdate {
+                    updateButton
                 }
             }
         }
