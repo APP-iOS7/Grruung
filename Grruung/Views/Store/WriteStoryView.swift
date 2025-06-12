@@ -116,6 +116,7 @@ struct WriteStoryView: View {
                 .padding(.bottom, 30)
             }
         }
+        .padding(.bottom, 30)
         .scrollContentBackground(.hidden)
         .background(
             LinearGradient(colors: [

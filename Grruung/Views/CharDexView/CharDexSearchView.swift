@@ -92,6 +92,7 @@ struct CharDexSearchView: View {
                 }
                 .padding()
             }
+            .padding(.bottom, 30)
             .scrollContentBackground(.hidden) // 기본 배경을 숨기고
             .background(
                 LinearGradient(colors: [

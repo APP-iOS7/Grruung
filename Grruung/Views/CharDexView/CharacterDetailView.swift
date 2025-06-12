@@ -89,6 +89,7 @@ struct CharacterDetailView: View {
                 .padding(.horizontal ,UIConstants.horizontalPadding)
             }
         }
+        .padding(.bottom, 55)
         .scrollContentBackground(.hidden) // 기본 배경을 숨기고
         .background(
             LinearGradient(colors: [
