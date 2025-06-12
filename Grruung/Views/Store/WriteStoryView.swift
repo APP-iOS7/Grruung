@@ -116,15 +116,12 @@ struct WriteStoryView: View {
                 .padding(.bottom, 30)
             }
         }
-//        .padding(.bottom, 48) // 하단 여백 추가
         .scrollContentBackground(.hidden)
         .background(
             LinearGradient(colors: [
                 Color(GRColor.mainColor1_1),
                 Color(GRColor.mainColor1_2),
-                Color(.systemBackground)
-            ],
-                           startPoint: .top, endPoint: .bottom)
+            ], startPoint: .top, endPoint: .bottom)
         )
         .onTapGesture {
             isTextEditorFocused = false
