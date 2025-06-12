@@ -24,6 +24,8 @@ struct SettingSection: Identifiable {
 // MARK: - 메인 뷰
 
 struct ProfileDetailView: View {
+    @EnvironmentObject private var authService: AuthService
+    
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil
     @State private var profileImage: Image? = nil
@@ -41,9 +43,6 @@ struct ProfileDetailView: View {
         SettingSection(items: [
             .init(title: "연결된 계정 변경", iconName: "link"),
             .init(title: "연결된 기기 변경", iconName: "arrow.triangle.2.circlepath")
-        ]),
-        SettingSection(items: [
-            .init(title: "로그아웃", iconName: "rectangle.portrait.and.arrow.right")
         ])
     ]
     
@@ -134,6 +133,15 @@ struct ProfileDetailView: View {
                             }
                             .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
                         }
+                        
+                        // 로그아웃 버튼
+                        Button(action: {
+                            authService.signOut()
+                        }) {
+                            SettingRow(icon: "rectangle.portrait.and.arrow.right", text: "로그아웃")
+                                .foregroundColor(.red)
+                        }
+                        .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
                         
                         Button {
                             print("계정 삭제")
