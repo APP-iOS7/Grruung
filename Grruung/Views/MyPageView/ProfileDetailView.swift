@@ -121,18 +121,38 @@ struct ProfileDetailView: View {
                     // MARK: - 설정 섹션
                     
                     VStack(spacing: 30) {
+                        // FIXME: - Start 결제 내역
                         ForEach(settingSections) { section in
-                            VStack(spacing: 0) {
-                                ForEach(section.items.indices, id: \ .self) { index in
-                                    let item = section.items[index]
-                                    SettingRow(icon: item.iconName, text: item.title)
-                                    if index < section.items.count - 1 {
+                            VStack {
+                                ForEach(section.items) { item in
+                                    if item.title == "결제내역" {
+                                        NavigationLink {
+                                            PurchaseHistoryView()
+                                        } label: {
+                                            SettingRow(icon: item.iconName, text: item.title)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    } else {
+                                        Button(action: {
+                                            // 각 설정 항목별 액션
+                                        }) {
+                                            SettingRow(icon: item.iconName, text: item.title)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                    
+                                    if item.id != section.items.last?.id {
                                         Divider()
                                     }
                                 }
                             }
-                            .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
+                            .padding(.horizontal)
                         }
+                        // FIXME: - End
                         
                         // 로그아웃 버튼
                         Button(action: {
@@ -166,7 +186,7 @@ struct ProfileDetailView: View {
                 VStack(spacing: 20) {
                     HStack {
                         Spacer()
-
+                        
                         Button {
                             isShowingNameEditorPopup = false
                         } label: {
