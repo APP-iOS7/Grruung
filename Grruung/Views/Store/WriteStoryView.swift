@@ -466,14 +466,23 @@ struct WriteStoryView: View {
                     print("우측 상단 button tapped!")
                     
                     if currentMode == .create {
-                        // 글쓰기 횟수 확인 후 처리
-                        if writingCountVM.tryToWrite() {
+                        // 글쓰기 시도 (튜플 반환값 적절히 처리)
+                        let (success, expReward) = writingCountVM.tryToWrite()
+                        
+                        if success {
+                            // 글 저장
                             let _ = try await viewModel.createPost(
                                 characterUUID: characterUUID,
                                 postTitle: postTitle,
                                 postBody: postBody,
                                 imageData: selectedImageData
                             )
+                            
+                            // 보상 획득 가능하면 보상 추가
+                            if expReward {
+                                await addRewardForWriting(characterUUID: characterUUID)
+                            }
+                            
                             isUploading = false
                             dismiss()
                         } else {
@@ -482,6 +491,7 @@ struct WriteStoryView: View {
                             print("글쓰기 횟수가 부족합니다")
                         }
                     } else if currentMode == .edit {
+                        // 수정된 ViewModel 함수 사용
                         try await viewModel.editPost(
                             postID: currentPost?.postID ?? "",
                             postTitle: postTitle,
@@ -657,14 +667,31 @@ struct WriteStoryView: View {
         // userWritingCount가 있고, 글쓰기 가능 여부를 확인
         guard let count = writingCountVM.userWritingCount else { return }
         
-        // 글쓰기 가능한지 확인 (writingCount 내부 값 변경 없이)
-        let canWrite = (count.dailyCount + count.additionalCount) > 0
+        // dailyRewardCount를 기반으로 글쓰기 가능 여부 확인
+        let canWrite = count.remainingRewards > 0
         
         if !canWrite {
             showNoWritingCountAlert = true
         }
     }
     
+    // 경험치 및 골드 추가 함수
+    private func addRewardForWriting(characterUUID: String) async {
+        do {
+            // 고정된 보상 값
+            let exp = 50
+            let gold = 100
+            
+            // 경험치와 골드 추가 함수 호출
+            try await FirebaseService.shared.addExpAndGold(
+                characterID: characterUUID,
+                exp: exp,
+                gold: gold
+            )
+        } catch {
+            print("⚠️ 보상 추가 실패: \(error.localizedDescription)")
+        }
+    }
 }
 
 #Preview {

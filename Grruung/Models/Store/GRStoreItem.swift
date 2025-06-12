@@ -68,6 +68,7 @@ enum ItemType: String, CaseIterable {
 }
 
 enum ItemCategory: String, CaseIterable {
+    case food = "음식"
     case drug = "약품"
     case toy = "장난감"
     case etc = "기타"
@@ -318,18 +319,33 @@ let recoveryProducts: [GRStoreItem] = [
 
 // 티켓
 let ticketProducts = [
-    GRStoreItem(itemName: "VIP 티켓",
+    GRStoreItem(itemName: "채팅 티켓",
                itemType: .consumable,
-               itemImage: "circleCrown",
+               itemImage: "circleCrown",  // 이미지 이름 변경 필요
                itemQuantity: 1,
                limitedQuantity: 50,
                purchasedQuantity: 0,
-               itemPrice: 799,
-               itemDescription: "왕실급 혜택을 누릴 수 있는 프리미엄 이용권.",
-               itemEffectDescription: "VIP 서비스 제공",
-               itemTag: .limited,
+               itemPrice: 1000,
+               itemCurrencyType: .gold,
+               itemDescription: "펫과 한 번의 대화를 할 수 있는 티켓입니다. 1회 사용 가능합니다.",
+               itemEffectDescription: "챗펫 기능 1회 이용",
+               itemTag: .normal,
                itemCategory: .etc,
-               bgColor: .yellow.opacity(0.5)),
+               bgColor: .blue.opacity(0.5)),
+    
+    GRStoreItem(itemName: "채팅 티켓",
+               itemType: .consumable,
+               itemImage: "circleCrown",  // 이미지 이름 변경 필요
+               itemQuantity: 1,
+               limitedQuantity: 50,
+               purchasedQuantity: 0,
+               itemPrice: 10,
+               itemCurrencyType: .diamond,
+               itemDescription: "펫과 한 번의 대화를 할 수 있는 프리미엄 티켓입니다. 1회 사용 가능합니다.",
+               itemEffectDescription: "챗펫 기능 1회 이용",
+               itemTag: .normal,
+               itemCategory: .etc,
+               bgColor: .purple.opacity(0.5)),
     
     GRStoreItem(itemName: "동산 잠금해제x1",
                itemType: .permanent,
