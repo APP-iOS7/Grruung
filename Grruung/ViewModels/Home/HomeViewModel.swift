@@ -1276,7 +1276,11 @@ class HomeViewModel: ObservableObject {
             character.status.evolutionStatus = .completeInfant
         case .child:
             character.status.evolutionStatus = .completeChild
-            // ... 다른 단계들
+        case .adolescent:
+            character.status.evolutionStatus = .completeAdolescent
+        case .adult:
+            character.status.evolutionStatus = .completeAdult
+            // TODO: elder 단계 추후 추가
         default:
             break
         }

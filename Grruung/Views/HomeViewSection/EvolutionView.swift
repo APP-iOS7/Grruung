@@ -174,6 +174,9 @@ struct EvolutionView: View {
             case .toAdolescent:
                 targetPhase = .adolescent
                 statusMessage = "더 성숙한 모습으로 성장할 준비가 되었습니다!"
+            case .toAdult:
+                targetPhase = .adult
+                statusMessage = "완전히 성장할 준비가 되었습니다!"
             default:
                 evolutionStep = .unavailable
                 statusMessage = "현재는 진화할 수 없습니다."

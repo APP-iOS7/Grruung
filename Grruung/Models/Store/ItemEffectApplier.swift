@@ -85,7 +85,7 @@ class ItemEffectApplier {
         "수박 먹기": ItemEffect(satiety: 10, stamina: 15, clean: 5),
         "쉐이크": ItemEffect(satiety: 100, stamina: 100,activity: 100, ),
         "초밥 먹기": ItemEffect(satiety: 10, activity: 12, health: 8),
-        "와플 먹기": ItemEffect(satiety: 10, stamina: 12, health: 8),
+        "와플 먹기": ItemEffect(exp: 100),
         
         // 채팅 티켓 효과 추가
 //        "채팅 티켓": ItemEffect(), // 특별한 스탯 효과 없음
