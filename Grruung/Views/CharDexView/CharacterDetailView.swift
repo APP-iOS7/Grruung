@@ -432,7 +432,7 @@ struct CharacterDetailView: View {
                 .frame(height: 100)
                 .frame(maxWidth: .infinity)
             } else {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(viewModel.posts.indices, id: \.self) { index in
                         StoryRowView(
                             post: viewModel.posts[index],
@@ -851,6 +851,6 @@ struct MenuItem: Identifiable {
 // MARK: - Preview
 #Preview {
     NavigationStack {
-        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+        CharacterDetailView(characterUUID: "2DADAC52-1E6D-4934-9F82-E5610E8C9492")
     }
 }
