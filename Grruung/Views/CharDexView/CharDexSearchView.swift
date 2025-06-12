@@ -93,14 +93,14 @@ struct CharDexSearchView: View {
                 .padding()
             }
             .padding(.bottom, 30)
-            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .scrollContentBackground(.hidden)
             .background(
                 LinearGradient(colors: [
                     Color(GRColor.mainColor1_1),
                     Color(GRColor.mainColor1_2)
                 ],
                                startPoint: .top, endPoint: .bottom)
-            ) // 원하는 색상 지정
+            )
             .navigationTitle("캐릭터 검색")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
