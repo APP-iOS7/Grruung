@@ -27,9 +27,7 @@ struct ProfileDetailView: View {
     @EnvironmentObject private var authService: AuthService
     
     @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var selectedImageData: Data? = nil
     @State private var profileImage: Image? = nil
-    
     @State private var username = "Quaqqa"
     @State private var newName = ""
     @State private var isShowingNameEditorPopup = false
@@ -46,12 +44,11 @@ struct ProfileDetailView: View {
         ])
     ]
     
-    // MARK: - 프로필 섹션
     var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 30) {
-                    
+                    // MARK: - 프로필 섹션
                     VStack(spacing: 20) {
                         ZStack(alignment: .bottomTrailing) {
                             PhotosPicker(selection: $selectedItem,
@@ -73,23 +70,20 @@ struct ProfileDetailView: View {
                                     }
                                 }
                                 .overlay(Circle().stroke(Color.white, lineWidth: 4))
-                                .background(Circle().fill(Color(.systemBackground)))
                             }
-                                         .onChange(of: selectedItem) { newItem in
-                                             Task {
-                                                 if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                                     selectedImageData = data
-                                                     if let uiImage = UIImage(data: data) {
-                                                         profileImage = Image(uiImage: uiImage)
-                                                     }
-                                                 }
-                                             }
-                                         }
+                            .onChange(of: selectedItem) { newItem in
+                                Task {
+                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                       let uiImage = UIImage(data: data) {
+                                        profileImage = Image(uiImage: uiImage)
+                                    }
+                                }
+                            }
                             
                             Image(systemName: "camera.fill")
                                 .foregroundColor(.white)
                                 .padding(6)
-                                .background(Circle().fill(Color.gray))
+                                .background(Circle().fill(Color.orange))
                                 .offset(x: 3, y: 3)
                         }
                         .padding(.top, 20)
@@ -101,30 +95,36 @@ struct ProfileDetailView: View {
                             HStack(spacing: 6) {
                                 Text(username)
                                     .font(.system(size: 22, weight: .semibold))
-                                    .foregroundColor(.black)
+                                    .foregroundColor(.white)
                                 
-                                Image(systemName: "pencil.line")        .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.black)
+                                Image(systemName: "pencil.line")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.white)
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .background(
+                            LinearGradient(
+                                colors: [Color(hex: "#FFB778"), Color(hex: "#FFA04D")],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 25))
                     .padding(.horizontal)
                     
                     // MARK: - 설정 섹션
-                    
                     VStack(spacing: 30) {
                         // FIXME: - Start 결제 내역
                         ForEach(settingSections) { section in
                             VStack {
                                 ForEach(section.items) { item in
+
                                     if item.title == "결제내역" {
                                         NavigationLink {
                                             PurchaseHistoryView()
@@ -178,15 +178,20 @@ struct ProfileDetailView: View {
                 }
                 .padding(.bottom, 50)
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .scrollContentBackground(.hidden)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "#FFF5D2"), Color(hex: "#FFE38B")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
             
+            // MARK: - 닉네임 편집 팝업
             if isShowingNameEditorPopup {
-                Color.black.opacity(0.4).ignoresSafeArea()
-                
                 VStack(spacing: 20) {
                     HStack {
                         Spacer()
-                        
                         Button {
                             isShowingNameEditorPopup = false
                         } label: {
@@ -205,7 +210,7 @@ struct ProfileDetailView: View {
                         .padding()
                         .background(Color(.systemGray6))
                         .frame(maxWidth: .infinity)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                     
                     Button {
                         username = newName
@@ -215,14 +220,14 @@ struct ProfileDetailView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(Color.orange)
                             .cornerRadius(12)
                     }
                 }
                 .padding()
                 .frame(width: 300)
                 .background(Color.white)
-                .cornerRadius(20)
+                .cornerRadius(12)
                 .shadow(radius: 20)
             }
         }
@@ -240,21 +245,19 @@ struct SettingRow: View {
             Image(systemName: icon)
                 .frame(width: 24)
                 .foregroundColor(.primary)
-                .frame(maxHeight: .infinity, alignment: .center)
             
             Text(text)
                 .foregroundColor(.primary)
-                .frame(maxHeight: .infinity, alignment: .center)
             
             Spacer()
+            
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
         }
-        .padding(.vertical, 20)
-        .padding(.horizontal, 15)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
     }
 }
-
 
 // MARK: - Preview
 #Preview {
