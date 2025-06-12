@@ -82,6 +82,7 @@ struct UserInventoryDetailView: View {
                 }
                 .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
                     Button("취소", role: .cancel) {}
+                    // FIXME: - Start 아이템 사용 후 홈뷰로 이동하도록 수정
                     Button("확인", role: .destructive) {
                         isEdited = true
                         if useItemCount > 0 {
@@ -104,16 +105,18 @@ struct UserInventoryDetailView: View {
                             item.userItemQuantity -= Int(useItemCount)
                             if item.userItemQuantity <= 0 {
                                 userInventoryViewModel.deleteItem(userId: realUserId, item: item)
-                                // 이전 뷰로 돌아가기
-                                dismiss()
                             } else {
                                 remainItemCount = Double(item.userItemQuantity)
                                 useItemCount = 0
                                 typeItemCount = Int(useItemCount).description
                                 userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
                             }
+                            
+                            // 홈뷰로 이동
+                            dismiss()
                         }
                     }
+                    // FIXME: - END
                 }
                 .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
                     Button("취소", role: .cancel) {}
@@ -129,19 +132,8 @@ struct UserInventoryDetailView: View {
                     Button("취소", role: .cancel) {}
                     Button("확인", role: .destructive) {
                         isEdited = true
-                        if useItemCount > 0 {
-                            item.userItemQuantity -= Int(useItemCount)
-                            if item.userItemQuantity <= 0 {
-                                userInventoryViewModel.deleteItem(userId: realUserId, item: item)
-                                // 이전 뷰로 돌아가기
-                                dismiss()
-                            } else {
-                                remainItemCount = Double(item.userItemQuantity)
-                                useItemCount = 0
-                                typeItemCount = Int(useItemCount).description
-                                userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
-                            }
-                        }
+                        userInventoryViewModel.deleteItem(userId: realUserId, item: item)
+                        dismiss()
                     }
                 }
                 .alert("영구 아이템은 버릴 수 없습니다.", isPresented: $showingNoDeleteAlert) {
