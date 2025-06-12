@@ -88,7 +88,7 @@ class ItemEffectApplier {
         "와플 먹기": ItemEffect(satiety: 10, stamina: 12, health: 8),
         
         // 채팅 티켓 효과 추가
-        "채팅 티켓": ItemEffect(), // 특별한 스탯 효과 없음
+//        "채팅 티켓": ItemEffect(), // 특별한 스탯 효과 없음
         
         // 추가 아이템 효과는 여기에 간단히 추가 가능
     ]
@@ -149,11 +149,11 @@ class ItemEffectApplier {
         
         // 채팅 티켓인 경우 특별 처리
         if itemName == "채팅 티켓" {
-            // 채팅 티켓 추가
-            let newTicketCount = ChatLimitManager.shared.addChatTickets(quantity)
-            return (true, "\(itemName) 사용 완료: 챗펫 대화 티켓 \(quantity)개 추가되었습니다. (현재: \(newTicketCount)개)")
+            // 채팅 횟수 추가 (기존의 티켓 추가 대신)
+            let newChatCount = ChatLimitManager.shared.addChatCount(3 * quantity) // 티켓 1개당 3회 추가
+            return (true, "\(itemName) 사용 완료: 챗펫 대화 횟수 \(3 * quantity)회 추가되었습니다. (현재: \(newChatCount)회)")
         }
-        
+
         // 포만감 증가
         if effect.satiety > 0 {
             homeViewModel.updateCharacterSatietyStatus(satietyValue: effect.satiety * quantity)

@@ -88,20 +88,12 @@ struct ChatPetView: View {
                 Text("추후 음성 대화 모드 업데이트 예정입니다.")
             }
             .alert("대화 횟수 제한", isPresented: $viewModel.showChatLimitAlert) {
-                Button("티켓 사용", role: .destructive) {
-                    if viewModel.useChatTicket() {
-                        // 티켓 사용 성공 시 메시지 전송
-                        if !viewModel.inputText.isEmpty {
-                            viewModel.sendMessage()
-                        }
-                    }
-                }
                 Button("상점 가기") {
                     showingShopView = true
                 }
                 Button("취소", role: .cancel) { }
             } message: {
-                Text("오늘의 무료 대화 횟수를 모두 사용했습니다. 티켓을 사용하거나 상점에서 티켓을 구매하시겠습니까?")
+                Text("대화 횟수를 모두 사용했습니다. 상점에서 채팅 티켓을 구매하거나, 내일 다시 시도해주세요.")
             }
             .alert("티켓 구매 필요", isPresented: $viewModel.showBuyTicketAlert) {
                 Button("상점 가기") {
@@ -130,21 +122,11 @@ struct ChatPetView: View {
                         .font(.system(size: 12))
                         .foregroundColor(.blue)
                     
-                    Text("\(viewModel.remainingFreeChats)/3")
+                    Text("\(viewModel.remainingChats)/3")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
-                // 티켓 정보 추가
-                HStack(spacing: 4) {
-                    Image(systemName: "ticket.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.purple)
-                    
-                    Text("\(viewModel.ticketCount)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)

@@ -15,13 +15,12 @@ class ChatPetViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var ticketCount: Int = 0
 
     // 오류 해결을 위해 추가된 프로퍼티
     @Published var showSubtitle: Bool = true // 자막 표시 여부
     @Published var isListening: Bool = false // 음성 인식 상태
     
-    @Published var remainingFreeChats: Int = 0
+    @Published var remainingChats: Int = 0
     @Published var showChatLimitAlert: Bool = false
     @Published var showBuyTicketAlert: Bool = false
     
@@ -45,8 +44,8 @@ class ChatPetViewModel: ObservableObject {
         self.character = character
         self.basePrompt = prompt
         
-        self.remainingFreeChats = chatLimitManager.getRemainingChats()
-        self.ticketCount = chatLimitManager.getTicketCount()
+        // 남은 채팅 횟수 초기화
+        self.remainingChats = chatLimitManager.getRemainingChats()
 
         initializeChat()
     }
@@ -279,37 +278,24 @@ class ChatPetViewModel: ObservableObject {
         generatePetResponse(to: userInput)
         
         // 남은 채팅 횟수 업데이트
-        self.remainingFreeChats = chatLimitManager.getRemainingChats()
+        self.remainingChats = chatLimitManager.getRemainingChats()
     }
     
     // 채팅 가능 여부 확인
     private func checkChatAvailability() -> Bool {
-        // 무료 채팅 횟수가 남아있는 경우
+        // 채팅 횟수가 남아있는 경우
         if chatLimitManager.useChat() {
             return true
         }
         
-        // 무료 채팅 횟수를 모두 사용한 경우 알림 표시
+        // 채팅 횟수를 모두 사용한 경우 알림 표시
         showChatLimitAlert = true
         return false
     }
     
-    // 티켓 수 업데이트 메서드
-    func updateTicketCount() {
-        self.ticketCount = chatLimitManager.getTicketCount()
-    }
-    
-    // 채팅 티켓 사용
-    func useChatTicket() -> Bool {
-        if chatLimitManager.useChatTicket() {
-            // 티켓 사용 후 개수 업데이트
-            updateTicketCount()
-            return true
-        }
-        
-        // 티켓이 없는 경우 구매 알림
-        showBuyTicketAlert = true
-        return false
+    // 남은 채팅 횟수 업데이트 메서드 추가
+    func updateRemainingChats() {
+        self.remainingChats = chatLimitManager.getRemainingChats()
     }
     
     // 챗펫 응답을 생성합니다.
