@@ -432,7 +432,7 @@ struct CharacterDetailView: View {
                 .frame(height: 100)
                 .frame(maxWidth: .infinity)
             } else {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(viewModel.posts.indices, id: \.self) { index in
                         StoryRowView(
                             post: viewModel.posts[index],
