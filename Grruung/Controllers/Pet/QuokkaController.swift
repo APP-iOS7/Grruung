@@ -507,18 +507,18 @@ extension QuokkaController {
     }
     
     // MARK: - 진화 완료 처리
-    @MainActor
-    func completeEvolution() {
-        // 진화 완료 후 첫 번째 프레임 로드
-        loadFirstFrame(phase: .infant, animationType: "normal")
-        
-        // 상태 메시지 업데이트
-        downloadMessage = "진화가 완료되었습니다!"
-        downloadProgress = 1.0
-        isDownloading = false
-        
-        print("🎉 진화 완료 - Infant 단계로 전환")
-    }
+//    @MainActor
+//    func completeEvolution() {
+//        // 진화 완료 후 첫 번째 프레임 로드
+//        loadFirstFrame(phase: .infant, animationType: "normal")
+//        
+//        // 상태 메시지 업데이트
+//        downloadMessage = "진화가 완료되었습니다!"
+//        downloadProgress = 1.0
+//        isDownloading = false
+//        
+//        print("🎉 진화 완료 - Infant 단계로 전환")
+//    }
     
     
     // MARK: - 애니메이션 재생

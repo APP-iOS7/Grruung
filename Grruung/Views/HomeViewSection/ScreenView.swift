@@ -81,22 +81,13 @@ struct ScreenView: View {
     private var visualPhase: CharacterPhase? {
         guard let character = character else { return nil }
         
+        // 진화가 완료되지 않은 'to' 상태에서는 이전 단계를 보여준다.
         switch character.status.evolutionStatus {
-        case .toInfant:
-            // .toInfant 상태일 때는 아직 .egg 모습으로 보여야 함
-            return .egg
-        case .toChild:
-            // .toChild 상태일 때는 아직 .infant 모습으로 보여야 함
-            return .infant
-        case .toAdolescent:
-            // .toAdolescent 상태일 때는 아직 .child 모습으로 보여야 함
-            return .child
-        case .toAdult:
-            // .toAdult 상태일 때는 아직 .adolescent 모습으로 보여야 함
-            return .adolescent
-        case .toElder:
-            // .toElder 상태일 때는 아직 .adult 모습으로 보여야 함
-            return .adult
+        case .toInfant: return .egg
+        case .toChild: return .infant
+        case .toAdolescent: return .child
+        case .toAdult: return .adolescent
+        case .toElder: return .adult
         default:
             // 그 외 모든 경우(egg, completeInfant, completeChild 등)에는 현재 phase를 그대로 따름
             return character.status.phase
