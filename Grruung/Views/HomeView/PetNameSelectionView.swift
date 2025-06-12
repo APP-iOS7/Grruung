@@ -108,7 +108,7 @@ struct PetNameSelectionView: View {
             }
             // 홈 화면으로 이동하는 네비게이션 링크
             .navigationDestination(isPresented: $navigateToHome) {
-                MainTabView()
+                MainView()
                     .environmentObject(authService)
                     .navigationBarBackButtonHidden(true)
             }

@@ -1,10 +1,3 @@
-//
-//  WritingCountViewModel.swift
-//  Grruung
-//
-//  Created by NO SEONGGYEONG on 5/27/25.
-//
-
 import Foundation
 import FirebaseFirestore
 
@@ -30,8 +23,7 @@ class WritingCountViewModel: ObservableObject {
             if let data = snapshot?.data() {
                 let writingCount = WritingCount(
                     id: userID,
-                    dailyCount: data["dailyCount"] as? Int ?? 3,
-                    additionalCount: data["additionalCount"] as? Int ?? 0,
+                    dailyRewardCount: data["dailyRewardCount"] as? Int ?? 0,
                     lastResetDate: (data["lastResetDate"] as? Timestamp)?.dateValue() ?? Date()
                 )
                 
@@ -48,19 +40,13 @@ class WritingCountViewModel: ObservableObject {
         }
     }
     
-    func tryToWrite() -> Bool {
-        guard var writingCount = userWritingCount else { return false }
-        if writingCount.tryWrite() {
-            self.userWritingCount = writingCount
-            updateWritingCountInFirestore()
-            return true
-        }
-        return false
-    }
-    
-    func addPurchasedCount(count: Int = 1) {
-        userWritingCount?.addPurchasedCount(count: count)
+    // 글쓰기 시도 후 결과 반환 (성공 여부, 경험치/골드 획득 여부)
+    func tryToWrite() -> (success: Bool, expReward: Bool) {
+        guard var writingCount = userWritingCount else { return (false, false) }
+        let result = writingCount.tryWrite()
+        self.userWritingCount = writingCount
         updateWritingCountInFirestore()
+        return result
     }
     
     private func updateWritingCountInFirestore() {
@@ -73,5 +59,10 @@ class WritingCountViewModel: ObservableObject {
                 print("글쓰기 카운트 업데이트 실패: \(error)")
             }
         }
+    }
+    
+    // 남은 보상 횟수 반환
+    func remainingRewards() -> Int {
+        return userWritingCount?.remainingRewards ?? 0
     }
 }
