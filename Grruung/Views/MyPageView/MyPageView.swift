@@ -190,7 +190,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     case "공지사항":
         NoticeView()
     case "고객센터":
-        Text("질문 및 피드백 화면")
+        CustomerCenterView()
     case "평가 및 리뷰":
         Text("App Store 링크 또는 리뷰 화면")
     case "약관 및 정책":

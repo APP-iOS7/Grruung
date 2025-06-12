@@ -57,7 +57,7 @@ struct CharDexSearchView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .frame(height: 32)
-                    .cornerRadius(8)
+                    .cornerRadius(UIConstants.cornerRadius)
                     .padding(.horizontal, 16)
                     .overlay(
                         HStack {
@@ -92,6 +92,15 @@ struct CharDexSearchView: View {
                 }
                 .padding()
             }
+            .padding(.bottom, 30)
+            .scrollContentBackground(.hidden)
+            .background(
+                LinearGradient(colors: [
+                    Color(GRColor.mainColor1_1),
+                    Color(GRColor.mainColor1_2)
+                ],
+                               startPoint: .top, endPoint: .bottom)
+            )
             .navigationTitle("캐릭터 검색")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -138,11 +147,47 @@ struct CharDexSearchView: View {
     private func characterSlot(_ character: GRCharacter) -> some View {
         VStack(alignment: .center) {
             ZStack {
-                Image(systemName: character.imageName)
-                    .resizable()
-                    .frame(width: 100, height: 100, alignment: .center)
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(.black)
+                Group {
+                    if character.status.phase == .egg {
+                        Image("egg")
+                            .resizable()
+                            .scaledToFit()
+                    } else if character.species == .quokka {
+                        switch character.status.phase {
+                        case .egg:
+                            Image("egg")
+                                .resizable()
+                                .scaledToFill()
+                        case .infant:
+                            Image("quokka_infant_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .child:
+                            Image("quokka_child_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .adolescent:
+                            Image("quokka_adolescent_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .adult:
+                            Image("quokka_adult_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .elder:
+                            Image("quokka_adult_still")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                    } else {
+                        Image("CatLion")
+                            .resizable()
+                            .scaledToFit()
+                    }
+                }
+                .frame(width: 130, height: 130)
+                
+                // 위치 표시 아이콘
                 if character.status.address == "space" {
                     Image(systemName: "xmark")
                         .resizable()
@@ -173,7 +218,7 @@ struct CharDexSearchView: View {
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
+        .cornerRadius(UIConstants.cornerRadius)
         .foregroundColor(.gray)
         .padding(.bottom, 16)
     }

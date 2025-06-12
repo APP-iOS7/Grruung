@@ -47,7 +47,7 @@ struct CharDexView: View {
     @EnvironmentObject private var characterDexViewModel: CharacterDexViewModel
     
     @State private var isDataLoaded: Bool = false
-
+    
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -166,6 +166,15 @@ struct CharDexView: View {
                     }
                 }
             }
+            .padding(.bottom, 30)
+            .scrollContentBackground(.hidden)
+            .background(
+                LinearGradient(colors: [
+                    Color(GRColor.mainColor1_1),
+                    Color(GRColor.mainColor1_2)
+                ],
+                               startPoint: .top, endPoint: .bottom)
+            ) 
             .navigationTitle("캐릭터 동산")
             .toolbar {
                 // 검색 버튼
@@ -294,27 +303,44 @@ struct CharDexView: View {
                 // 이미지 부분
                 Group {
                     if character.status.phase == .egg {
-                        // 운석 단계일 경우 이미지 사용
                         Image("egg")
                             .resizable()
-                            .frame(width: 100, height: 100, alignment: .center)
-                            .aspectRatio(contentMode: .fit)
-                    } else {
-                        // 그 외 단계에서는 species에 따라 이미지 결정
-                        if character.species == .quokka {
-                            Image("quokka")
+                            .scaledToFit()
+                    } else if character.species == .quokka {
+                        switch character.status.phase {
+                        case .egg:
+                            Image("egg")
                                 .resizable()
-                                .frame(width: 100, height: 100, alignment: .center)
-                                .aspectRatio(contentMode: .fit)
-                        } else {
-                            Image("CatLion")
+                                .scaledToFill()
+                        case .infant:
+                            Image("quokka_infant_still")
                                 .resizable()
-                                .frame(width: 100, height: 100, alignment: .center)
-                                .aspectRatio(contentMode: .fit)
+                                .scaledToFill()
+                        case .child:
+                            Image("quokka_child_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .adolescent:
+                            Image("quokka_adolescent_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .adult:
+                            Image("quokka_adult_still")
+                                .resizable()
+                                .scaledToFill()
+                        case .elder:
+                            Image("quokka_adult_still")
+                                .resizable()
+                                .scaledToFill()
                         }
+                    } else {
+                        Image("CatLion")
+                            .resizable()
+                            .scaledToFit()
                     }
                 }
-                .foregroundStyle(.black)
+                .frame(width: 130, height: 130)
+             
                 
                 // 위치 표시 아이콘
                 if character.status.address == "userHome" {
@@ -347,7 +373,7 @@ struct CharDexView: View {
         .frame(height: 180)
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
-        .cornerRadius(20)
+        .cornerRadius(UIConstants.cornerRadius)
         .foregroundColor(.gray)
         .padding(.bottom, 16)
     }

@@ -66,7 +66,7 @@ class WriteStoryViewModel: ObservableObject {
         }
     }
     
-    func editPost(postID: String, postTitle: String, postBody: String, newImageData: Data?, existingImageUrl: String?) async throws {
+    func editPost(postID: String, postTitle: String, postBody: String, newImageData: Data?, existingImageUrl: String?, deleteImage: Bool) async throws {
         
         var imageUrlToSave = existingImageUrl ?? ""
         
@@ -94,18 +94,35 @@ class WriteStoryViewModel: ObservableObject {
             
             // 2. 새 이미지를 Firebase Storage에 업로드
             imageUrlToSave = try await uploadImageToStorage(imageData: data)
+        } else if deleteImage {
+            // 이미지를 삭제하는 경우
+            imageUrlToSave = ""
             
-            do {
-                try await db.collection("GRPost").document(postID).updateData([
-                    "postTitle": postTitle,
-                    "postImage": imageUrlToSave,
-                    "postBody": postBody,
-                    "updatedAt": Timestamp(date: Date())
-                ])
-                print("Post updated with ID: \(postID)")
-            } catch {
-                throw error
+            // 기존 이미지가 있다면 스토리지에서 삭제
+            if let oldUrlString = existingImageUrl,
+               !oldUrlString.isEmpty,
+               let oldUrl = URL(string: oldUrlString),
+               oldUrl.host?.contains("firebasestorage.googleapis.com") ?? false {
+                
+                let oldImageRef = storage.reference(forURL: oldUrlString)
+                do {
+                    try await oldImageRef.delete()
+                    print("기존 이미지 삭제 완료: \(oldUrlString)")
+                } catch {
+                    print("기존 이미지 삭제 실패: \(error)")
+                }
             }
+        }
+        do {
+            try await db.collection("GRPost").document(postID).updateData([
+                "postTitle": postTitle,
+                "postImage": imageUrlToSave,
+                "postBody": postBody,
+                "updatedAt": Timestamp(date: Date())
+            ])
+            print("Post updated with ID: \(postID)")
+        } catch {
+            throw error
         }
     }
     

@@ -64,24 +64,47 @@ struct CharacterDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: UIConstants.verticalPadding) {
                 // 캐릭터 정보 영역
                 characterInfoSection
                 
-                // 성장 과정 영역
-                growthProgressSection
+                VStack(spacing: 20) {
+                    // 성장 과정 영역
+                    growthProgressSection
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
+                )
+                .padding(.horizontal ,UIConstants.horizontalPadding)
                 
-                // 날짜 탐색 버튼
-                dateNavigationSection
-                
-                // 활동 기록 영역
-                activitySection
-                
-                // 들려준 이야기 영역
-                storyListSection
+                VStack(spacing: 20) {
+                    // 날짜 탐색 버튼
+                    dateNavigationSection
+                    
+                    // 활동 기록 영역
+                    activitySection
+                    
+                    // 들려준 이야기 영역
+                    storyListSection
+                }
+                .padding(.vertical, UIConstants.verticalPadding)
+                .background(
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
+                )
+                .padding(.horizontal ,UIConstants.horizontalPadding)
             }
-            .padding(.bottom, 30)
         }
+        .padding(.bottom, 55)
+        .scrollContentBackground(.hidden)
+        .background(
+            LinearGradient(colors: [
+                Color(GRColor.mainColor1_1),
+                Color(GRColor.mainColor1_2)
+            ],
+                           startPoint: .top, endPoint: .bottom)
+        )
         .navigationTitle(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -190,13 +213,13 @@ struct CharacterDetailView: View {
     // MARK: - Character Info Section
     
     private var characterInfoSection: some View {
-        HStack(alignment: .top, spacing: 15) {
+        HStack(alignment: .top, spacing: UIConstants.horizontalPadding) {
             // 캐릭터 이미지
             CharacterImageView(character: viewModel.character)
-                .frame(width: 120, height: 120)
+                .frame(width: UIConstants.imageViewHeight, height: UIConstants.imageViewHeight)
             
             // 캐릭터 정보
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 2) {
                 InfoRow(title: "떨어진 날", value: formatDate(viewModel.character.createdAt))
                 InfoRow(title: "태어난 날", value: formatDate(viewModel.character.birthDate))
                 InfoRow(title: "종", value: viewModel.character.species.rawValue)
@@ -207,79 +230,63 @@ struct CharacterDetailView: View {
             
             Spacer()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
+        .padding(.horizontal, UIConstants.horizontalPadding)
+        .padding(.vertical, UIConstants.verticalPadding / 1.6)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal)
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Growth Progress Section
     
     private var growthProgressSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(GRColor.pointColor)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
-                Spacer()
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 15) {
+                HStack(spacing: UIConstants.horizontalPadding / 4) {
                     ForEach(0...currentStageIndex, id: \.self) { index in
-                        VStack(spacing: 8) {
+                        VStack {
                             // 성장 단계 이미지
-                            AsyncImage(
-                                url: getGrowthStageImageURL(for: index)
-                            ) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 60, height: 60)
-                            } placeholder: {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray5))
-                                    .frame(width: 60, height: 60)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .foregroundColor(.gray)
-                                    )
-                            }
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(index == currentStageIndex ? Color.blue.opacity(0.1) : Color.clear)
-                            )
+                            let imageName = getGrowthStageImageName(for: index)
+                            
+                            Image(imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100 , height: 100)
                             
                             // 단계 이름
                             Text(getPhaseNameFor(index: index))
                                 .font(.caption)
                                 .fontWeight(index == currentStageIndex ? .semibold : .regular)
-                                .foregroundColor(index == currentStageIndex ? .blue : .secondary)
+                                .foregroundColor(index == currentStageIndex ? GRColor.pointColor : .textSecondary)
                         }
                         
                         // 화살표 (마지막이 아닌 경우)
                         if index != currentStageIndex {
                             Image(systemName: "arrow.right")
-                                .foregroundColor(.gray)
+                                .foregroundColor(GRColor.gray400)
                                 .font(.caption)
                         }
                     }
+                    Spacer(minLength: 8)
                 }
-                .padding(.horizontal)
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 15)
+        .padding(.vertical, UIConstants.verticalPadding)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal)
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Date Navigation Section
@@ -292,7 +299,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
-                    .foregroundColor(.blue)
+                    .foregroundColor(GRColor.pointColor)
             }
             
             Spacer()
@@ -309,36 +316,36 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.right")
                     .font(.title2)
-                    .foregroundColor(.blue)
+                    .foregroundColor(GRColor.pointColor)
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
+        .padding(.horizontal, UIConstants.horizontalPadding)
+        .padding(.vertical, UIConstants.verticalPadding / 1.6)
     }
     
     // MARK: - Activity Section
     
     private var activitySection: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(.red)
+                    .foregroundColor(GRColor.grColorRed)
                 Text("함께 했던 순간")
                     .font(.headline)
                     .fontWeight(.semibold)
                 Spacer()
             }
             
-            HStack(spacing: 20) {
+            HStack(spacing: UIConstants.horizontalPadding) {
                 // 활동 아이콘
                 VStack {
                     Image(systemName: "pawprint.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.orange)
+                        .font(.system(size: UIIconSize.large))
+                        .foregroundColor(GRColor.grColorOrange)
                     
                     Text("총 활동량")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.textSecondary)
                 }
                 
                 Divider()
@@ -355,21 +362,21 @@ struct CharacterDetailView: View {
                 Spacer()
             }
         }
-        .padding()
+        .padding(UIConstants.horizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal)
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Story List Section
     
     private var storyListSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "book.fill")
-                    .foregroundColor(.brown)
+                    .foregroundColor(GRColor.grColorBrown)
                 Text("들려준 이야기")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -378,25 +385,25 @@ struct CharacterDetailView: View {
                 if !viewModel.posts.isEmpty {
                     Text("\(viewModel.posts.count)개")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.textSecondary)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, UIConstants.horizontalPadding)
             
             if viewModel.posts.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "book.closed")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
+                        .font(.system(size: UIIconSize.large))
+                        .foregroundColor(GRColor.gray400)
                     
                     Text("이번 달에 기록된 이야기가 없습니다")
-                        .foregroundColor(.gray)
+                        .foregroundColor(GRColor.gray500)
                         .font(.subheadline)
                 }
                 .frame(height: 100)
                 .frame(maxWidth: .infinity)
             } else {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(viewModel.posts.indices, id: \.self) { index in
                         StoryRowView(
                             post: viewModel.posts[index],
@@ -444,9 +451,22 @@ struct CharacterDetailView: View {
     }
     
     // 성장 단계 이미지 URL 반환
-    private func getGrowthStageImageURL(for index: Int) -> URL? {
-        guard index < viewModel.growthStages.count else { return nil }
-        return viewModel.growthStages[index].imageURL
+    // 성장 단계 이미지 이름 반환 (Assets에서)
+    private func getGrowthStageImageName(for index: Int) -> String {
+        let characterStillImages: [String] = [
+            "egg",
+            "quokka_infant_still",
+            "quokka_child_still",
+            "quokka_adolescent_still",
+            "quokka_adult_still",
+            "quokka"
+        ]
+        
+        guard index < characterStillImages.count else {
+            return "egg" // 기본값
+        }
+        
+        return characterStillImages[index]
     }
     
     // 단계 인덱스에 따른 이름 반환
@@ -619,9 +639,38 @@ struct CharacterImageView: View {
                     .resizable()
                     .scaledToFit()
             } else if character.species == .quokka {
-                Image("quokka")
-                    .resizable()
-                    .scaledToFit()
+                switch character.status.phase {
+                    //                case egg = "운석"
+                    //                case infant = "유아기"
+                    //                case child = "소아기"
+                    //                case adolescent = "청년기"
+                    //                case adult = "성년기"
+                    //                case elder = "노년기"
+                case .egg:
+                    Image("egg")
+                        .resizable()
+                        .scaledToFit()
+                case .infant:
+                    Image("quokka_infant_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .child:
+                    Image("quokka_child_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adolescent:
+                    Image("quokka_adolescent_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adult:
+                    Image("quokka_adult_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .elder:
+                    Image("quokka")
+                        .resizable()
+                        .scaledToFit()
+                }
             } else {
                 Image("CatLion")
                     .resizable()
@@ -629,13 +678,14 @@ struct CharacterImageView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray5))
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(GRColor.gray200Line)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.systemGray4), lineWidth: 1)
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .stroke(GRColor.gray300Disable, lineWidth: 1)
         )
+        .cornerRadius(UIConstants.cornerRadius)
     }
 }
 
@@ -647,12 +697,13 @@ struct InfoRow: View {
         HStack {
             Text(title + ":")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.textSecondary)
                 .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
+                .foregroundColor(.textPrimary)
             
             Spacer()
         }
@@ -669,17 +720,18 @@ struct StatRow: View {
         HStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.textSecondary)
                 .frame(width: 50, alignment: .leading)
             
             Text("\(value)")
                 .font(.caption)
                 .fontWeight(.semibold)
+                .foregroundColor(color)
                 .frame(width: 30, alignment: .trailing)
             
             Text("/ \(maxValue)")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.textSecondary)
             
             Spacer()
         }
@@ -694,56 +746,80 @@ struct StoryRowView: View {
     
     var body: some View {
         NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: post.characterUUID, postID: post.postID)) {
-            HStack(spacing: 15) {
-                // 이미지
-                AsyncImage(url: URL(string: post.postImage)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 60, height: 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemGray5))
-                        .frame(width: 60, height: 60)
+            HStack(spacing: UIConstants.horizontalPadding) {
+                // 이미지 로드중일 시 로딩 인디케이터 표시, 성공 시 이미지 표시, 실패 시 기본 이미지 표시
+                if let imageURL = URL(string: post.postImage), !post.postImage.isEmpty {
+                    AsyncImage(url: URL(string: post.postImage)) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .background(
+                                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                        .fill(GRColor.gray200Line)
+                                )
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .clipShape(RoundedRectangle(cornerRadius: UIConstants.cornerRadius))
+                            
+                        case .failure:
+                            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                                .fill(GRColor.gray200Line)
+                                .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .foregroundColor(GRColor.gray500)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.gray200Line)
+                        .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                         .overlay(
                             Image(systemName: "photo")
-                                .foregroundColor(.gray)
+                                .foregroundColor(GRColor.gray500)
                         )
                 }
                 
                 // 텍스트 정보
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
                     Text(post.postTitle)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.textPrimary)
                     
                     Text(formatDate(post.createdAt))
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.textSecondary)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(GRColor.gray400)
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal)
+            .padding(.vertical, UIConstants.verticalPadding / 2)
+            .padding(.horizontal, UIConstants.horizontalPadding)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive, action: onDelete) {
                 Label("삭제", systemImage: "trash")
             }
+            .tint(GRColor.redError)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             Button(action: onEdit) {
                 Label("편집", systemImage: "pencil")
             }
-            .tint(.blue)
+            .tint(GRColor.pointColor)
         }
     }
 }
@@ -754,7 +830,7 @@ struct LoadingOverlay: View {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
             
-            VStack(spacing: 15) {
+            VStack(spacing: UIConstants.verticalPadding) {
                 ProgressView()
                     .scaleEffect(1.5)
                     .tint(.white)
@@ -763,9 +839,9 @@ struct LoadingOverlay: View {
                     .foregroundColor(.white)
                     .font(.subheadline)
             }
-            .padding(20)
+            .padding(UIConstants.horizontalPadding)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                     .fill(Color.black.opacity(0.8))
             )
         }
@@ -789,6 +865,6 @@ struct MenuItem: Identifiable {
 // MARK: - Preview
 #Preview {
     NavigationStack {
-        CharacterDetailView(characterUUID: "CF6NXxcH5HgGjzVE0nVE")
+        CharacterDetailView(characterUUID: "2DADAC52-1E6D-4934-9F82-E5610E8C9492")
     }
 }

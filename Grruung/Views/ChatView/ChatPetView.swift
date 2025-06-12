@@ -12,6 +12,7 @@ struct ChatPetView: View {
     @Environment(\.presentationMode) var presentationMode
     @FocusState private var isInputFocused: Bool
     @State private var showUpdateAlert = false // 업데이트 알림 표시 여부
+    @State private var showingShopView = false // 상점 화면 표시 여부
 
     // 캐릭터와 프롬프트 직접 저장
     let character: GRCharacter
@@ -30,10 +31,11 @@ struct ChatPetView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
+                    remainingChatInfo
+                    
                     chatMessagesArea
                     
                     messageInputArea
-//                        .ignoresSafeArea(.keyboard, edges: .bottom)
                 }
                 
                 if viewModel.isLoading {
@@ -85,12 +87,53 @@ struct ChatPetView: View {
             } message: {
                 Text("추후 음성 대화 모드 업데이트 예정입니다.")
             }
+            .alert("대화 횟수 제한", isPresented: $viewModel.showChatLimitAlert) {
+                Button("상점 가기") {
+                    showingShopView = true
+                }
+                Button("취소", role: .cancel) { }
+            } message: {
+                Text("대화 횟수를 모두 사용했습니다. 상점에서 채팅 티켓을 구매하거나, 내일 다시 시도해주세요.")
+            }
+            .alert("티켓 구매 필요", isPresented: $viewModel.showBuyTicketAlert) {
+                Button("상점 가기") {
+                    showingShopView = true
+                }
+                Button("취소", role: .cancel) { }
+            } message: {
+                Text("대화 티켓이 부족합니다. 상점에서 티켓을 구매하시겠습니까?")
+            }
             .onTapGesture {
                 // 배경 탭 시 키보드 숨기기
                 if isInputFocused {
                     isInputFocused = false
                 }
             }
+        }
+    }
+    
+    private var remainingChatInfo: some View {
+        HStack {
+            Spacer()
+            HStack(spacing: 8) {
+                // 무료 채팅 정보
+                HStack(spacing: 4) {
+                    Image(systemName: "bubble.left.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
+                    
+                    Text("\(viewModel.remainingChats)/3")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(12)
+            .padding(.trailing, 16)
+            .padding(.top, 8)
         }
     }
     

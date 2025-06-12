@@ -15,14 +15,40 @@ struct MainView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var characterService: FirebaseService
     @StateObject private var tabBarController = CustomTabBarController()
+    private var color: Color = GRColor.mainColor1_2
     
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 // 현재 선택된 탭에 따른 컨텐츠 표시
                 TabContent(selectedTab: tabBarController.selectedTab)
+                    .padding(.bottom, tabBarController.selectedTab == 0 || tabBarController.selectedTab == 1 ? 0 : 90)
                     .edgesIgnoringSafeArea(.all)
                 
+                if tabBarController.selectedTab != 0 {
+                    switch tabBarController.selectedTab {
+                    case 1:
+                        Rectangle()
+                            .fill(GRColor.mainColor1_2)
+                            .frame(height: 81)
+                            .ignoresSafeArea(edges: .bottom)
+                    case 2:
+                        Rectangle()
+                            .fill(GRColor.mainColor2_2)
+                            .frame(height: 90)
+                            .ignoresSafeArea(edges: .bottom)
+                    case 3:
+                        Rectangle()
+                            .fill(GRColor.mainColor3_2)
+                            .frame(height: 90)
+                            .ignoresSafeArea(edges: .bottom)
+                    default:
+                        Rectangle()
+                            .fill(.white)
+                            .frame(height: 90)
+                            .ignoresSafeArea(edges: .bottom)
+                    }
+                }
                 // 커스텀 탭바
                 CustomTabBar(selectedTab: $tabBarController.selectedTab)
                     .edgesIgnoringSafeArea(.bottom)
