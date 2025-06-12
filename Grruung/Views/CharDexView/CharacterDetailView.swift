@@ -685,6 +685,7 @@ struct CharacterImageView: View {
             RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                 .stroke(GRColor.gray300Disable, lineWidth: 1)
         )
+        .cornerRadius(UIConstants.cornerRadius)
     }
 }
 
