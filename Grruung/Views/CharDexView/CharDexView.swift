@@ -48,6 +48,17 @@ struct CharDexView: View {
     
     @State private var isDataLoaded: Bool = false
     
+    // UserDefaults 키 정의
+    private enum UserDefaultsKeys {
+        static let doNotShowSlotAlert = "doNotShowSlotAlert"
+    }
+
+    // 더이상 보지않기 체크 상태
+    @State private var doNotShowAgain: Bool = false
+
+    // 커스텀 알림창 상태 추가
+    @State private var showingCustomAlert = false
+    
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -165,6 +176,11 @@ struct CharDexView: View {
                         }
                     }
                 }
+                
+                // 커스텀 알림창 표시
+                if showingCustomAlert {
+                    customAlertView
+                }
             }
             .padding(.bottom, 30)
             .scrollContentBackground(.hidden)
@@ -188,15 +204,27 @@ struct CharDexView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     sortOptionsMenu
                 }
+                
+#if DEBUG
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        // UserDefaults 초기화
+                        resetUserDefaultsForTesting()
+                        // 팝업 강제 표시
+                        showingCustomAlert = true
+                    }) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                    }
+                }
+#endif
             }
             .onAppear {
                 loadInitialData()
             }
             .onDisappear {
-                // FIXME: - Start 리스너 정리
                 charactersListener?.remove()
                 charactersListener = nil
-                // FIXME: - End
             }
             
             // MARK: - Alert Modifiers
@@ -205,15 +233,6 @@ struct CharDexView: View {
                     unlockSlot()
                 }
                 Button("취소", role: .cancel) {}
-            }
-            .alert("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.", isPresented: $showingNotEnoughAlert) {
-                Button("슬롯 해금하기") {
-                    selectedLockedIndex = 0
-                    showingUnlockAlert = true
-                }
-                Button("취소", role: .cancel) {
-                    firstAlert = false
-                }
             }
             .alert("잠금해제 티켓의 수가 부족합니다", isPresented: $showingNotEnoughTicketAlert) {
                 Button("확인", role: .cancel) {}
@@ -413,6 +432,60 @@ struct CharDexView: View {
         .padding(.bottom, 16)
     }
     
+    // 커스텀 알림창 뷰
+    private var customAlertView: some View {
+        ZStack {
+            // 배경 오버레이
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    // 배경 탭하면 닫기
+                    showingCustomAlert = false
+                    firstAlert = false
+                }
+            
+            // 알림창 컨텐츠
+            VStack(spacing: 20) {
+                // 제목
+                Text("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .multilineTextAlignment(.center)
+                    .padding(.top)
+                
+                // 체크박스
+                Toggle("더이상 보지 않기", isOn: $doNotShowAgain)
+                    .toggleStyle(CheckboxToggleStyle())
+                    .padding(.horizontal)
+                
+                // 버튼
+                Button {
+                    showingCustomAlert = false
+                    firstAlert = false
+                    saveSlotAlertPreference()
+                } label: {
+                    Text("확인")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.brown.opacity(0.5)) // 앱 스타일에 맞는 갈색 배경
+                        .foregroundColor(.black) // 텍스트 색상을 검정으로 변경
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+            .frame(width: 300)
+            .background(Color(UIColor.systemBackground)) // 시스템 배경색 사용
+            .cornerRadius(15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(Color.brown.opacity(0.5), lineWidth: 1) // 갈색 테두리 추가
+            )
+            .shadow(radius: 5)
+        }
+    }
+    
     // MARK: - Methods
     
     // 데이터 로딩
@@ -516,8 +589,8 @@ struct CharDexView: View {
                     print("✅ 캐릭터 목록 업데이트 완료: \(updatedCharacters.count)개")
                     
                     // 캐릭터 수와 해제 슬롯 수 체크 로직
-                    if self.unlockCount <= self.sortedCharacters.count && self.firstAlert {
-                        self.showingNotEnoughAlert = true
+                    if self.unlockCount <= self.sortedCharacters.count && self.firstAlert && shouldShowSlotAlert() {
+                        self.showingCustomAlert = true  // 커스텀 알림창 표시
                     }
                     
                     if self.sortedCharacters.count > self.unlockCount {
@@ -630,6 +703,11 @@ struct CharDexView: View {
             }
         }
     }
+    
+    private func resetUserDefaultsForTesting() {
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.doNotShowSlotAlert)
+        print("✅ UserDefaults 초기화 완료: 팝업이 다시 표시됩니다.")
+    }
 }
 
 // MARK: - Helper Types
@@ -666,6 +744,37 @@ struct LoadingView: View {
                 .padding()
             Text("데이터 로딩 중...")
                 .font(.headline)
+        }
+    }
+}
+
+extension CharDexView {
+    struct CheckboxToggleStyle: ToggleStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            HStack {
+                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                    .foregroundColor(configuration.isOn ? Color.brown : Color.gray.opacity(0.5)) // 체크박스 색상 갈색으로 변경
+                    .font(.system(size: 16, weight: .semibold))
+                    .onTapGesture {
+                        configuration.isOn.toggle()
+                    }
+                
+                configuration.label
+                    .font(.footnote)
+                    .foregroundColor(.black) // 텍스트 색상 검정으로 설정
+            }
+        }
+    }
+    
+    // 알림창 표시 여부 확인 메서드
+    private func shouldShowSlotAlert() -> Bool {
+        return !UserDefaults.standard.bool(forKey: UserDefaultsKeys.doNotShowSlotAlert)
+    }
+    
+    // 알림창 표시 여부 저장 메서드
+    private func saveSlotAlertPreference() {
+        if doNotShowAgain {
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.doNotShowSlotAlert)
         }
     }
 }
