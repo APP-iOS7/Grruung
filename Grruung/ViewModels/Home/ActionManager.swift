@@ -78,7 +78,8 @@ class ActionManager {
         // 재우기/깨우기 액션 처리 (항상 표시)
         if let sleepAction = allActions.first(where: { $0.id == "sleep" }) {
             // 자고 있는 경우 깨우기 액션으로 변경
-            let modifiedSleepAction = isSleeping ? sleepAction.withUpdatedName("깨우기") : sleepAction
+            let modifiedSleepAction = isSleeping ?
+                sleepAction.withUpdatedName("깨우기") : sleepAction
             result.append(modifiedSleepAction)
         }
         
@@ -109,12 +110,12 @@ class ActionManager {
                 result.append(contentsOf: randomActions)
             }
             
-#if DEBUG
+    #if DEBUG
             print("🎯 액션 필터링 결과:")
             print("   - 현재 단계: \(phase.rawValue)")
             print("   - 전체 가능한 액션: \(availableActions.count)개")
             print("   - 최종 선택된 액션: \(result.map { $0.name }.joined(separator: ", "))")
-#endif
+    #endif
         }
         
         // ActionButton으로 변환
@@ -194,6 +195,21 @@ class ActionManager {
                 timeRestriction: TimeRestriction(startHour: 22, endHour: 6, isInverted: true)
             ),
             
+            // 우유먹기 (유아기 필수 액션)
+            PetAction(
+                id: "milk_feeding",
+                icon: "drop.circle.fill",
+                name: "우유먹기",
+                unlockPhase: .infant,
+                phaseExclusive: true, // 유아기에만 사용 가능하도록 변경
+                activityCost: 4,
+                effects: ["satiety": 12, "healthy": 8, "happiness": 5],
+                expGain: 4,
+                successMessage: "우유가 맛있어요! 쑥쑥 자랄 수 있을 것 같아요!",
+                failMessage: "지금은 우유를 먹고 싶지 않아요...",
+                timeRestriction: nil
+            ),
+            
             // 유아기 이상 액션
             PetAction(
                 id: "feed",
@@ -234,47 +250,7 @@ class ActionManager {
                 failMessage: "너무 지쳐서 씻기 힘들어요...",
                 timeRestriction: nil
             ),
-            PetAction(
-                id: "give_medicine",
-                icon: "pills.fill",
-                name: "감기약",
-                unlockPhase: .infant,
-                phaseExclusive: false,
-                activityCost: 3,
-                effects: ["healthy": 20, "stamina": -2],
-                expGain: 2,
-                successMessage: "약을 먹고 몸이 좋아졌어요!",
-                failMessage: "너무 지쳐서 약을 먹기 힘들어요...",
-                timeRestriction: nil
-            ),
             
-            PetAction(
-                id: "vitamins",
-                icon: "capsule.fill",
-                name: "영양제",
-                unlockPhase: .child,
-                phaseExclusive: false,
-                activityCost: 2,
-                effects: ["healthy": 15, "stamina": 5, "satiety": 3],
-                expGain: 3,
-                successMessage: "영양제로 건강해졌어요!",
-                failMessage: "컨디션이 안 좋아서 영양제를 거부해요...",
-                timeRestriction: nil
-            ),
-            
-            PetAction(
-                id: "check_health",
-                icon: "stethoscope",
-                name: "건강 검진",
-                unlockPhase: .adolescent,
-                phaseExclusive: false,
-                activityCost: 8,
-                effects: ["healthy": 25, "happiness": -5], // 병원이라 약간 스트레스
-                expGain: 5,
-                successMessage: "건강 검진 결과 아주 건강해요!",
-                failMessage: "너무 지쳐서 병원에 갈 수 없어요...",
-                timeRestriction: TimeRestriction(startHour: 9, endHour: 18, isInverted: false) // 병원 운영시간
-            ),
             
             // MARK: - 기타 관련 액션들
             PetAction(
@@ -375,20 +351,6 @@ class ActionManager {
                 expGain: 3,
                 successMessage: "털을 빗어주니까 깔끔해져요!",
                 failMessage: "너무 지쳐서 가만히 있을 수 없어요...",
-                timeRestriction: nil
-            ),
-            
-            PetAction(
-                id: "full_grooming",
-                icon: "sparkles",
-                name: "그루밍",
-                unlockPhase: .adolescent,
-                phaseExclusive: false,
-                activityCost: 10,
-                effects: ["clean": 25, "healthy": 8, "happiness": 10, "stamina": -5],
-                expGain: 6,
-                successMessage: "완벽한 그루밍으로 멋져졌어요!",
-                failMessage: "너무 지쳐서 그루밍을 받을 수 없어요...",
                 timeRestriction: nil
             ),
             
