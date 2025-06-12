@@ -32,7 +32,8 @@ struct WriteStoryView: View {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var selectedImageData: Data? = nil // 새로 선택/변경한 이미지 데이터
     @State private var displayedImage: UIImage? = nil // 화면에 표시될 최종 이미지
-    
+    @State private var showCooldownAlert = false // 쿨타임 알림 표시 여부
+
     private var isPlaceholderVisible: Bool {
         postBody.isEmpty
     }
@@ -216,20 +217,25 @@ struct WriteStoryView: View {
                             print("우측 상단 button tapped!")
                             
                             if currentMode == .create {
-                                // 글쓰기 횟수 확인 후 처리
-                                if writingCountVM.tryToWrite() {
-                                    let _ =  try await viewModel.createPost(
-                                        characterUUID: characterUUID,
-                                        postTitle: postTitle,
-                                        postBody: postBody,
-                                        imageData: selectedImageData
-                                    )
-                                    dismiss()
-                                } else {
-                                    print("글쓰기 횟수가 부족합니다")
-                                    
+                                // 글쓰기 및 보상 체크
+                                let (success, expReward) = writingCountVM.tryToWrite()
+                                
+                                // 글 저장 (항상 성공)
+                                let newPostId = try await viewModel.createPost(
+                                    characterUUID: characterUUID,
+                                    postTitle: postTitle,
+                                    postBody: postBody,
+                                    imageData: selectedImageData
+                                )
+                                
+                                // 보상 획득 가능하면 보상 추가
+                                if expReward {
+                                    await addRewardForWriting(characterUUID: characterUUID)
                                 }
+                                
+                                dismiss()
                             } else if currentMode == .edit {
+                                // 기존 로직 유지
                                 try await viewModel.editPost(
                                     postID: currentPost?.postID ?? "",
                                     postTitle: postTitle,
@@ -237,17 +243,13 @@ struct WriteStoryView: View {
                                     newImageData: selectedImageData,
                                     existingImageUrl: currentPost?.postImage ?? ""
                                 )
+                                dismiss()
+                            } else {
+                                dismiss() // 읽기 모드면 그냥 닫기
                             }
-                            dismiss()
                         } catch {
                             print("Error saving post: \(error)")
                         }
-                    }
-                    
-                    if let imageData = selectedImageData {
-                        print("Image data size: \(imageData.count) bytes")
-                    } else {
-                        print("No image selected.")
                     }
                 }
                 .disabled(currentMode != .read && (postBody.isEmpty || postTitle.isEmpty))
@@ -258,8 +260,30 @@ struct WriteStoryView: View {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
         }
+        .alert("쿨타임 안내", isPresented: $showCooldownAlert) {
+            Button("확인", role: .cancel) { }
+        } message: {
+            Text("이야기를 작성했지만 쿨타임 중이어서 경험치와 골드를 획득하지 못했습니다.\n다음 보상은 쿨타임 종료 후 이용 가능합니다.")
+        }
     }
     
+    // 경험치 및 골드 추가 함수
+    private func addRewardForWriting(characterUUID: String) async {
+        do {
+            // 고정된 보상 값
+            let exp = 50
+            let gold = 100
+            
+            // 경험치와 골드 추가 함수 호출
+            try await FirebaseService.shared.addExpAndGold(
+                characterID: characterUUID,
+                exp: exp,
+                gold: gold
+            )
+        } catch {
+            print("⚠️ 보상 추가 실패: \(error.localizedDescription)")
+        }
+    }
     
     private func setupViewforCurrentMode() {
         if currentMode == .create {

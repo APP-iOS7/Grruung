@@ -64,24 +64,16 @@ struct WriteStoryStartView: View {
             VStack {
                 Spacer()
                 Button {
-                    if let count = writingCountVM.userWritingCount?.totalAvailableCount, count > 0 {
-                        // 글쓰기 횟수가 남아있으면 이동
-                        navigateToWriteView = true
-                    } else {
-                        // 글쓰기 횟수가 없으면 알림 표시
-                        showNoCountAlert = true
-                    }
+                    // 항상 이용 가능
+                    navigateToWriteView = true
                 } label: {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
-                    // 글쓰기 횟수의 남은 횟수에 따라 버튼 색상 변경 글쓰기 가능: 파랑, 불가능: 회색
-                        .background((writingCountVM.userWritingCount?.totalAvailableCount ?? 0) > 0 ? Color.blue : Color.gray)
+                        .background(Color.blue) // 항상 파란색 (이용 가능)
                         .clipShape(Circle())
                         .shadow(radius: 4)
-                    
-                    
                 }
                 .padding(.bottom, 16)
             }
@@ -94,9 +86,9 @@ struct WriteStoryStartView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Text("남은 글쓰기 횟수: \(writingCountVM.userWritingCount?.totalAvailableCount ?? 0)")
+                Text("오늘 남은 보상: \(writingCountVM.remainingRewards())/5")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(writingCountVM.remainingRewards() > 0 ? .green : .gray)
                     .padding(.top, 8)
             }
         }
