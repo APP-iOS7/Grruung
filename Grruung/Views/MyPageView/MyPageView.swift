@@ -201,7 +201,6 @@ private func settingsDestination(for item: SettingsItem) -> some View {
 }
 
 // MARK: - Preview
-
 #Preview {
     MyPageView()
 }

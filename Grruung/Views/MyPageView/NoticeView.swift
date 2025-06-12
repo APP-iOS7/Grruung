@@ -74,6 +74,7 @@ struct NoticeView: View {
     }
 }
 
+//MARK: - Preview
 #Preview {
     NoticeView()
 }
