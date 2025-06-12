@@ -52,19 +52,25 @@ class QuokkaController: ObservableObject {
             "sleep4WakeUp": 173
         ],
         .child: [
-            "normal": 182,
+            "normal": 64,
             "sleeping": 1,  // 임시 값
             "eating": 1,     // 임시 값
         ],
         // .adolescent, .adult, .elder 등 다른 단계도 이곳에 추가 가능
         .adolescent: [
-            "normal": 1
+            "normal": 182,
+            "eating": 1,
+            "sleeping": 1
         ],
         .adult: [
-            "normal": 1
+            "normal": 178,
+            "eating": 1,
+            "sleeping": 1
         ],
         .elder: [
-            "normal": 1
+            "normal": 1, // 추후 추가
+            "eating": 1,
+            "sleeping": 1
         ]
     ]
     

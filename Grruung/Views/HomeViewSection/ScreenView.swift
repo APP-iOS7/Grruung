@@ -77,6 +77,32 @@ struct ScreenView: View {
     
     // MARK: - 상태별 뷰
     
+    // 현재 진화 상태에 따라 '보여줘야 할 모습'의 단계를 결정하는 변수
+    private var visualPhase: CharacterPhase? {
+        guard let character = character else { return nil }
+        
+        switch character.status.evolutionStatus {
+        case .toInfant:
+            // .toInfant 상태일 때는 아직 .egg 모습으로 보여야 함
+            return .egg
+        case .toChild:
+            // .toChild 상태일 때는 아직 .infant 모습으로 보여야 함
+            return .infant
+        case .toAdolescent:
+            // .toAdolescent 상태일 때는 아직 .child 모습으로 보여야 함
+            return .child
+        case .toAdult:
+            // .toAdult 상태일 때는 아직 .adolescent 모습으로 보여야 함
+            return .adolescent
+        case .toElder:
+            // .toElder 상태일 때는 아직 .adult 모습으로 보여야 함
+            return .adult
+        default:
+            // 그 외 모든 경우(egg, completeInfant, completeChild 등)에는 현재 phase를 그대로 따름
+            return character.status.phase
+        }
+    }
+    
     // 캐릭터 생성 버튼이 포함된 기본 뷰
     @ViewBuilder
     private var defaultViewWithCreateButton: some View {
@@ -226,8 +252,8 @@ struct ScreenView: View {
         quokkaController.setModelContext(modelContext)
         
         // 캐릭터가 있고 egg가 아닌 경우 애니메이션 프레임 로드
-        if let character = character, !shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus) {
-            quokkaController.loadFirstFrame(phase: character.status.phase, animationType: "normal")
+        if let character = character, !shouldShowEggAnimation(evolutionStatus: character.status.evolutionStatus), let phase = visualPhase {
+            quokkaController.loadFirstFrame(phase: phase, animationType: "normal")
         }
     }
     
@@ -254,10 +280,10 @@ struct ScreenView: View {
     private func handleSleepStateChange(isSleeping: Bool) {
         guard let character = character, character.species == .quokka else { return }
         
-        let currentPhase = character.status.phase
+        guard let currentVisualPhase = self.visualPhase else { return }
         
         // 현재는 infant 단계만 특별한 수면/기상 애니메이션을 가짐
-        if currentPhase == .infant {
+        if currentVisualPhase == .infant {
             if isSleeping {
                 // 재우기: sleep1Start (once) -> sleep2Pingpong (pingPong)
                 print("😴 재우기 애니메이션 시퀀스 시작")
@@ -278,8 +304,8 @@ struct ScreenView: View {
         } else {
             // 일단 child 단계 이상에서는 isSleeping 상태와 관계없이 항상 normal 애니메이션 재생
             // 추후 애니메이션이 추가되는대로 업데이트 예정
-             print("▶️ \(currentPhase.rawValue) 단계의 normal 애니메이션 재생")
-             quokkaController.playAnimation(type: "normal", phase: currentPhase, mode: .pingPong)
+             print("▶️ \(currentVisualPhase) 단계의 normal 애니메이션 재생")
+            quokkaController.playAnimation(type: "normal", phase: currentVisualPhase, mode: .pingPong)
         }
     }
     
