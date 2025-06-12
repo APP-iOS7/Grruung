@@ -67,6 +67,7 @@ struct PurchaseRecord: Identifiable {
 
 // MARK: - 구매 내역 화면
 struct PurchaseHistoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject private var authService: AuthService
     @State private var isLoading = false
@@ -94,7 +95,7 @@ struct PurchaseHistoryView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
             
             Divider()
                 .padding(.vertical, 5)
@@ -116,12 +117,44 @@ struct PurchaseHistoryView: View {
                 List {
                     ForEach(filteredRecords) { record in
                         PurchaseHistoryItem(record: record)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     }
                 }
                 .listStyle(PlainListStyle())
+                .scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle("결제 내역")
+        .navigationBarBackButtonHidden(true) // 기본 뒤로가기 버튼 숨기기
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+            
+            // 중앙에 타이틀 배치
+            /*
+            ToolbarItem(placement: .principal) {
+                Text("결제 내역")
+                    .font(.headline) // 작은 글씨로 설정
+                    .foregroundColor(.black)
+            }*/
+        }
+        .toolbarRole(.browser) // 간격을 더 줄이는 역할
+
+        .background(
+            LinearGradient(
+                colors: [GRColor.mainColor3_1, GRColor.mainColor3_2],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
         .onAppear {
             loadData()
         }
@@ -151,7 +184,6 @@ struct PurchaseHistoryView: View {
         
         // 실제 유저 ID 또는 테스트 ID
         let userId = authService.currentUserUID.isEmpty ? "23456" : authService.currentUserUID
-        print("🔄 결제 내역 로드 시작 - 사용자 ID: \(userId)")
         
         // 결제 기록 컬렉션 참조
         let purchaseRecordsRef = db.collection("users").document(userId).collection("purchaseRecords")
@@ -159,49 +191,70 @@ struct PurchaseHistoryView: View {
         // Firestore에서 구매 기록 가져오기
         purchaseRecordsRef.order(by: "purchaseDate", descending: true).getDocuments { snapshot, error in
             if let error = error {
-                print("❌ 결제 기록 불러오기 실패: \(error.localizedDescription)")
+                print("결제 기록 불러오기 실패: \(error.localizedDescription)")
                 self.isLoading = false
                 return
             }
             
-            let documentCount = snapshot?.documents.count ?? 0
-            print("📊 결제 기록 조회 결과 - 문서 수: \(documentCount)")
+            var records: [PurchaseRecord] = []
             
-            // 문서가 있으면 기록 변환
+            // Firestore에서 직접 결제 기록 가져오기
             if let documents = snapshot?.documents, !documents.isEmpty {
-                // 간단한 중복 제거 (동일한 문서 ID는 한 번만 처리)
-                var processedIds = Set<String>()
-                var records: [PurchaseRecord] = []
-                
                 for document in documents {
-                    let id = document.documentID
-                    
-                    // 이미 처리한 ID면 건너뛰기
-                    if processedIds.contains(id) {
-                        continue
-                    }
-                    
-                    processedIds.insert(id)
-                    
-                    if let record = PurchaseRecord.fromFirestore(id: id, data: document.data()) {
+                    if let record = PurchaseRecord.fromFirestore(id: document.documentID, data: document.data()) {
                         records.append(record)
                     }
                 }
-                
-                // 날짜순 정렬
-                let sortedRecords = records.sorted(by: { $0.purchaseDate > $1.purchaseDate })
-                
-                DispatchQueue.main.async {
-                    self.purchaseRecords = sortedRecords
-                    self.isLoading = false
-                    print("✅ 최종 표시할 결제 기록 수: \(sortedRecords.count)")
+            }
+            
+            // 기록이 없거나 적을 경우, 인벤토리에서 보완
+            if records.isEmpty || records.count < 2 {
+                // UserInventory에서 데이터 가져오기
+                Task {
+                    do {
+                        try await userInventoryViewModel.fetchInventories(userId: userId)
+                        
+                        let inventoryRecords = userInventoryViewModel.inventories
+                            .filter {
+                                ($0.userItemName.contains("다이아") ||
+                                $0.userItemName.contains("동산 잠금해제"))
+                            }
+                            .map { inventory -> PurchaseRecord in
+                                let isRealMoney = inventory.userItemImage.contains("diamond_") ||
+                                                 inventory.userItemImage.contains("charDex_unlock_ticket")
+                                
+                                return PurchaseRecord(
+                                    id: inventory.id,
+                                    itemName: inventory.userItemName,
+                                    itemImage: inventory.userItemImage,
+                                    quantity: inventory.userItemQuantity,
+                                    price: 0, // 가격 정보는 없음
+                                    currencyType: .won,
+                                    purchaseDate: inventory.purchasedAt,
+                                    isRealMoney: isRealMoney
+                                )
+                            }
+                        
+                        // 중복 제거를 위한 ID 집합
+                        let existingIds = Set(records.map { $0.id })
+                        let uniqueInventoryRecords = inventoryRecords.filter { !existingIds.contains($0.id) }
+                        
+                        await MainActor.run {
+                            self.purchaseRecords = (records + uniqueInventoryRecords).sorted(by: { $0.purchaseDate > $1.purchaseDate })
+                            self.isLoading = false
+                        }
+                    } catch {
+                        print("인벤토리 로드 실패: \(error.localizedDescription)")
+                        await MainActor.run {
+                            self.purchaseRecords = records
+                            self.isLoading = false
+                        }
+                    }
                 }
             } else {
-                // 문서가 없으면 빈 배열 설정
                 DispatchQueue.main.async {
-                    self.purchaseRecords = []
+                    self.purchaseRecords = records
                     self.isLoading = false
-                    print("ℹ️ 결제 기록이 없습니다.")
                 }
             }
         }
@@ -221,13 +274,14 @@ struct TabButton: View {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(isSelected ? .bold : .regular)
-                .padding(.vertical, 8)
+                .padding(.vertical, 6)
                 .padding(.horizontal, 15)
                 .foregroundColor(isSelected ? .white : .primary)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.blue : Color(.systemGray6))
+                        .fill(isSelected ? GRColor.buttonColor_2 : Color.white.opacity(0.6))
                 )
+                .shadow(color: isSelected ? Color.black.opacity(0.2) : Color.clear, radius: 2, x: 0, y: 1)
         }
     }
 }
@@ -246,7 +300,7 @@ struct PurchaseHistoryItem: View {
                     .frame(width: 40, height: 40)
                     .foregroundColor(.cyan)
                     .padding(8)
-                    .background(Color.cyan.opacity(0.2))
+                    .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
             } else if record.itemImage.contains("charDex_unlock_ticket") {
                 Image(systemName: "ticket.fill")
@@ -255,7 +309,7 @@ struct PurchaseHistoryItem: View {
                     .frame(width: 40, height: 40)
                     .foregroundColor(.purple)
                     .padding(8)
-                    .background(Color.purple.opacity(0.2))
+                    .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
             } else {
                 Image(systemName: "cart.fill")
@@ -264,7 +318,7 @@ struct PurchaseHistoryItem: View {
                     .frame(width: 40, height: 40)
                     .foregroundColor(.blue)
                     .padding(8)
-                    .background(Color.blue.opacity(0.2))
+                    .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
             }
             
@@ -280,19 +334,22 @@ struct PurchaseHistoryItem: View {
                         .foregroundColor(.black)
                         .padding(.vertical, 3)
                         .padding(.horizontal, 8)
-                        .background(Color(.systemGray5))
                         .cornerRadius(5)
                     
                     Spacer()
                     
-                    // 구매 날짜
+                    // 구매 날짜 (오른쪽 패딩 추가)
                     Text(formattedDate(record.purchaseDate))
                         .font(.caption)
                         .foregroundColor(.gray)
+                        .padding(.trailing, 10) // 날짜 오른쪽 패딩 추가
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 5)
+        .background(Color.white.opacity(0.6))
+        .cornerRadius(12)
     }
     
     // 날짜 포매팅
@@ -303,4 +360,3 @@ struct PurchaseHistoryItem: View {
         return formatter.string(from: date)
     }
 }
-
