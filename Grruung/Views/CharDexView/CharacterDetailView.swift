@@ -64,12 +64,19 @@ struct CharacterDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: UIConstants.verticalPadding) { // UIConstants 사용
+            VStack(spacing: UIConstants.verticalPadding) {
                 // 캐릭터 정보 영역
                 characterInfoSection
                 
-                // 성장 과정 영역
-                growthProgressSection
+                VStack(spacing: 20) {
+                    // 성장 과정 영역
+                    growthProgressSection
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
+                )
+                .padding(.horizontal ,UIConstants.horizontalPadding)
                 
                 VStack(spacing: 20) {
                     // 날짜 탐색 버튼
@@ -83,20 +90,21 @@ struct CharacterDetailView: View {
                 }
                 .padding(.vertical, UIConstants.verticalPadding)
                 .background(
-                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                        .fill(GRColor.mainColor2_1) // Color extension 사용
+                    RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                        .fill(GRColor.mainColor2_1)
                 )
                 .padding(.horizontal ,UIConstants.horizontalPadding)
             }
         }
-        .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+        .padding(.bottom, 55)
+        .scrollContentBackground(.hidden)
         .background(
             LinearGradient(colors: [
                 Color(GRColor.mainColor1_1),
                 Color(GRColor.mainColor1_2)
             ],
                            startPoint: .top, endPoint: .bottom)
-        ) // 원하는 색상 지정
+        )
         .navigationTitle(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -205,13 +213,13 @@ struct CharacterDetailView: View {
     // MARK: - Character Info Section
     
     private var characterInfoSection: some View {
-        HStack(alignment: .top, spacing: UIConstants.horizontalPadding) { // UIConstants 사용
+        HStack(alignment: .top, spacing: UIConstants.horizontalPadding) {
             // 캐릭터 이미지
             CharacterImageView(character: viewModel.character)
-                .frame(width: UIConstants.imageViewHeight, height: UIConstants.imageViewHeight) // UIConstants 사용
+                .frame(width: UIConstants.imageViewHeight, height: UIConstants.imageViewHeight)
             
             // 캐릭터 정보
-            VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 2) { // UIConstants 사용
+            VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 2) {
                 InfoRow(title: "떨어진 날", value: formatDate(viewModel.character.createdAt))
                 InfoRow(title: "태어난 날", value: formatDate(viewModel.character.birthDate))
                 InfoRow(title: "종", value: viewModel.character.species.rawValue)
@@ -222,100 +230,63 @@ struct CharacterDetailView: View {
             
             Spacer()
         }
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
-        .padding(.vertical, UIConstants.verticalPadding / 1.6) // UIConstants 사용 (적절한 값으로 조정)
+        .padding(.horizontal, UIConstants.horizontalPadding)
+        .padding(.vertical, UIConstants.verticalPadding / 1.6)
         .background(
-            RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                .fill(Color.background) // Color extension 사용
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Growth Progress Section
     
     private var growthProgressSection: some View {
-        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) { // UIConstants 사용
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(GRColor.pointColor) // GRColor 사용
+                    .foregroundColor(GRColor.pointColor)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
-                Spacer()
             }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: UIConstants.horizontalPadding) { // UIConstants 사용
+                HStack(spacing: UIConstants.horizontalPadding / 4) {
                     ForEach(0...currentStageIndex, id: \.self) { index in
-                        VStack(spacing: UIConstants.verticalPadding / 2) { // UIConstants 사용 (적절한 값으로 조정)
+                        VStack {
                             // 성장 단계 이미지
-                            let imageUrl = getGrowthStageImageURL(for: index) // URL을 한 번만 가져옵니다.
+                            let imageName = getGrowthStageImageName(for: index)
                             
-                            if let validUrl = imageUrl, !validUrl.absoluteString.isEmpty {
-                                AsyncImage(
-                                    url:validUrl
-                                ) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                                    .fill(GRColor.gray200Line)
-                                            )
-                                        
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
-                                    case .failure:
-                                        RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                                            .fill(GRColor.gray200Line) // GRColor 사용
-                                            .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .foregroundColor(GRColor.gray500) // GRColor 사용
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                            } else {
-                                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                    .fill(GRColor.gray200Line) // GRColor 사용
-                                    .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06) // UIIconSize 사용 (적절한 값으로 조정)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .foregroundColor(GRColor.gray500) // GRColor 사용
-                                    )
-                            }
+                            Image(imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100 , height: 100)
                             
                             // 단계 이름
                             Text(getPhaseNameFor(index: index))
                                 .font(.caption)
                                 .fontWeight(index == currentStageIndex ? .semibold : .regular)
-                                .foregroundColor(index == currentStageIndex ? GRColor.pointColor : .textSecondary) // GRColor 및 Color extension 사용
+                                .foregroundColor(index == currentStageIndex ? GRColor.pointColor : .textSecondary)
                         }
                         
                         // 화살표 (마지막이 아닌 경우)
                         if index != currentStageIndex {
                             Image(systemName: "arrow.right")
-                                .foregroundColor(GRColor.gray400) // GRColor 사용
+                                .foregroundColor(GRColor.gray400)
                                 .font(.caption)
                         }
                     }
+                    Spacer(minLength: 8)
                 }
-                .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
             }
         }
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
-        .padding(.vertical, UIConstants.verticalPadding) // UIConstants 사용
+        .padding(.vertical, UIConstants.verticalPadding)
         .background(
-            RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                .fill(Color.background) // Color extension 사용
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Date Navigation Section
@@ -327,8 +298,8 @@ struct CharacterDetailView: View {
                 viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.title2) // TODO: UIIconSize 또는 별도 폰트 스타일 가이드 확인 필요
-                    .foregroundColor(GRColor.pointColor) // GRColor 사용
+                    .font(.title2)
+                    .foregroundColor(GRColor.pointColor)
             }
             
             Spacer()
@@ -344,37 +315,37 @@ struct CharacterDetailView: View {
                 viewModel.loadPost(characterUUID: characterUUID, searchDate: searchDate)
             }) {
                 Image(systemName: "chevron.right")
-                    .font(.title2) // TODO: UIIconSize 또는 별도 폰트 스타일 가이드 확인 필요
-                    .foregroundColor(GRColor.pointColor) // GRColor 사용
+                    .font(.title2)
+                    .foregroundColor(GRColor.pointColor)
             }
         }
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
-        .padding(.vertical, UIConstants.verticalPadding / 1.6) // UIConstants 사용 (적절한 값으로 조정)
+        .padding(.horizontal, UIConstants.horizontalPadding)
+        .padding(.vertical, UIConstants.verticalPadding / 1.6)
     }
     
     // MARK: - Activity Section
     
     private var activitySection: some View {
-        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) { // UIConstants 사용
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(GRColor.grColorRed) // GRColor 사용
+                    .foregroundColor(GRColor.grColorRed)
                 Text("함께 했던 순간")
                     .font(.headline)
                     .fontWeight(.semibold)
                 Spacer()
             }
             
-            HStack(spacing: UIConstants.horizontalPadding) { // UIConstants 사용
+            HStack(spacing: UIConstants.horizontalPadding) {
                 // 활동 아이콘
                 VStack {
                     Image(systemName: "pawprint.circle.fill")
-                        .font(.system(size: UIIconSize.large)) // UIIconSize 사용
-                        .foregroundColor(GRColor.grColorOrange) // GRColor 사용
+                        .font(.system(size: UIIconSize.large))
+                        .foregroundColor(GRColor.grColorOrange)
                     
                     Text("총 활동량")
                         .font(.caption)
-                        .foregroundColor(.textSecondary) // Color extension 사용
+                        .foregroundColor(.textSecondary)
                 }
                 
                 Divider()
@@ -391,21 +362,21 @@ struct CharacterDetailView: View {
                 Spacer()
             }
         }
-        .padding(UIConstants.horizontalPadding) // UIConstants 사용
+        .padding(UIConstants.horizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                .fill(Color.background) // Color extension 사용
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(Color.background)
         )
-        .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
+        .padding(.horizontal, UIConstants.horizontalPadding)
     }
     
     // MARK: - Story List Section
     
     private var storyListSection: some View {
-        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) { // UIConstants 사용
+        VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "book.fill")
-                    .foregroundColor(GRColor.grColorBrown) // GRColor 사용
+                    .foregroundColor(GRColor.grColorBrown)
                 Text("들려준 이야기")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -414,19 +385,19 @@ struct CharacterDetailView: View {
                 if !viewModel.posts.isEmpty {
                     Text("\(viewModel.posts.count)개")
                         .font(.caption)
-                        .foregroundColor(.textSecondary) // Color extension 사용
+                        .foregroundColor(.textSecondary)
                 }
             }
-            .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
+            .padding(.horizontal, UIConstants.horizontalPadding)
             
             if viewModel.posts.isEmpty {
-                VStack(spacing: 10) { // TODO: UIConstants에서 적절한 값으로 변경 고려
+                VStack(spacing: 10) {
                     Image(systemName: "book.closed")
-                        .font(.system(size: UIIconSize.large)) // UIIconSize 사용
-                        .foregroundColor(GRColor.gray400) // GRColor 사용
+                        .font(.system(size: UIIconSize.large))
+                        .foregroundColor(GRColor.gray400)
                     
                     Text("이번 달에 기록된 이야기가 없습니다")
-                        .foregroundColor(GRColor.gray500) // GRColor 사용
+                        .foregroundColor(GRColor.gray500)
                         .font(.subheadline)
                 }
                 .frame(height: 100)
@@ -450,7 +421,7 @@ struct CharacterDetailView: View {
                         
                         if index < viewModel.posts.count - 1 {
                             Divider()
-                                .padding(.leading, 80) // TODO: UIConstants 또는 다른 방식으로 값 관리 고려
+                                .padding(.leading, 80)
                         }
                     }
                 }
@@ -480,9 +451,22 @@ struct CharacterDetailView: View {
     }
     
     // 성장 단계 이미지 URL 반환
-    private func getGrowthStageImageURL(for index: Int) -> URL? {
-        guard index < viewModel.growthStages.count else { return nil }
-        return viewModel.growthStages[index].imageURL
+    // 성장 단계 이미지 이름 반환 (Assets에서)
+    private func getGrowthStageImageName(for index: Int) -> String {
+        let characterStillImages: [String] = [
+            "egg",
+            "quokka_infant_still",
+            "quokka_child_still",
+            "quokka_adolescent_still",
+            "quokka_adult_still",
+            "quokka"
+        ]
+        
+        guard index < characterStillImages.count else {
+            return "egg" // 기본값
+        }
+        
+        return characterStillImages[index]
     }
     
     // 단계 인덱스에 따른 이름 반환
@@ -655,9 +639,38 @@ struct CharacterImageView: View {
                     .resizable()
                     .scaledToFit()
             } else if character.species == .quokka {
-                Image("quokka")
-                    .resizable()
-                    .scaledToFit()
+                switch character.status.phase {
+                    //                case egg = "운석"
+                    //                case infant = "유아기"
+                    //                case child = "소아기"
+                    //                case adolescent = "청년기"
+                    //                case adult = "성년기"
+                    //                case elder = "노년기"
+                case .egg:
+                    Image("egg")
+                        .resizable()
+                        .scaledToFit()
+                case .infant:
+                    Image("quokka_infant_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .child:
+                    Image("quokka_child_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adolescent:
+                    Image("quokka_adolescent_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .adult:
+                    Image("quokka_adult_profile")
+                        .resizable()
+                        .scaledToFit()
+                case .elder:
+                    Image("quokka")
+                        .resizable()
+                        .scaledToFit()
+                }
             } else {
                 Image("CatLion")
                     .resizable()
@@ -665,13 +678,14 @@ struct CharacterImageView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                .fill(GRColor.gray200Line) // GRColor 사용
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .fill(GRColor.gray200Line)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
-                .stroke(GRColor.gray300Disable, lineWidth: 1) // GRColor 사용
+            RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
+                .stroke(GRColor.gray300Disable, lineWidth: 1)
         )
+        .cornerRadius(UIConstants.cornerRadius)
     }
 }
 
@@ -683,13 +697,13 @@ struct InfoRow: View {
         HStack {
             Text(title + ":")
                 .font(.caption)
-                .foregroundColor(.textSecondary) // Color extension 사용
-                .frame(width: 60, alignment: .leading) // TODO: UIConstants 값으로 변경 고려
+                .foregroundColor(.textSecondary)
+                .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(.textPrimary) // Color extension 사용
+                .foregroundColor(.textPrimary)
             
             Spacer()
         }
@@ -706,18 +720,18 @@ struct StatRow: View {
         HStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.textSecondary) // Color extension 사용
-                .frame(width: 50, alignment: .leading) // TODO: UIConstants 값으로 변경 고려
+                .foregroundColor(.textSecondary)
+                .frame(width: 50, alignment: .leading)
             
             Text("\(value)")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(color) // GRColor 사용 (파라미터로 전달받은 color)
-                .frame(width: 30, alignment: .trailing) // TODO: UIConstants 값으로 변경 고려
+                .foregroundColor(color)
+                .frame(width: 30, alignment: .trailing)
             
             Text("/ \(maxValue)")
                 .font(.caption)
-                .foregroundColor(.textSecondary) // Color extension 사용
+                .foregroundColor(.textSecondary)
             
             Spacer()
         }
@@ -733,7 +747,7 @@ struct StoryRowView: View {
     var body: some View {
         NavigationLink(destination: WriteStoryView(currentMode: .read, characterUUID: post.characterUUID, postID: post.postID)) {
             HStack(spacing: UIConstants.horizontalPadding) {
-                // 이미지
+                // 이미지 로드중일 시 로딩 인디케이터 표시, 성공 시 이미지 표시, 실패 시 기본 이미지 표시
                 if let imageURL = URL(string: post.postImage), !post.postImage.isEmpty {
                     AsyncImage(url: URL(string: post.postImage)) { phase in
                         switch phase {
@@ -753,7 +767,7 @@ struct StoryRowView: View {
                             
                         case .failure:
                             RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                                .fill(GRColor.gray200Line) // GRColor 사용
+                                .fill(GRColor.gray200Line)
                                 .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                                 .overlay(
                                     Image(systemName: "photo")
@@ -765,47 +779,47 @@ struct StoryRowView: View {
                     }
                 } else {
                     RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
-                        .fill(GRColor.gray200Line) // GRColor 사용
+                        .fill(GRColor.gray200Line)
                         .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                         .overlay(
                             Image(systemName: "photo")
-                                .foregroundColor(GRColor.gray500) // GRColor 사용
+                                .foregroundColor(GRColor.gray500)
                         )
                 }
                 
                 // 텍스트 정보
-                VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) { // UIConstants 사용 (적절한 값으로 조정)
+                VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
                     Text(post.postTitle)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                        .foregroundColor(.textPrimary) // Color extension 사용
+                        .foregroundColor(.textPrimary)
                     
                     Text(formatDate(post.createdAt))
                         .font(.caption)
-                        .foregroundColor(.textSecondary) // Color extension 사용
+                        .foregroundColor(.textSecondary)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(GRColor.gray400) // GRColor 사용
+                    .foregroundColor(GRColor.gray400)
             }
-            .padding(.vertical, UIConstants.verticalPadding / 2) // UIConstants 사용 (적절한 값으로 조정)
-            .padding(.horizontal, UIConstants.horizontalPadding) // UIConstants 사용
+            .padding(.vertical, UIConstants.verticalPadding / 2)
+            .padding(.horizontal, UIConstants.horizontalPadding)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive, action: onDelete) {
                 Label("삭제", systemImage: "trash")
             }
-            .tint(GRColor.redError) // GRColor 사용
+            .tint(GRColor.redError)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             Button(action: onEdit) {
                 Label("편집", systemImage: "pencil")
             }
-            .tint(GRColor.pointColor) // GRColor 사용
+            .tint(GRColor.pointColor)
         }
     }
 }
@@ -816,7 +830,7 @@ struct LoadingOverlay: View {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
             
-            VStack(spacing: UIConstants.verticalPadding) { // UIConstants 사용
+            VStack(spacing: UIConstants.verticalPadding) {
                 ProgressView()
                     .scaleEffect(1.5)
                     .tint(.white)
@@ -825,9 +839,9 @@ struct LoadingOverlay: View {
                     .foregroundColor(.white)
                     .font(.subheadline)
             }
-            .padding(UIConstants.horizontalPadding) // UIConstants 사용
+            .padding(UIConstants.horizontalPadding)
             .background(
-                RoundedRectangle(cornerRadius: UIConstants.cornerRadius) // UIConstants 사용
+                RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
                     .fill(Color.black.opacity(0.8))
             )
         }

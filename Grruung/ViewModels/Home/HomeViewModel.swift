@@ -1276,7 +1276,11 @@ class HomeViewModel: ObservableObject {
             character.status.evolutionStatus = .completeInfant
         case .child:
             character.status.evolutionStatus = .completeChild
-            // ... 다른 단계들
+        case .adolescent:
+            character.status.evolutionStatus = .completeAdolescent
+        case .adult:
+            character.status.evolutionStatus = .completeAdult
+            // TODO: elder 단계 추후 추가
         default:
             break
         }
@@ -1751,18 +1755,6 @@ class HomeViewModel: ObservableObject {
                 
                 print("💰 골드 획득: \(amount) (현재: \(newGoldAmount))")
                 
-                // 성공 메시지 표시
-                if amount > 0 {
-                    await MainActor.run {
-                        // statusMessage = "💰 \(amount) 골드를 획득했습니다!"
-                        goldMessage = "💰 \(amount) 골드를 획득했습니다!"
-                        
-                        // 일정 시간 후 메시지 초기화 (옵션)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-                            self?.goldMessage = ""
-                        }
-                    }
-                }
             } catch {
                 print("⚠️ 골드 업데이트 실패: \(error.localizedDescription)")
             }

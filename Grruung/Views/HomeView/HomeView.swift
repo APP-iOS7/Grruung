@@ -4,8 +4,6 @@
 //
 //  Created by NoelMacMini on 5/1/25.
 //
-// TODO: 10. 만들어 놓은거 전부 연결
-// 활동 액션 별로 골드 획득 / 수면시 일정 골드 획득 / 레벨업 할때 일정 골드 획득
 //
 
 import SwiftUI
@@ -54,27 +52,6 @@ struct HomeView: View {
                             
                             // 레벨 프로그레스 바
                             levelProgressBar
-                            
-                            // 캐릭터 상태 메시지
-                            VStack(spacing: 5) {
-                                // 상태 메시지
-                                Text(viewModel.statusMessage)
-                                    .font(viewModel.character?.status.phase == .egg ?
-                                          .system(.headline, design: .monospaced) : .headline)
-                                    .italic(viewModel.character?.status.phase == .egg)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.vertical, 5)
-                                    .foregroundColor(getMessageColor())
-                                
-                                // 골드 획득 메시지 (비어있지 않을 때만 표시)
-                                if !viewModel.goldMessage.isEmpty {
-                                    Text(viewModel.goldMessage)
-                                        .font(.headline)
-                                        .foregroundColor(.yellow)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.vertical, 5)
-                                }
-                            }
                             
                             Spacer()
                             
@@ -327,20 +304,7 @@ struct HomeView: View {
     // 캐릭터 섹션
     private var characterSection: some View {
         ZStack {
-            // 캐릭터 이미지
-            VStack {
-                Spacer()
-                
-                ScreenView(
-                    character: viewModel.character,
-                    isSleeping: viewModel.isSleeping,
-                    onCreateCharacterTapped: {
-                        // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
-                        isShowingOnboarding = true
-                    }
-                )
-            }
-            
+            // 기존 캐릭터 섹션 구현
             HStack {
                 // 왼쪽 버튼들
                 VStack(spacing: 15) {
@@ -352,27 +316,39 @@ struct HomeView: View {
                 
                 Spacer()
                 
+                // 캐릭터 이미지
+                VStack {
+                    Spacer()
+                    
+                    ZStack(alignment: .top) {
+                        // 캐릭터 스크린 뷰
+                        ScreenView(
+                            character: viewModel.character,
+                            isSleeping: viewModel.isSleeping,
+                            onCreateCharacterTapped: {
+                                // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
+                                isShowingOnboarding = true
+                            }
+                        )
+                        
+                        // 상태 메시지 말풍선 (비어있지 않을 때만 표시)
+                        if !viewModel.statusMessage.isEmpty && !viewModel.isSleeping {
+                            SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
+                                .offset(y: -40) // 말풍선 위치 조정
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                                .animation(.easeInOut(duration: 0.5), value: viewModel.statusMessage)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
                 // 오른쪽 버튼들
                 VStack(spacing: 15) {
                     ForEach(3..<6) { index in
                         let button = viewModel.sideButtons[index]
                         iconButton(systemName: button.icon, name: button.name, unlocked: button.unlocked)
                     }
-                }
-            }
-            
-            VStack {
-                Spacer()
-                
-                // 부화&진화 진행 버튼 (진화가 필요한 경우에만 표시)
-                if let character = viewModel.character,
-                   character.status.evolutionStatus.needsEvolution {
-                    evolutionButton
-                }
-                
-                // 업데이트 버튼 (업데이트가 필요한 경우에만 표시)
-                if viewModel.needsAnimationUpdate {
-                    updateButton
                 }
             }
         }
@@ -573,6 +549,69 @@ struct HomeView: View {
                     )
                 }
             }
+        }
+    }
+    
+    // MARK: - 말풍선 컴포넌트
+    struct SpeechBubbleView: View {
+        let message: String
+        let color: Color
+        
+        // 말풍선 표시 상태를 제어하는 상태 변수
+        @State private var isVisible = true
+        
+        var body: some View {
+            Text(message)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.black)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    ZStack {
+                        // 말풍선 배경
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.9))
+                            .shadow(color: Color.black.opacity(0.2), radius: 3)
+                        
+                        // 테두리
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(color.opacity(0.6), lineWidth: 1.5)
+                        
+                        // 말풍선 꼬리 부분
+                        Triangle()
+                            .fill(Color.white.opacity(0.9))
+                            .frame(width: 15, height: 10)
+                            .overlay(
+                                Triangle()
+                                    .stroke(color.opacity(0.6), lineWidth: 1.5)
+                            )
+                            .rotationEffect(.degrees(180))
+                            .offset(y: 14)
+                    }
+                )
+                .opacity(isVisible ? 1 : 0) // 표시 상태에 따라 투명도 변경
+                .onAppear {
+                    // 2초 후 사라지도록 타이머 설정
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        // 페이드 아웃 애니메이션과 함께 사라짐
+                        withAnimation(.easeOut(duration: 0.5)) {
+                            isVisible = false
+                        }
+                    }
+                }
+        }
+    }
+
+    // 말풍선 꼬리 모양을 위한 삼각형 Shape
+    struct Triangle: Shape {
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+            path.closeSubpath()
+            return path
         }
     }
     

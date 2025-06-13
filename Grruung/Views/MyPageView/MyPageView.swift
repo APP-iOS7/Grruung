@@ -23,6 +23,10 @@ struct MyPageView: View {
                 }
                 .padding()
             }
+            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
+            .background(
+                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
         }
     }
 }
@@ -39,6 +43,7 @@ struct ProfileSection: View {
                     .resizable()
                     .frame(width: 100, height: 100)
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("냥냥이")
@@ -101,9 +106,9 @@ struct SeviceGrid: View {
                 }
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
+            //            .background(
+            //                RoundedRectangle(cornerRadius: 12)
+            //                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
     }
 }
@@ -143,7 +148,7 @@ struct SettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("설정")
-                .font(.title2)
+                .font(.headline)
                 .bold()
                 .padding(.horizontal)
                 .padding(.top)
@@ -168,9 +173,9 @@ struct SettingsSection: View {
                     }
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
+            //            .background(
+            //                RoundedRectangle(cornerRadius: 12)
+            //                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
     }
 }
@@ -182,13 +187,13 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     switch item.title {
     case "알림":
         MyPageAlarmView()
-    case "인증 관리":
-        Text("인증 관리 화면")
-    case "질문&피드백":
-        Text("질문 및 피드백 화면")
+    case "공지사항":
+        NoticeView()
+    case "고객센터":
+        CustomerCenterView()
     case "평가 및 리뷰":
         Text("App Store 링크 또는 리뷰 화면")
-    case "정보":
+    case "약관 및 정책":
         Text("앱 정보 화면")
     default:
         Text("준비 중")
@@ -196,7 +201,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
 }
 
 // MARK: - Preview
-
 #Preview {
     MyPageView()
 }
+
