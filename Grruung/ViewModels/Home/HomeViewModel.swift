@@ -83,6 +83,7 @@ class HomeViewModel: ObservableObject {
     @Published var isCleanActionInProgress: Bool = false
     
     private var statusMessageTimer: Timer?
+    private var isActionMessageActive = false
     
     // 디버그 모드 설정 추가
 #if DEBUG
@@ -1015,12 +1016,40 @@ class HomeViewModel: ObservableObject {
             ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
         ]
         
-        // 상태 메시지 업데이트
-        updateStatusMessage()
+        // 액션 메시지가 활성화되어 있지 않을 때만 상태 메시지 업데이트
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
+    // 액션 메시지를 표시하고 타이머 설정
+    private func showActionMessage(_ message: String) {
+        // 메시지 설정
+        statusMessage = message
+        isActionMessageActive = true
+        
+        // 기존 타이머 취소
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 타이머 실행하여 메시지 초기화
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isActionMessageActive = false
+                self.updateStatusMessage() // 스탯 기반 메시지로 복귀
+            }
+        }
+        
+        print("💬 액션 메시지 표시: \(message)")
     }
     
     // 캐릭터 상태에 따른 메시지를 업데이트
     private func updateStatusMessage() {
+        // 액션 메시지가 활성화되어 있으면 스탯 메시지 업데이트 안함
+        if isActionMessageActive {
+            return
+        }
+        
         guard let character = character else {
             statusMessage = "안녕하세요!"
             return
@@ -1068,9 +1097,6 @@ class HomeViewModel: ObservableObject {
         } else {
             statusMessage = "오늘도 좋은 하루에요!"
         }
-        
-        // 2초 후에 상태 메시지 초기화를 위한 타이머 설정
-        startStatusMessageTimer()
     }
     
     // 상태 메시지 타이머를 시작하는 메서드
@@ -1362,7 +1388,7 @@ class HomeViewModel: ObservableObject {
         if isSleeping {
             // 이미 자고 있으면 깨우기
             isSleeping = false
-            statusMessage = "일어났어요! 이제 활동할 수 있어요!"
+            showActionMessage("일어났어요! 이제 활동할 수 있어요!")
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
@@ -1370,8 +1396,7 @@ class HomeViewModel: ObservableObject {
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
             activityValue = min(100, activityValue + sleepBonus)
             
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            updateAllPercents()
+            showActionMessage("쿨쿨... 잠을 자고 있어요.")
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1387,9 +1412,9 @@ class HomeViewModel: ObservableObject {
         let sleepChanges = ["sleep_state": isSleeping ? 1 : 0]
         recordAndSaveStatChanges(sleepChanges, reason: isSleeping ? "sleep_start" : "sleep_end")
         
-#if DEBUG
+    #if DEBUG
         print("😴 " + (isSleeping ? "펫을 재웠습니다" : "펫을 깨웠습니다"))
-#endif
+    #endif
     }
     
     // 인덱스를 기반으로 액션을 실행합니다.
@@ -1457,9 +1482,8 @@ class HomeViewModel: ObservableObject {
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
-            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
-            // 실패 메시지도 2초 후 사라지도록 타이머 설정
-            startStatusMessageTimer()
+            // 실패 메시지 표시
+            showActionMessage(action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage)
             return
         }
         
@@ -1513,13 +1537,11 @@ class HomeViewModel: ObservableObject {
         
         // 성공 메시지 표시
         if !action.successMessage.isEmpty {
-            statusMessage = action.successMessage
-            // 성공 메시지도 2초 후 사라지도록 타이머 설정
-            startStatusMessageTimer()
+            showActionMessage(action.successMessage)
         }
         
-        // UI 업데이트
-        updateAllPercents()
+        // UI 업데이트 - 액션 메시지가 덮어씌워지지 않도록 updateAllPercents 메서드 수정
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
@@ -1538,6 +1560,25 @@ class HomeViewModel: ObservableObject {
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
     #endif
+    }
+    
+    private func updateAllPercentsWithoutMessageUpdate() {
+        // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
+        satietyPercent = CGFloat(satietyValue) / 100.0
+        staminaPercent = CGFloat(staminaValue) / 100.0
+        activityPercent = CGFloat(activityValue) / 100.0
+        
+        // 경험치 퍼센트 업데이트
+        expPercent = expMaxValue > 0 ? CGFloat(expValue) / CGFloat(expMaxValue) : 0.0
+        
+        // UI 표시용 스탯 배열 업데이트 (3개의 보이는 스탯만)
+        stats = [
+            ("fork.knife", Color.orange, colorForValue(satietyValue), satietyPercent),      // 포만감
+            ("figure.run", Color.blue, colorForValue(staminaValue), staminaPercent),       // 운동량
+            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
+        ]
+        
+        // 상태 메시지는 업데이트하지 않음
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -1825,9 +1866,8 @@ class HomeViewModel: ObservableObject {
     ) -> Bool {
         // 활동력 확인
         if activityValue < activityCost {
-            statusMessage = failMessage
-            // 실패 메시지도 2초 후 사라지도록 타이머 설정
-            startStatusMessageTimer()
+            // 실패 메시지 표시
+            showActionMessage(failMessage)
             return false
         }
         
@@ -1871,17 +1911,17 @@ class HomeViewModel: ObservableObject {
         addExp(expGain)
         
         // 성공 메시지 표시
-        statusMessage = successMessage
-        // 성공 메시지도 2초 후 사라지도록 타이머 설정
-        startStatusMessageTimer()
+        showActionMessage(successMessage)
         
         // UI 업데이트
-        updateAllPercents()
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
         // Firebase에 스탯 변화 기록
         recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
+        
+        print("🎪 특수 이벤트 참여 성공: \(name)")
         
         return true
     }
@@ -2138,7 +2178,7 @@ class HomeViewModel: ObservableObject {
         }
         
         // 상태 메시지 업데이트
-        statusMessage = message
+        showActionMessage(message)
         
         // 활동 날짜 업데이트
         updateLastActivityDate()
