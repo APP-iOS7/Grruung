@@ -1618,58 +1618,58 @@ class HomeViewModel: ObservableObject {
     private func getActionId(for icon: String) -> String? {
         switch icon {
             // 운석 전용 액션들 (phaseExclusive = true)
-        case "hand.tap.fill":
+        case "Hands002Icon":
             return "tap_egg"               // 알 두드리기 - 경험치 적게 증가
         case "fireIcon":
             return "warm_egg"              // 알 데우기 - 경험치 중간 증가
-        case "bubble.left.fill":
+        case "chatIcon":
             return "talk_egg"              // 알에게 말하기 - 경험치 소량 증가
             
             // 기본 액션들 (유아기 이상)
-        case "fork.knife":
+        case "appleIcon":
             return "feed"                  // 밥 주기 - 포만감 증가
-        case "gamecontroller.fill":
+        case "playIcon":
             return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
-        case "shower.fill":
+        case "soapIcon":
             return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
         case "nightIcon":
             return "sleep"                 // 재우기/깨우기 - 활동량 회복
             
-        case "drop.circle.fill":
+        case "milkIcon":
             return "milk_feeding"          // 우유 먹이기 - 포만감 소량 증가 (유아기)
             
             // 기타 관련 액션들
-        case "sun.max.fill":
+        case "sunIcon":
             return "weather_sunny"         // 햇빛 쬐기 - 건강 소량 증가
-        case "figure.walk":
+        case "walking":
             return "walk_together"         // 산책하기 - 체력 감소, 건강 증가
-        case "figure.seated.side":
+        case "healing":
             return "rest_together"         // 함께 쉬기 - 활동량 회복, 애정도 증가
             
             // 장소 관련 액션들
-        case "house.fill":
+        case "homeIcon":
             return "go_home"               // 집으로 이동 - 위치 변경
         case "tree.fill":
             return "go_outside"            // 외출하기 - 위치 변경
             
             // 감정 관리 액션들
-        case "hand.raised.fill":
+        case "loveHeartIcon":
             return "comfort"               // 안아주기 - 애정도 증가
         case "hands.clap.fill":
             return "encourage"             // 칭찬하기 - 애정도 중간 증가
             
             // 청결 관리 액션들
-        case "comb.fill":
+        case "Hands005Icon":
             return "brush_fur"             // 빗질하기 - 청결도 소량 증가 (기본 빗질)
             
             // 추가 액션들
-        case "figure.mixed.cardio":
+        case "yogaIcon":
             return "stretch_exercise"      // 스트레칭 - 건강 증가, 체력 회복
-        case "command":
+        case "toyIcon":
             return "teach_trick"           // 재주 가르치기 - 애정도 증가, 경험치 획득
-        case "hand.point.up.fill":
+        case "loveHeartIcon2":
             return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
-        case "hand.point.right.fill":
+        case "bearLoveIcon":
             return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
             
         default:
