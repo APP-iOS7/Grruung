@@ -35,7 +35,7 @@ struct GRColor {
     // _1: 연한색
     // _2: 진한색
     static let mainColor1_1 = Color(hex: "FFF6EE")
-    static let mainColor1_2 = Color(hex: "FEE3CF")
+    static let mainColor1_2 = Color(hex: "FDE0CA")
     
     static let mainColor2_1 = Color(hex: "FEF9EA")
     static let mainColor2_2 = Color(hex: "FEEFC6")
