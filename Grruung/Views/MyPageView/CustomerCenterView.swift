@@ -2,9 +2,6 @@
 //  CustomerCenterView.swift
 //  Grruung
 //
-//  Created by subin on 6/10/25.
-//
-
 import SwiftUI
 
 // MARK: - FAQ 뷰
@@ -168,7 +165,6 @@ struct FAQItemView: View {
                 HStack {
                     Text(faq.question)
                         .font(.body)
-                        .fontWeight(.medium)
                         .foregroundColor(.black)
                         .multilineTextAlignment(.leading)
                     
@@ -438,6 +434,7 @@ struct InquiryItemView: View {
 }
 
 // MARK: - 프리뷰
+
 #Preview {
     CustomerCenterView()
 }

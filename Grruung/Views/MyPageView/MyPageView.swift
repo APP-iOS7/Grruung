@@ -23,7 +23,6 @@ struct MyPageView: View {
                 }
                 .padding()
             }
-            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
             .background(
                 LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
@@ -124,7 +123,7 @@ private func SeviceDestination(for item: SeviceItem) -> some View {
     case "동산":
         CharDexView()
     default:
-        Text("준비 중")
+        Text("준비중 입니다.")
     }
 }
 
@@ -180,6 +179,16 @@ struct SettingsSection: View {
     }
 }
 
+// 앱스토어 이동
+private func openAppStoreDirectly() {
+    let appStoreID = "YOUR_APP_ID" // 실제 앱 ID로 변경
+    let appStoreURL = "https://apps.apple.com/app/id\(appStoreID)?action=write-review"
+    
+    if let url = URL(string: appStoreURL) {
+        UIApplication.shared.open(url)
+    }
+}
+
 // MARK: - 액션 처리 메서드
 
 @ViewBuilder
@@ -192,9 +201,12 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     case "고객센터":
         CustomerCenterView()
     case "평가 및 리뷰":
-        Text("App Store 링크 또는 리뷰 화면")
+        Color.clear
+                   .onAppear {
+                       openAppStoreDirectly()
+                   }
     case "약관 및 정책":
-        Text("앱 정보 화면")
+        TermsPolicyView()
     default:
         Text("준비 중")
     }
