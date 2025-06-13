@@ -47,8 +47,8 @@ struct SpeechBubbleView: View {
             )
             .opacity(isVisible ? 1 : 0) // 표시 상태에 따라 투명도 변경
             .onAppear {
-                // 2초 후 사라지도록 타이머 설정
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                // 3초 후 사라지도록 타이머 설정
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     // 페이드 아웃 애니메이션과 함께 사라짐
                     withAnimation(.easeOut(duration: 0.5)) {
                         isVisible = false

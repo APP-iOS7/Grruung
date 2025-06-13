@@ -279,22 +279,23 @@ struct HomeView: View {
                 Text("레벨 \(viewModel.level)")
                     .font(.caption)
                     .fontWeight(.semibold)
+                    .foregroundStyle(.white)
                 
                 ZStack(alignment: .leading) {
                     // 배경 바 (전체 너비)
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 30)
+                        .fill(Color.white.opacity(0.2))
+                        .frame(height: 20)
                     
                     // 진행 바
                     GeometryReader { geometry in
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color(hex: "6159A0"))
-                            .frame(width: geometry.size.width * viewModel.expPercent, height: 30)
+                            .fill(Color(hex: "07a5ed"))
+                            .frame(width: geometry.size.width * viewModel.expPercent, height: 20)
                             .animation(.easeInOut(duration: 0.8), value: viewModel.expPercent)
                         
                     }
-                    .frame(height: 30)
+                    .frame(height: 20)
                 }
             }
         }
