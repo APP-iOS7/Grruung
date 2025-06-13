@@ -116,15 +116,13 @@ struct WriteStoryView: View {
                 .padding(.bottom, 30)
             }
         }
-//        .padding(.bottom, 48) // 하단 여백 추가
+        .padding(.bottom, 30)
         .scrollContentBackground(.hidden)
         .background(
             LinearGradient(colors: [
                 Color(GRColor.mainColor1_1),
                 Color(GRColor.mainColor1_2),
-                Color(.systemBackground)
-            ],
-                           startPoint: .top, endPoint: .bottom)
+            ], startPoint: .top, endPoint: .bottom)
         )
         .onTapGesture {
             isTextEditorFocused = false
@@ -170,13 +168,13 @@ struct WriteStoryView: View {
                     saveButton
                 }
             }
-//            // MARK: - 키보드 툴바에 완료 버튼 추가 (선택 사항)
-//            ToolbarItemGroup(placement: .keyboard) {
-//                Spacer()
-//                Button("완료") {
-//                    isTextEditorFocused = false
-//                }
-//            }
+            //            // MARK: - 키보드 툴바에 완료 버튼 추가 (선택 사항) 이 코드 사용시 화면을 더 가려서 일단 주석 처리
+            //            ToolbarItemGroup(placement: .keyboard) {
+            //                Spacer()
+            //                Button("완료") {
+            //                    isTextEditorFocused = false
+            //                }
+            //            }
         }
         .alert("이야기를 삭제하시겠습니까?", isPresented: $showDeleteAlert) {
             Button("취소", role: .cancel) {}
@@ -457,6 +455,7 @@ struct WriteStoryView: View {
         }
     }
     
+    // MARK: - 저장 버튼
     private var saveButton: some View {
         Button {
             Task {
@@ -584,6 +583,7 @@ struct WriteStoryView: View {
         }
     }
     
+    // MARK: - 이미지 로딩 함수
     private func loadImageFrom(urlString: String) {
         guard let url = URL(string: urlString) else {
             print("Invalid URL string: \(urlString)")
@@ -636,7 +636,8 @@ struct WriteStoryView: View {
     //            }
     //        }
     //    }
-    // 로딩 인디케이터 뷰 추가
+    
+    // MARK: - 로딩 인디케이터 뷰
     private var loadingIndicator: some View {
         ZStack {
             RoundedRectangle(cornerRadius: UIConstants.cornerRadius)
@@ -650,6 +651,7 @@ struct WriteStoryView: View {
         .padding()
     }
     
+    // MARK: - 게시물 삭제 함수
     private func deletePost() {
         guard let postID = postID else { return }
         
@@ -663,6 +665,7 @@ struct WriteStoryView: View {
         }
     }
     
+    // MARK: - 글쓰기 횟수 체크 함수
     private func checkWritingCount() {
         // userWritingCount가 있고, 글쓰기 가능 여부를 확인
         guard let count = writingCountVM.userWritingCount else { return }
@@ -675,7 +678,7 @@ struct WriteStoryView: View {
         }
     }
     
-    // 경험치 및 골드 추가 함수
+    // MARK: - 경험치 및 골드 추가 함수
     private func addRewardForWriting(characterUUID: String) async {
         do {
             // 고정된 보상 값
@@ -694,6 +697,7 @@ struct WriteStoryView: View {
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         WriteStoryView(currentMode: .edit, characterUUID: "39C50A01-C374-4455-A0B9-38EF092ECEF8")

@@ -48,12 +48,15 @@ struct CustomTabBar: View {
                                     .foregroundColor(selectedTab == index ? .orange : .gray)
                                 
                                 // 이름
+                                /*
                                 Text(item.name)
                                     .font(.system(size: 12))
                                     .foregroundColor(selectedTab == index ? .blue : .gray)
+                                 */
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
+                            .padding(.bottom, 12)
                         }
                     }
                 }

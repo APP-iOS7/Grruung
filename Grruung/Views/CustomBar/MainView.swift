@@ -22,7 +22,7 @@ struct MainView: View {
             ZStack(alignment: .bottom) {
                 // 현재 선택된 탭에 따른 컨텐츠 표시
                 TabContent(selectedTab: tabBarController.selectedTab)
-                    .padding(.bottom, tabBarController.selectedTab == 0 ? 0 : 90)
+                    .padding(.bottom, tabBarController.selectedTab == 0 || tabBarController.selectedTab == 1 ? 0 : 90)
                     .edgesIgnoringSafeArea(.all)
                 
                 if tabBarController.selectedTab != 0 {
@@ -30,7 +30,7 @@ struct MainView: View {
                     case 1:
                         Rectangle()
                             .fill(GRColor.mainColor1_2)
-                            .frame(height: 90)
+                            .frame(height: 81)
                             .ignoresSafeArea(edges: .bottom)
                     case 2:
                         Rectangle()
