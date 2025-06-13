@@ -411,28 +411,26 @@ struct HomeView: View {
                     }
                 }) {
                     ZStack {
-                        // 배경 블러 효과와 불투명도 증가
+                        // 바깥쪽 배경 + 그림자
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.white.opacity(action.unlocked ? 0.25 : 0.15))
                             .frame(width: 75, height: 75)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        
+
                         if !action.unlocked {
                             Image(systemName: "lock.fill")
                                 .foregroundColor(.white)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                         } else {
                             VStack(spacing: 5) {
-                                // 아이콘 크기 증가 및 그림자 추가
-                                Image(systemName: action.icon)
-                                    .font(.system(size: 28))
-                                    .foregroundColor(viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle" ?
-                                        .gray : GRColor.buttonColor_2)
+                                Image(action.icon)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 42, height: 42)
                                     .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                                
-                                // 텍스트에 그림자 추가
+
                                 Text(action.name)
-                                    .font(.caption)
+                                    .font(.caption2)
                                     .bold()
                                     .foregroundColor(.white)
                                     .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
@@ -440,7 +438,7 @@ struct HomeView: View {
                             .padding(8)
                         }
                     }
-                    // 버튼에 테두리 추가
+                    // 바깥 테두리 유지
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.white.opacity(0.3), lineWidth: 1)
@@ -457,21 +455,14 @@ struct HomeView: View {
         if !unlocked {
             // 잠긴 버튼
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.15))
-                    .frame(width: 60, height: 60)
-                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                
-                Image(systemName: "lock.fill")
-                    .foregroundColor(.white)
+                Image("lockIcon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 75)
                     .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
             }
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
-            )
         } else {
-            if systemName == "cart.fill" {
+            if systemName == "cartIcon" {
                 NavigationLink(destination: StoreView()) {
                     ZStack {
                         // 배경 블러 효과와 불투명도 증가
@@ -500,23 +491,21 @@ struct HomeView: View {
                             .stroke(Color.white.opacity(0.3), lineWidth: 1)
                     )
                 }
-            } else if systemName == "backpack.fill" {
+            } else if systemName == "backpackIcon2" {
                 NavigationLink(destination: UserInventoryView()) {
                     ZStack {
-                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.white.opacity(0.25))
                             .frame(width: 60, height: 60)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        
+
                         VStack(spacing: 3) {
-                            // 아이콘 크기 증가 및 그림자 추가
-                            Image(systemName: systemName)
-                                .font(.system(size: 28))
-                                .foregroundColor(GRColor.buttonColor_2)
+                            Image("backpackIcon2")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 45, height: 45)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                            
-                            // 텍스트 추가
+
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
@@ -524,10 +513,6 @@ struct HomeView: View {
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
                 }
             } else {
                 Button(action: {
@@ -542,7 +527,11 @@ struct HomeView: View {
                         
                         VStack(spacing: 3) {
                             // 아이콘 크기 증가 및 그림자 추가
-                            Image(systemName: systemName)
+                            Image(uiImage: UIImage(named: systemName) ?? UIImage(systemName: systemName)!)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 28, height: 28)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                                 .font(.system(size: 28))
                                 .foregroundColor(GRColor.buttonColor_2)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
@@ -575,18 +564,18 @@ struct HomeView: View {
         switch systemName {
         case "backpack.fill": // 인벤토리
             showInventory.toggle()
-        case "heart.text.square.fill": // 헬스케ㅇ
+        case "healthIcon": // 헬스케ㅇ
             if let character = viewModel.character {
                 showHealthCare = true
             } else {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "fireworks": // 특수 이벤트 (아이콘 변경)
+        case "specialGiftIcon": // 특수 이벤트 (아이콘 변경)
             withAnimation {
                 showSpecialEvent = true
             }
-        case "book.fill": // 일기
+        case "contractIcon": // 일기
             if let character = viewModel.character {
                 // 스토리 작성 시트 표시
                 isShowingWriteStory = true
@@ -594,7 +583,7 @@ struct HomeView: View {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "microphone.fill": // 채팅
+        case "chatIcon": // 채팅
             if let character = viewModel.character {
                 // 챗펫 시트 표시
                 isShowingChatPet = true
@@ -615,16 +604,16 @@ struct HomeView: View {
         switch systemName {
         case "backpack.fill": // 인벤토리
             showInventory.toggle()
-        case "heart.text.square.fill": // 헬스케어
+        case "healthIcon": // 헬스케어
             if let character = viewModel.character {
                 showHealthCare = true
             } else {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "fireworks": // 동산
+        case "treeIcon": // 동산
             showSpecialEvent.toggle() // 특수 이벤트 표시
-        case "book.fill": // 일기
+        case "contractIcon": // 일기
             if let character = viewModel.character {
                 // 스토리 작성 시트 표시
                 isShowingWriteStory = true
@@ -632,7 +621,7 @@ struct HomeView: View {
                 // 캐릭터가 없는 경우 경고 표시
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
-        case "microphone.fill": // 채팅
+        case "chatIcon": // 채팅
             if let character = viewModel.character {
                 // 챗펫 시트 표시
                 isShowingChatPet = true
