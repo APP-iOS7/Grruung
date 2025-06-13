@@ -41,20 +41,12 @@ struct SpeechBubbleView: View {
                             BubbleTriangle()
                                 .stroke(color.opacity(0.6), lineWidth: 1.5)
                         )
-                        .rotationEffect(.degrees(0))
-                        .offset(y: 22)
+                        .rotationEffect(.degrees(180))
+                        .offset(y: 14)
                 }
             )
-            .opacity(isVisible ? 1 : 0) // 표시 상태에 따라 투명도 변경
-            .onAppear {
-                // 3초 후 사라지도록 타이머 설정
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    // 페이드 아웃 애니메이션과 함께 사라짐
-                    withAnimation(.easeOut(duration: 0.5)) {
-                        isVisible = false
-                    }
-                }
-            }
+            .opacity(isVisible ? 1 : 0)
+            // onAppear 부분은 더 이상 필요하지 않음 (타이머는 ViewModel에서 처리)
     }
 }
 
