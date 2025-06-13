@@ -12,6 +12,7 @@ struct StoreView: View {
     @State private var selectedTab = 0
     @State private var gold = 0
     @State private var diamond = 0
+    @State private var refreshTrigger: Bool = false
     
     @StateObject var userInventoryViewModel = UserInventoryViewModel()
     @EnvironmentObject var userViewModel: UserViewModel
@@ -91,16 +92,16 @@ struct StoreView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 45) {
                             // 각 섹션은 ID로 scrollTo 대상
-                            SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
+                            SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
+                            SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy)
+                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy)
+                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
+                            SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
                         }
                         .padding()
@@ -146,6 +147,7 @@ struct StoreView: View {
                 }
             }
         }
+        .id(refreshTrigger)
         .environmentObject(userInventoryViewModel)
     }
 }
@@ -163,6 +165,7 @@ struct SectionView: View {
         GridItem(.flexible())
     ]
     
+    @Binding var refreshTrigger: Bool
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     
@@ -189,7 +192,7 @@ struct SectionView: View {
             
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
-                    NavigationLink(destination: ProductDetailView(product: product))
+                    NavigationLink(destination: ProductDetailView(product: product, refreshTrigger: $refreshTrigger))
                     {
                         ProductItemView(product: product)
                     }
