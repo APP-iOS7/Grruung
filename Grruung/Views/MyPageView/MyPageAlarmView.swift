@@ -40,19 +40,22 @@ struct MyPageAlarmView: View {
                             .foregroundColor(.white)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.orange)
-                            .cornerRadius(10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(
+                                        LinearGradient(colors: [Color(hex: "#FFB778"), Color(hex: "FFA04D")], startPoint: .leading, endPoint: .trailing)))
+                            .cornerRadius(12)
                         }
                     }
                     .padding()
-                    .background(Color.orange.opacity(0.2))
-                    .cornerRadius(12)
+//                    .background(Color.orange.opacity(0.2))
+//                    .cornerRadius(12)
                 }
                 
                 // 알림 설명
                 VStack(alignment: .leading, spacing: 8) {
                     Text("알림 설정")
-                        .font(.title2)
+                        .font(.headline)
                         .fontWeight(.semibold)
                     
                     Text("Grruung에서 보내는 푸시 알림을 설정합니다.")

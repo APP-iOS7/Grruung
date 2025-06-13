@@ -23,6 +23,9 @@ struct MyPageView: View {
                 }
                 .padding()
             }
+            .background(
+                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
         }
     }
 }
@@ -39,6 +42,7 @@ struct ProfileSection: View {
                     .resizable()
                     .frame(width: 100, height: 100)
                     .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("냥냥이")
@@ -101,9 +105,9 @@ struct SeviceGrid: View {
                 }
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
+            //            .background(
+            //                RoundedRectangle(cornerRadius: 12)
+            //                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
     }
 }
@@ -119,7 +123,7 @@ private func SeviceDestination(for item: SeviceItem) -> some View {
     case "동산":
         CharDexView()
     default:
-        Text("준비 중")
+        Text("준비중 입니다.")
     }
 }
 
@@ -143,7 +147,7 @@ struct SettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("설정")
-                .font(.title2)
+                .font(.headline)
                 .bold()
                 .padding(.horizontal)
                 .padding(.top)
@@ -168,10 +172,20 @@ struct SettingsSection: View {
                     }
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
+            //            .background(
+            //                RoundedRectangle(cornerRadius: 12)
+            //                    .stroke(Color.gray.opacity(0.4), lineWidth: 1))
         }
+    }
+}
+
+// 앱스토어 이동
+private func openAppStoreDirectly() {
+    let appStoreID = "YOUR_APP_ID" // 실제 앱 ID로 변경
+    let appStoreURL = "https://apps.apple.com/app/id\(appStoreID)?action=write-review"
+    
+    if let url = URL(string: appStoreURL) {
+        UIApplication.shared.open(url)
     }
 }
 
@@ -182,21 +196,24 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     switch item.title {
     case "알림":
         MyPageAlarmView()
-    case "인증 관리":
-        Text("인증 관리 화면")
-    case "질문&피드백":
-        Text("질문 및 피드백 화면")
+    case "공지사항":
+        NoticeView()
+    case "고객센터":
+        CustomerCenterView()
     case "평가 및 리뷰":
-        Text("App Store 링크 또는 리뷰 화면")
-    case "정보":
-        Text("앱 정보 화면")
+        Color.clear
+                   .onAppear {
+                       openAppStoreDirectly()
+                   }
+    case "약관 및 정책":
+        TermsPolicyView()
     default:
         Text("준비 중")
     }
 }
 
 // MARK: - Preview
-
 #Preview {
     MyPageView()
 }
+

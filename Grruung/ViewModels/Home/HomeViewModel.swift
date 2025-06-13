@@ -9,14 +9,18 @@ import Foundation
 import SwiftUI
 import Combine
 import FirebaseFirestore
+import SwiftData 
 
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
+    // 컨트롤러
+    private var quokkaController: QuokkaController?
+    
     // 캐릭터 관련
     @Published var character: GRCharacter?
     @Published var statusMessage: String = "안녕하세요!" // 상태 메시지
     @Published var goldMessage: String = ""
-
+    
     // 레벨 관련
     @Published var level: Int = 1
     @Published var expValue: Int = 0
@@ -53,6 +57,10 @@ class HomeViewModel: ObservableObject {
     private var weeklyAffectionTimer: Timer?    // 주간 애정도 체크용
     private var lastActivityDate: Date = Date() // 마지막 활동 날짜
     
+    // 애니메이션 업데이트 관련
+    @Published var needsAnimationUpdate: Bool = false // 애니메이션 업데이트 필요 여부
+    @Published var showUpdateScreen: Bool = false // 애니메이션 업데이트 화면 여부
+    
     // Firebase 연동 상태
     @Published var isFirebaseConnected: Bool = false
     @Published var isLoadingFromFirebase: Bool = false
@@ -67,7 +75,17 @@ class HomeViewModel: ObservableObject {
     @Published var isDataReady: Bool = false
     @Published var userViewModel = UserViewModel()
     @Published var isAnimationRunning: Bool = false
-
+    
+    // 건강/청결 상태 표시 관련 변수
+    @Published var showHealthStatus: Bool = false
+    @Published var showCleanStatus: Bool = false
+    @Published var isHealthActionInProgress: Bool = false
+    @Published var isCleanActionInProgress: Bool = false
+    
+    private var statusMessageTimer: Timer?
+    private var isActionMessageActive = false
+    private var defaultStatusMessageShown = false
+    
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -115,19 +133,19 @@ class HomeViewModel: ObservableObject {
     
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("backpack.fill", true, "인벤토리"),
-        ("cart.fill", true, "상점"),
-        ("fireworks", true, "특수 이벤트"),
-        ("book.fill", true, "일기"),
-        ("microphone.fill", true, "채팅"),
+        ("backpackIcon2", true, "인벤토리"),
+        ("healthIcon", true, "건강관리"),
+        ("specialGiftIcon", true, "특수 이벤트"),
+        ("contractIcon", true, "일기"),
+        ("chatIcon", true, "채팅"),
         ("lock.fill", true, "잠금")
     ]
     
     @Published var actionButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("fork.knife", true, "밥주기"),
-        ("gamecontroller.fill", true, "놀아주기"),
-        ("shower.fill", true, "씻기기"),
-        ("bed.double", true, "재우기")
+        ("appleIcon", true, "밥주기"),
+        ("playIcon", true, "놀아주기"),
+        ("soapIcon", true, "씻기기"),
+        ("nightIcon", true, "재우기")
     ]
     
     // 스탯 표시 형식 수정 (3개의 보이는 스탯만)
@@ -167,7 +185,8 @@ class HomeViewModel: ObservableObject {
         startStatDecreaseTimers()
         
         userViewModel = UserViewModel()
-        
+        ItemEffectApplier.shared.setHomeViewModel(self)
+
         // 캐릭터 주소 변경 이벤트 구독
         NotificationCenter.default.addObserver(
             self,
@@ -183,15 +202,32 @@ class HomeViewModel: ObservableObject {
             name: NSNotification.Name("CharacterNameChanged"),
             object: nil
         )
-#if DEBUG
+        
+        // 아이템 효과 적용 이벤트 구독 추가
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleItemEffectApplied(_:)),
+            name: NSNotification.Name("ItemEffectApplied"),
+            object: nil
+        )
+        
+        // 경험치 추가 알림 관찰자 등록
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAddExperience(_:)),
+            name: NSNotification.Name("AddExperiencePoints"),
+            object: nil
+        )
+        
+        // 초기 상태 메시지를 0.5초 후에 표시 (UI가 모두 로드된 후)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.showInitialStatusMessage()
+        }
+        
+    #if DEBUG
         print("🚀 HomeViewModel 초기화 완료")
         print("🚀 디버그 모드 활성화!")
-        print("   - 타이머 속도: \(debugSpeedMultiplier)배 빠르게")
-        print("   - 스탯 변화: \(debugSpeedMultiplier)배")
-        print("   - 경험치 획득: \(debugSpeedMultiplier)배")
-        print("   - 에너지 회복: \(energyTimerInterval)초마다")
-        print("   - 스탯 감소: \(statDecreaseInterval)초마다")
-#endif
+    #endif
     }
     
     // Firebase 연동을 초기화합니다
@@ -301,7 +337,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - Firebase Integration
-
+    
     // Firestore에서 메인 캐릭터를 로드
     private func loadMainCharacterFromFirebase() {
         isLoadingFromFirebase = true
@@ -369,18 +405,18 @@ class HomeViewModel: ObservableObject {
         // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
         actionButtons = [
             ("plus.circle", true, "캐릭터 생성"),
-            ("gamecontroller.fill", false, "놀아주기"),
-            ("shower.fill", false, "씻기기"),
-            ("bed.double", false, "재우기")
+            ("playIcon", false, "놀아주기"),
+            ("soapIcon", false, "씻기기"),
+            ("nightIcon", false, "재우기")
         ]
         
         // 사이드 버튼 비활성화
         sideButtons = [
-            ("backpack.fill", true, "인벤토리"),
-            ("cart.fill", true, "상점"),
-            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
-            ("book.fill", false, "일기"),
-            ("microphone.fill", false, "채팅"),
+            ("backpackIcon2", true, "인벤토리"),
+            ("healthIcon", true, "건강관리"),
+            ("specialGiftIcon", true, "특수 이벤트"), // 아이콘 변경
+            ("contractIcon", false, "일기"),
+            ("chatIcon", false, "채팅"),
             ("lock.fill", true, "잠금")
         ]
         
@@ -389,7 +425,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // 기본 캐릭터를 생성하고 Firebase에 저장
-    private func createAndSaveDefaultCharacter() {
+    @MainActor private func createAndSaveDefaultCharacter() {
         print("🆕 기본 캐릭터 생성 중...")
         
         let status = GRCharacterStatus(
@@ -441,6 +477,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // Firebase에서 로드한 캐릭터로 ViewModel 상태를 설정
+    @MainActor
     private func setupCharacterFromFirebase(_ character: GRCharacter) {
         self.isUpdatingFromFirebase = true
         
@@ -467,6 +504,9 @@ class HomeViewModel: ObservableObject {
         
         isFirebaseConnected = true
         self.isUpdatingFromFirebase = false
+        
+        print("🔍 setupCharacterFromFirebase 완료 - 애니메이션 확인 시작")
+        checkAnimationDataCompleteness() // 애니메이션 데이터 완전성 확인
         
 #if DEBUG
         print("📊 Firebase 캐릭터 동기화 완료")
@@ -552,7 +592,7 @@ class HomeViewModel: ObservableObject {
     
     
     // MARK: - Data Persistence
-
+    
     // 현재 캐릭터 상태를 Firestore에 저장
     private func saveCharacterToFirebase() {
         // Firebase에서 업데이트 중이면 저장하지 않음 (무한 루프 방지)
@@ -611,7 +651,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - Offline Data Processing
-
+    
     // 앱 재시작 시 오프라인 시간 계산 및 보상 적용
     private func processOfflineTime() {
         guard let character = character else { return }
@@ -701,7 +741,7 @@ class HomeViewModel: ObservableObject {
     
     
     // MARK: - Timer Management
-
+    
     private func startStatDecreaseTimers() {
         // 활동량(피로도) 회복 타이머 (15분마다)
         energyTimer = Timer.scheduledTimer(withTimeInterval: energyTimerInterval, repeats: true) { [weak self] _ in
@@ -734,17 +774,23 @@ class HomeViewModel: ObservableObject {
     
     // 모든 타이머를 정지합니다.
     private func stopAllTimers() {
-        energyTimer?.invalidate()
-        energyTimer = nil
-        
+        // 스탯 감소 타이머 정지
         statDecreaseTimer?.invalidate()
         statDecreaseTimer = nil
         
+        // 히든 스탯 감소 타이머 정지
         hiddenStatDecreaseTimer?.invalidate()
         hiddenStatDecreaseTimer = nil
         
+        // 주간 애정도 타이머 정지
         weeklyAffectionTimer?.invalidate()
         weeklyAffectionTimer = nil
+        
+        // 상태 메시지 타이머 정지
+        statusMessageTimer?.invalidate()
+        statusMessageTimer = nil
+        
+        print("⏱️ 모든 타이머 정지됨")
     }
     
     // 활동량(피로도) 회복 처리 - 15분마다 실행
@@ -954,7 +1000,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - Character Status Management
-
+    
     // 모든 스탯의 퍼센트 값을 업데이트
     private func updateAllPercents() {
         // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
@@ -972,16 +1018,56 @@ class HomeViewModel: ObservableObject {
             ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
         ]
         
-        // 상태 메시지 업데이트
-        updateStatusMessage()
+        // 액션 메시지가 활성화되어 있지 않을 때만 상태 메시지 업데이트
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
+    // 앱 시작 시 첫 상태 메시지 표시
+    private func showInitialStatusMessage() {
+        // 액션 메시지가 활성화되어 있지 않을 때만 실행
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
+    // 액션 메시지를 표시하고 타이머 설정
+    private func showActionMessage(_ message: String) {
+        // 메시지 설정
+        statusMessage = message
+        isActionMessageActive = true
+        
+        // 기존 타이머 취소
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 메시지 숨기기
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isActionMessageActive = false
+                self.statusMessage = "" // 메시지 비우기
+                
+                print("💬 액션 메시지 숨김 (2초 타이머)")
+            }
+        }
+        
+        print("💬 액션 메시지 표시: \(message)")
     }
     
     // 캐릭터 상태에 따른 메시지를 업데이트
     private func updateStatusMessage() {
-        guard let character = character else {
-            statusMessage = "안녕하세요!"
+        // 액션 메시지가 활성화되어 있으면 스탯 메시지 업데이트 안함
+        if isActionMessageActive {
             return
         }
+        
+        guard let character = character else {
+            return
+        }
+        
+        // 상태 메시지 생성
+        let newStatusMessage: String
         
         // 운석 상태인 경우 특별한 메시지 표시
         if character.status.phase == .egg {
@@ -994,37 +1080,74 @@ class HomeViewModel: ObservableObject {
                 "*콩닥콩닥*",
                 "*똑똑*"
             ]
-            statusMessage = eggMessages.randomElement() ?? "..."
-            return
+            newStatusMessage = eggMessages.randomElement() ?? "..."
+        } else if isSleeping {
+            newStatusMessage = "쿨쿨... 잠을 자고 있어요."
         }
-        
-        if isSleeping {
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            return
-        }
-        
         // 우선순위에 따른 상태 메시지 (낮은 스탯 우선)
-        if satietyValue < 20 {
-            statusMessage = "너무 배고파요... 밥 주세요!"
+        else if satietyValue < 20 {
+            newStatusMessage = "너무 배고파요... 밥 주세요!"
         } else if activityValue < 20 {
-            statusMessage = "너무 지쳐요... 쉬고 싶어요."
+            newStatusMessage = "너무 지쳐요... 쉬고 싶어요."
         } else if staminaValue < 20 {
-            statusMessage = "몸이 너무 피곤해요..."
+            newStatusMessage = "몸이 너무 피곤해요..."
         } else if healthyValue < 30 {
-            statusMessage = "몸이 아파요... 병원에 가고 싶어요."
+            newStatusMessage = "몸이 아파요... 병원에 가고 싶어요."
         } else if cleanValue < 30 {
-            statusMessage = "더러워요... 씻겨주세요!"
+            newStatusMessage = "더러워요... 씻겨주세요!"
         } else if satietyValue < 50 {
-            statusMessage = "조금 배고파요..."
+            newStatusMessage = "조금 배고파요..."
         } else if activityValue < 50 {
-            statusMessage = "좀 피곤해요..."
+            newStatusMessage = "좀 피곤해요..."
         } else if affectionValue < 100 {
-            statusMessage = "심심해요... 놀아주세요!"
+            newStatusMessage = "심심해요... 놀아주세요!"
         } else if satietyValue > 80 && staminaValue > 80 && activityValue > 80 {
-            statusMessage = "정말 행복해요! 감사합니다!"
+            newStatusMessage = "정말 행복해요! 감사합니다!"
         } else {
-            statusMessage = "오늘도 좋은 하루에요!"
+            newStatusMessage = "오늘도 좋은 하루에요!"
         }
+        
+        // 메시지가 실제로 변경되었고, 아직 표시되지 않았을 경우에만 표시
+        if statusMessage != newStatusMessage && !defaultStatusMessageShown {
+            statusMessage = newStatusMessage
+            defaultStatusMessageShown = true
+            
+            // 기존 타이머 취소
+            statusMessageTimer?.invalidate()
+            
+            // 2초 후에 메시지 숨기기
+            statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.statusMessage = "" // 메시지 비우기
+                    self.defaultStatusMessageShown = false
+                    
+                    print("💬 기본 상태 메시지 숨김 (2초 타이머)")
+                }
+            }
+            
+            print("💬 기본 상태 메시지 표시: \(newStatusMessage)")
+        }
+    }
+    
+    // 상태 메시지 타이머를 시작하는 메서드
+    private func startStatusMessageTimer() {
+        // 기존 타이머가 있다면 무효화
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 상태 메시지 초기화
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                // 상태 메시지 초기화 (UI 업데이트는 메인 스레드에서)
+                self?.clearStatusMessage()
+            }
+        }
+    }
+    
+    // 상태 메시지를 초기화하는 메서드
+    private func clearStatusMessage() {
+        // 상태 메시지 초기화 (빈 문자열로 설정)
+        statusMessage = ""
     }
     
     // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
@@ -1133,9 +1256,9 @@ class HomeViewModel: ObservableObject {
         let goldReward = calculateLevelUpGoldReward()
         addGold(goldReward)
         
-    #if DEBUG
+#if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
-    #endif
+#endif
     }
     
     // 현재 레벨에 맞는 성장 단계를 업데이트
@@ -1224,11 +1347,11 @@ class HomeViewModel: ObservableObject {
         
         self.character = character
         
-    #if DEBUG
+#if DEBUG
         print("🔄 레벨 \(level) 달성 -> 진화 상태: \(character.status.evolutionStatus.rawValue)")
-    #endif
+#endif
     }
-
+    
     // 부화 팝업 표시 여부 (다음 단계에서 사용)
     @Published var showEvolutionPopup: Bool = false
     
@@ -1242,7 +1365,11 @@ class HomeViewModel: ObservableObject {
             character.status.evolutionStatus = .completeInfant
         case .child:
             character.status.evolutionStatus = .completeChild
-        // ... 다른 단계들
+        case .adolescent:
+            character.status.evolutionStatus = .completeAdolescent
+        case .adult:
+            character.status.evolutionStatus = .completeAdult
+            // TODO: elder 단계 추후 추가
         default:
             break
         }
@@ -1292,7 +1419,7 @@ class HomeViewModel: ObservableObject {
         if isSleeping {
             // 이미 자고 있으면 깨우기
             isSleeping = false
-            statusMessage = "일어났어요! 이제 활동할 수 있어요!"
+            showActionMessage("일어났어요! 이제 활동할 수 있어요!")
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
@@ -1300,8 +1427,7 @@ class HomeViewModel: ObservableObject {
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
             activityValue = min(100, activityValue + sleepBonus)
             
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            updateAllPercents()
+            showActionMessage("쿨쿨... 잠을 자고 있어요.")
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1317,9 +1443,9 @@ class HomeViewModel: ObservableObject {
         let sleepChanges = ["sleep_state": isSleeping ? 1 : 0]
         recordAndSaveStatChanges(sleepChanges, reason: isSleeping ? "sleep_start" : "sleep_end")
         
-#if DEBUG
+    #if DEBUG
         print("😴 " + (isSleeping ? "펫을 재웠습니다" : "펫을 깨웠습니다"))
-#endif
+    #endif
     }
     
     // 인덱스를 기반으로 액션을 실행합니다.
@@ -1346,7 +1472,7 @@ class HomeViewModel: ObservableObject {
         }
         
         // 잠자는 상태에서는 재우기/깨우기만 가능
-        if isSleeping && action.icon != "bed.double" {
+        if isSleeping && action.icon != "nightIcon" {
             print("😴 펫이 자고 있어서 깨우기만 가능합니다")
             return
         }
@@ -1357,7 +1483,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-        case "bed.double":
+        case "nightIcon":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
             
@@ -1373,7 +1499,7 @@ class HomeViewModel: ObservableObject {
         // 액션 실행 후 액션 버튼 갱신
         refreshActionButtons()
     }
-
+    
     
     // ActionManager를 통해 액션을 실행합니다.
     /// - Parameter actionId: 실행할 액션 ID
@@ -1387,7 +1513,8 @@ class HomeViewModel: ObservableObject {
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
-            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
+            // 실패 메시지 표시
+            showActionMessage(action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage)
             return
         }
         
@@ -1434,18 +1561,18 @@ class HomeViewModel: ObservableObject {
             let oldExp = expValue
             addExp(action.expGain)
             
-        #if DEBUG
+    #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-        #endif
+    #endif
         }
         
         // 성공 메시지 표시
         if !action.successMessage.isEmpty {
-            statusMessage = action.successMessage
+            showActionMessage(action.successMessage)
         }
         
-        // UI 업데이트
-        updateAllPercents()
+        // UI 업데이트 - 액션 메시지가 덮어씌워지지 않도록 updateAllPercents 메서드 수정
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
@@ -1466,73 +1593,84 @@ class HomeViewModel: ObservableObject {
     #endif
     }
     
+    private func updateAllPercentsWithoutMessageUpdate() {
+        // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
+        satietyPercent = CGFloat(satietyValue) / 100.0
+        staminaPercent = CGFloat(staminaValue) / 100.0
+        activityPercent = CGFloat(activityValue) / 100.0
+        
+        // 경험치 퍼센트 업데이트
+        expPercent = expMaxValue > 0 ? CGFloat(expValue) / CGFloat(expMaxValue) : 0.0
+        
+        // UI 표시용 스탯 배열 업데이트 (3개의 보이는 스탯만)
+        stats = [
+            ("fork.knife", Color.orange, colorForValue(satietyValue), satietyPercent),      // 포만감
+            ("figure.run", Color.blue, colorForValue(staminaValue), staminaPercent),       // 운동량
+            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
+        ]
+        
+        // 상태 메시지는 업데이트하지 않음
+    }
+    
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
     /// - Parameter icon: 액션 아이콘
     /// - Returns: 해당하는 액션 ID
     private func getActionId(for icon: String) -> String? {
         switch icon {
             // 운석 전용 액션들 (phaseExclusive = true)
-        case "hand.tap.fill":
-            return "tap_egg"
-        case "flame.fill":
-            return "warm_egg"
-        case "bubble.left.fill":
-            return "talk_egg"
+        case "Hands002Icon":
+            return "tap_egg"               // 알 두드리기 - 경험치 적게 증가
+        case "fireIcon":
+            return "warm_egg"              // 알 데우기 - 경험치 중간 증가
+        case "chatIcon":
+            return "talk_egg"              // 알에게 말하기 - 경험치 소량 증가
             
             // 기본 액션들 (유아기 이상)
-        case "fork.knife":
-            return "feed"
-        case "gamecontroller.fill":
-            return "play"
-        case "shower.fill":
-            return "wash"
-        case "bed.double":
-            return "sleep"
+        case "appleIcon":
+            return "feed"                  // 밥 주기 - 포만감 증가
+        case "playIcon":
+            return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
+        case "soapIcon":
+            return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
+        case "nightIcon":
+            return "sleep"                 // 재우기/깨우기 - 활동량 회복
             
-        case "drop.circle.fill":
-            return "milk_feeding"
-            
-            // 건강 관리 액션들
-        case "pills.fill":
-            return "give_medicine"
-        case "capsule.fill":
-            return "vitamins"
-        case "stethoscope":
-            return "check_health"
+        case "milkIcon":
+            return "milk_feeding"          // 우유 먹이기 - 포만감 소량 증가 (유아기)
             
             // 기타 관련 액션들
-        case "sun.max.fill":
-            return "weather_sunny"
-        case "figure.walk":
-            return "walk_together"
-        case "figure.seated.side":
-            return "rest_together"
+        case "sunIcon":
+            return "weather_sunny"         // 햇빛 쬐기 - 건강 소량 증가
+        case "walking":
+            return "walk_together"         // 산책하기 - 체력 감소, 건강 증가
+        case "healing":
+            return "rest_together"         // 함께 쉬기 - 활동량 회복, 애정도 증가
             
             // 장소 관련 액션들
-        case "house.fill":
-            return "go_home"
+        case "homeIcon":
+            return "go_home"               // 집으로 이동 - 위치 변경
         case "tree.fill":
-            return "go_outside"
+            return "go_outside"            // 외출하기 - 위치 변경
             
             // 감정 관리 액션들
-        case "hand.raised.fill":
-            return "comfort"
+        case "loveHeartIcon":
+            return "comfort"               // 안아주기 - 애정도 증가
         case "hands.clap.fill":
-            return "encourage"
+            return "encourage"             // 칭찬하기 - 애정도 중간 증가
             
             // 청결 관리 액션들
-        case "comb.fill":
-            return "brush_fur"
-        case "sparkles":
-            return "full_grooming"
+        case "Hands005Icon":
+            return "brush_fur"             // 빗질하기 - 청결도 소량 증가 (기본 빗질)
             
-            // 특별 액션들
-        case "figure.strengthtraining.traditional":
-            return "special_training"
-        case "party.popper.fill":
-            return "party"
-        case "drop.fill":
-            return "hot_spring"
+            // 추가 액션들
+        case "yogaIcon":
+            return "stretch_exercise"      // 스트레칭 - 건강 증가, 체력 회복
+        case "toyIcon":
+            return "teach_trick"           // 재주 가르치기 - 애정도 증가, 경험치 획득
+        case "loveHeartIcon2":
+            return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
+        case "bearLoveIcon":
+            return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
             
         default:
 #if DEBUG
@@ -1543,7 +1681,7 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - Feature Management
-
+    
     // 성장 단계별 기능 해금
     private func unlockFeaturesByPhase(_ phase: CharacterPhase) {
         switch phase {
@@ -1589,6 +1727,7 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    @MainActor
     func loadCharacter() {
         // Firebase에서 로드하도록 변경
         if firebaseService.getCurrentUserID() != nil {
@@ -1603,9 +1742,13 @@ class HomeViewModel: ObservableObject {
     // MARK: - Resource Cleanup
     
     deinit {
-        cleanupResources()
+        stopAllTimers()
+        statusMessageTimer?.invalidate()
         
-        print("⏰ 모든 타이머 정리됨")
+        // Firebase 리스너 정리
+        characterListener?.remove()
+        
+        print("🧩 HomeViewModel 해제됨")
     }
     
     // 모든 리소스를 정리
@@ -1643,7 +1786,7 @@ class HomeViewModel: ObservableObject {
             loadMainCharacterFromFirebase()
         }
     }
-
+    
     @objc private func handleCharacterNameChanged(_ notification: Notification) {
         guard let characterUUID = notification.userInfo?["characterUUID"] as? String,
               let newName = notification.userInfo?["name"] as? String else {
@@ -1724,18 +1867,6 @@ class HomeViewModel: ObservableObject {
                 
                 print("💰 골드 획득: \(amount) (현재: \(newGoldAmount))")
                 
-                // 성공 메시지 표시
-                if amount > 0 {
-                    await MainActor.run {
-                        // statusMessage = "💰 \(amount) 골드를 획득했습니다!"
-                        goldMessage = "💰 \(amount) 골드를 획득했습니다!"
-                        
-                        // 일정 시간 후 메시지 초기화 (옵션)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-                            self?.goldMessage = ""
-                        }
-                    }
-                }
             } catch {
                 print("⚠️ 골드 업데이트 실패: \(error.localizedDescription)")
             }
@@ -1743,9 +1874,9 @@ class HomeViewModel: ObservableObject {
     }
     
     // MARK: - 애니메이션 중 버튼 클릭 비활성화 기능 추가
-
+    
     // 애니메이션 시작/종료 메서드
-    func startAnimation(duration: Double = 1.0) {
+    func startAnimation(duration: Double = 2.5) {
         isAnimationRunning = true
         
         // 애니메이션 완료 후 상태 변경
@@ -1766,7 +1897,8 @@ class HomeViewModel: ObservableObject {
     ) -> Bool {
         // 활동력 확인
         if activityValue < activityCost {
-            statusMessage = failMessage
+            // 실패 메시지 표시
+            showActionMessage(failMessage)
             return false
         }
         
@@ -1810,16 +1942,349 @@ class HomeViewModel: ObservableObject {
         addExp(expGain)
         
         // 성공 메시지 표시
-        statusMessage = successMessage
+        showActionMessage(successMessage)
         
         // UI 업데이트
-        updateAllPercents()
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
         // Firebase에 스탯 변화 기록
         recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
         
+        print("🎪 특수 이벤트 참여 성공: \(name)")
+        
         return true
+    }
+    
+    // MARK: - 헬스케어 관련
+    
+    // 건강 상태 업데이트
+    func updateCharacterHealthStatus(healthValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 건강 상태 업데이트
+        let oldValue = character.status.healthy
+        let newValue = min(100, oldValue + healthValue)
+        character.updateStatus(healthy: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.healthyValue = character.status.healthy
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["healthy": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "health_care")
+        
+#if DEBUG
+        print("💊 건강 상태 업데이트: \(oldValue) → \(newValue)")
+#endif
+    }
+    
+    // 청결 상태 업데이트
+    func updateCharacterCleanStatus(cleanValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 청결 상태 업데이트
+        let oldValue = character.status.clean
+        let newValue = min(100, oldValue + cleanValue)
+        character.updateStatus(clean: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.cleanValue = character.status.clean
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["clean": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "clean_care")
+        
+#if DEBUG
+        print("🧼 청결 상태 업데이트: \(oldValue) → \(newValue)")
+#endif
+    }
+    
+    // 건강/청결 상태 체크 및 알림 메시지 업데이트
+    func checkHealthAndCleanStatus() -> String? {
+        guard let character = self.character else { return nil }
+        
+        // 건강 상태가 30 미만인 경우
+        if character.status.healthy < 30 {
+            return "펫이 아파 보입니다. 건강 관리가 필요해요!"
+        }
+        
+        // 청결 상태가 30 미만인 경우
+        if character.status.clean < 30 {
+            return "펫이 지저분해 보입니다. 청결 관리가 필요해요!"
+        }
+        
+        return nil
+    }
+    
+    // 골드 차감
+    func spendGold(amount: Int, completion: @escaping (Bool) -> Void) {
+        guard let userId = firebaseService.getCurrentUserID() else {
+            statusMessage = "사용자 정보를 찾을 수 없습니다."
+            completion(false)
+            return
+        }
+        
+        // 더미 ID 처리
+        let realUserId = userId.isEmpty ? "23456" : userId
+        
+        // 현재 골드 확인
+        Task {
+            do {
+                // 사용자 정보 가져오기
+                try await userViewModel.fetchUser(userId: realUserId)
+                
+                guard let currentUser = userViewModel.user else {
+                    statusMessage = "사용자 정보를 찾을 수 없습니다."
+                    completion(false)
+                    return
+                }
+                
+                // 골드가 충분한지 확인
+                if currentUser.gold < amount {
+                    // 골드 부족
+                    await MainActor.run {
+                        statusMessage = "골드가 부족합니다 (보유: \(currentUser.gold), 필요: \(amount))"
+                        completion(false)
+                    }
+                    return
+                }
+                
+                // 골드 차감
+                let newGoldAmount = currentUser.gold - amount
+                
+                // Firebase에 업데이트
+                userViewModel.updateCurrency(userId: currentUser.id, gold: newGoldAmount)
+                
+                // 성공 메시지 표시
+                await MainActor.run {
+                    goldMessage = "💰 \(amount) 골드를 사용했습니다."
+                    
+                    // 일정 시간 후 메시지 초기화
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                        self?.goldMessage = ""
+                    }
+                    
+                    completion(true)
+                }
+            } catch {
+                await MainActor.run {
+                    statusMessage = "골드 차감 중 오류가 발생했습니다."
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    // 건강 상태 표시 함수
+    func showHealthStatusFor(minutes: Int) {
+        showHealthStatus = true
+        
+        // 타이머를 사용하여 지정된 시간 후 상태 숨기기
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(minutes * 60)) { [weak self] in
+            self?.showHealthStatus = false
+        }
+    }
+    
+    // 청결 상태 표시 함수
+    func showCleanStatusFor(minutes: Int) {
+        showCleanStatus = true
+        
+        // 타이머를 사용하여 지정된 시간 후 상태 숨기기
+        DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(minutes * 60)) { [weak self] in
+            self?.showCleanStatus = false
+        }
+    }
+    
+    // 건강 액션 시작 및 종료
+    func startHealthAction(duration: Double = 1.5) {
+        isHealthActionInProgress = true
+        
+        // 지정된 시간 후 액션 종료
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isHealthActionInProgress = false
+        }
+    }
+    
+    // 청결 액션 시작 및 종료
+    func startCleanAction(duration: Double = 1.5) {
+        isCleanActionInProgress = true
+        
+        // 지정된 시간 후 액션 종료
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isCleanActionInProgress = false
+        }
+    }
+    
+    // MARK: - 아이템 효과 적용 관련 메서드
+    
+    // 활동량 상태 업데이트
+    func updateCharacterActivityStatus(activityValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 활동량 상태 업데이트
+        let oldValue = character.status.activity
+        let newValue = min(100, oldValue + activityValue)
+        character.updateStatus(activity: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.activityValue = character.status.activity
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["activity": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "activity_care")
+        
+#if DEBUG
+        print("🏃 활동량 상태 업데이트: \(oldValue) → \(newValue)")
+#endif
+    }
+    
+    // 포만감 상태 업데이트
+    func updateCharacterSatietyStatus(satietyValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 포만감 상태 업데이트
+        let oldValue = character.status.satiety
+        let newValue = min(100, oldValue + satietyValue)
+        character.updateStatus(satiety: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.satietyValue = character.status.satiety
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["satiety": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "food_care")
+        
+#if DEBUG
+        print("🍽️ 포만감 상태 업데이트: \(oldValue) → \(newValue)")
+#endif
+    }
+    
+    // 스태미나 상태 업데이트
+    func updateCharacterStaminaStatus(staminaValue: Int) {
+        guard var character = self.character else { return }
+        
+        // 스태미나 상태 업데이트
+        let oldValue = character.status.stamina
+        let newValue = min(100, oldValue + staminaValue)
+        character.updateStatus(stamina: newValue - oldValue)
+        
+        // 변경 내용 적용
+        self.character = character
+        self.staminaValue = character.status.stamina
+        
+        // 모델 업데이트
+        updateCharacterStatus()
+        
+        // 변경 사항 기록
+        let changes = ["stamina": newValue - oldValue]
+        recordAndSaveStatChanges(changes, reason: "stamina_care")
+        
+#if DEBUG
+        print("💪 스태미나 상태 업데이트: \(oldValue) → \(newValue)")
+#endif
+    }
+    
+    // 아이템 효과 적용 알림 처리
+    @objc private func handleItemEffectApplied(_ notification: Notification) {
+        guard let message = notification.userInfo?["message"] as? String else {
+            return
+        }
+        
+        // 상태 메시지 업데이트
+        showActionMessage(message)
+        
+        // 활동 날짜 업데이트
+        updateLastActivityDate()
+    }
+    
+    // 경험치 추가 알림 처리
+    @objc private func handleAddExperience(_ notification: Notification) {
+        guard let expPoints = notification.userInfo?["expPoints"] as? Int else {
+            return
+        }
+        
+        // 경험치 추가 (내부 private 메서드 호출)
+        addExp(expPoints)
+    }
+    // MARK: - 애니메이션 업데이트 확인
+    // 현재 캐릭터의 애니메이션 데이터가 완전한지 확인
+    @MainActor
+    private func checkAnimationDataCompleteness() {
+        guard let character = character else {
+            print("🔍 캐릭터 없음 - 업데이트 확인 생략")
+            return
+        }
+        
+        // quokkaController가 없으면 생략
+        guard let controller = quokkaController else {
+            print("🔍 QuokkaController가 아직 초기화되지 않음")
+            return
+        }
+        
+        print("🔍 애니메이션 데이터 완전성 확인 시작: \(character.status.phase.rawValue)")
+        
+        // egg 단계는 Bundle에 있으므로 확인 불필요
+        if character.status.phase == .egg {
+            print("🔍 egg 단계 - 업데이트 확인 불필요")
+            needsAnimationUpdate = false
+            return
+        }
+        
+        // QuokkaController를 통해 데이터 완전성 확인
+        print("🔍 QuokkaController로 데이터 완전성 확인 중...")
+        let isComplete = controller.isPhaseDataComplete(
+            phase: character.status.phase,
+            evolutionStatus: character.status.evolutionStatus
+        )
+        
+        print("🔍 데이터 완전성 확인 결과: \(isComplete ? "완료" : "미완료")")
+        
+        needsAnimationUpdate = !isComplete
+        
+        if needsAnimationUpdate {
+            print("📥 애니메이션 데이터 업데이트 필요: \(character.status.phase.rawValue)")
+            showUpdateScreen = true
+        } else {
+            print("✅ 애니메이션 데이터 업데이트 불필요")
+            showUpdateScreen = false
+        }
+    }
+    
+    // ModelContext를 QuokkaController에 전달하는 메서드
+    @MainActor
+    func setModelContext(_ context: ModelContext) {
+        // QuokkaController 초기화
+        if quokkaController == nil {
+            quokkaController = QuokkaController()
+        }
+        
+        quokkaController?.setModelContext(context)
+        print("✅ HomeViewModel: ModelContext 설정 완료")
+    }
+    
+    // 업데이트 완료 처리 메서드
+    @MainActor
+    func completeAnimationUpdate() {
+        needsAnimationUpdate = false
+        showUpdateScreen = false
+        print("✅ 애니메이션 업데이트 완료")
     }
 }

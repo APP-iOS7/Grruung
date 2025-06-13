@@ -78,7 +78,8 @@ class ActionManager {
         // 재우기/깨우기 액션 처리 (항상 표시)
         if let sleepAction = allActions.first(where: { $0.id == "sleep" }) {
             // 자고 있는 경우 깨우기 액션으로 변경
-            let modifiedSleepAction = isSleeping ? sleepAction.withUpdatedName("깨우기") : sleepAction
+            let modifiedSleepAction = isSleeping ?
+                sleepAction.withUpdatedName("깨우기") : sleepAction
             result.append(modifiedSleepAction)
         }
         
@@ -109,12 +110,12 @@ class ActionManager {
                 result.append(contentsOf: randomActions)
             }
             
-#if DEBUG
+    #if DEBUG
             print("🎯 액션 필터링 결과:")
             print("   - 현재 단계: \(phase.rawValue)")
             print("   - 전체 가능한 액션: \(availableActions.count)개")
             print("   - 최종 선택된 액션: \(result.map { $0.name }.joined(separator: ", "))")
-#endif
+    #endif
         }
         
         // ActionButton으로 변환
@@ -141,7 +142,7 @@ class ActionManager {
             // phaseExclusive = true시 그 단계에서만 사용가능한 활동 액션 등장
             PetAction(
                 id: "tap_egg",
-                icon: "hand.tap.fill",
+                icon: "Hands002Icon",
                 name: "두드리기",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -154,7 +155,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "warm_egg",
-                icon: "flame.fill",
+                icon: "fireIcon",
                 name: "따뜻하게",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -167,7 +168,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "talk_egg",
-                icon: "bubble.left.fill",
+                icon: "chatIcon",
                 name: "말걸기",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -182,7 +183,7 @@ class ActionManager {
             // 모든 단계 공통 액션
             PetAction(
                 id: "sleep",
-                icon: "bed.double",
+                icon: "nightIcon",
                 name: "재우기",
                 unlockPhase: .egg, // 모든 단계에서 사용 가능
                 phaseExclusive: false,
@@ -194,10 +195,25 @@ class ActionManager {
                 timeRestriction: TimeRestriction(startHour: 22, endHour: 6, isInverted: true)
             ),
             
+            // 우유먹기 (유아기 필수 액션)
+            PetAction(
+                id: "milk_feeding",
+                icon: "milkIcon",
+                name: "우유먹기",
+                unlockPhase: .infant,
+                phaseExclusive: true, // 유아기에만 사용 가능하도록 변경
+                activityCost: 4,
+                effects: ["satiety": 12, "healthy": 8, "happiness": 5],
+                expGain: 4,
+                successMessage: "우유가 맛있어요! 쑥쑥 자랄 수 있을 것 같아요!",
+                failMessage: "지금은 우유를 먹고 싶지 않아요...",
+                timeRestriction: nil
+            ),
+            
             // 유아기 이상 액션
             PetAction(
                 id: "feed",
-                icon: "fork.knife",
+                icon: "appleIcon",
                 name: "밥주기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -210,7 +226,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "play",
-                icon: "gamecontroller.fill",
+                icon: "playIcon",
                 name: "놀아주기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -223,7 +239,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "wash",
-                icon: "shower.fill",
+                icon: "soapIcon",
                 name: "씻기기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -234,52 +250,12 @@ class ActionManager {
                 failMessage: "너무 지쳐서 씻기 힘들어요...",
                 timeRestriction: nil
             ),
-            PetAction(
-                id: "give_medicine",
-                icon: "pills.fill",
-                name: "감기약",
-                unlockPhase: .infant,
-                phaseExclusive: false,
-                activityCost: 3,
-                effects: ["healthy": 20, "stamina": -2],
-                expGain: 2,
-                successMessage: "약을 먹고 몸이 좋아졌어요!",
-                failMessage: "너무 지쳐서 약을 먹기 힘들어요...",
-                timeRestriction: nil
-            ),
             
-            PetAction(
-                id: "vitamins",
-                icon: "capsule.fill",
-                name: "영양제",
-                unlockPhase: .child,
-                phaseExclusive: false,
-                activityCost: 2,
-                effects: ["healthy": 15, "stamina": 5, "satiety": 3],
-                expGain: 3,
-                successMessage: "영양제로 건강해졌어요!",
-                failMessage: "컨디션이 안 좋아서 영양제를 거부해요...",
-                timeRestriction: nil
-            ),
-            
-            PetAction(
-                id: "check_health",
-                icon: "stethoscope",
-                name: "건강 검진",
-                unlockPhase: .adolescent,
-                phaseExclusive: false,
-                activityCost: 8,
-                effects: ["healthy": 25, "happiness": -5], // 병원이라 약간 스트레스
-                expGain: 5,
-                successMessage: "건강 검진 결과 아주 건강해요!",
-                failMessage: "너무 지쳐서 병원에 갈 수 없어요...",
-                timeRestriction: TimeRestriction(startHour: 9, endHour: 18, isInverted: false) // 병원 운영시간
-            ),
             
             // MARK: - 기타 관련 액션들
             PetAction(
                 id: "weather_sunny",
-                icon: "sun.max.fill",
+                icon: "sunIcon",
                 name: "날씨좋기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -293,7 +269,7 @@ class ActionManager {
             
             PetAction(
                 id: "walk_together",
-                icon: "figure.walk",
+                icon: "walking",
                 name: "같이 걷기",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -307,7 +283,7 @@ class ActionManager {
             
             PetAction(
                 id: "rest_together",
-                icon: "figure.seated.side",
+                icon: "healing",
                 name: "같이 쉬기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -322,7 +298,7 @@ class ActionManager {
             // MARK: - 장소 관련 액션들
             PetAction(
                 id: "go_home",
-                icon: "house.fill",
+                icon: "homeIcon",
                 name: "집가기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -337,7 +313,7 @@ class ActionManager {
             // MARK: - 감정 관리 액션들
             PetAction(
                 id: "comfort",
-                icon: "hand.raised.fill",
+                icon: "loveHeartIcon",
                 name: "달래주기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -351,7 +327,7 @@ class ActionManager {
             
             PetAction(
                 id: "encourage",
-                icon: "hands.clap.fill",
+                icon: "Hands005Icon",
                 name: "응원하기",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -366,7 +342,7 @@ class ActionManager {
             // MARK: - 청결 관리 액션들 (확장)
             PetAction(
                 id: "brush_fur",
-                icon: "comb.fill",
+                icon: "bathingIcon",
                 name: "털빗기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -378,24 +354,10 @@ class ActionManager {
                 timeRestriction: nil
             ),
             
-            PetAction(
-                id: "full_grooming",
-                icon: "sparkles",
-                name: "그루밍",
-                unlockPhase: .adolescent,
-                phaseExclusive: false,
-                activityCost: 10,
-                effects: ["clean": 25, "healthy": 8, "happiness": 10, "stamina": -5],
-                expGain: 6,
-                successMessage: "완벽한 그루밍으로 멋져졌어요!",
-                failMessage: "너무 지쳐서 그루밍을 받을 수 없어요...",
-                timeRestriction: nil
-            ),
-            
             // 특별 액션들 중 특수 이벤트와 겹치지 않는 것만 유지
             PetAction(
                 id: "special_training",
-                icon: "figure.strengthtraining.traditional",
+                icon: "dumbbellIcom",
                 name: "특별훈련",
                 unlockPhase: .adolescent,
                 phaseExclusive: false,
@@ -417,7 +379,7 @@ class ActionManager {
             
             PetAction(
                 id: "stretch_exercise",
-                icon: "figure.mixed.cardio",
+                icon: "yogaIcon",
                 name: "스트레칭",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -430,7 +392,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "teach_trick",
-                icon: "command",
+                icon: "toyIcon",
                 name: "재주 가르치기",
                 unlockPhase: .adolescent,
                 phaseExclusive: false,
@@ -443,7 +405,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "pet_head",
-                icon: "hand.point.up.fill",
+                icon: "loveHeartIcon2",
                 name: "머리 쓰다듬기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -457,7 +419,7 @@ class ActionManager {
             
             PetAction(
                 id: "scratch_belly",
-                icon: "hand.point.right.fill",
+                icon: "bearLoveIcon",
                 name: "배 긁어주기",
                 unlockPhase: .child,
                 phaseExclusive: false,
