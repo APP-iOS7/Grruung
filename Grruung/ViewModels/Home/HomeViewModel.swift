@@ -84,6 +84,7 @@ class HomeViewModel: ObservableObject {
     
     private var statusMessageTimer: Timer?
     private var isActionMessageActive = false
+    private var defaultStatusMessageShown = false
     
     // 디버그 모드 설정 추가
 #if DEBUG
@@ -203,12 +204,12 @@ class HomeViewModel: ObservableObject {
         )
         
         // 아이템 효과 적용 이벤트 구독 추가
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(handleItemEffectApplied(_:)),
-                name: NSNotification.Name("ItemEffectApplied"),
-                object: nil
-            )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleItemEffectApplied(_:)),
+            name: NSNotification.Name("ItemEffectApplied"),
+            object: nil
+        )
         
         // 경험치 추가 알림 관찰자 등록
         NotificationCenter.default.addObserver(
@@ -217,15 +218,16 @@ class HomeViewModel: ObservableObject {
             name: NSNotification.Name("AddExperiencePoints"),
             object: nil
         )
-#if DEBUG
+        
+        // 초기 상태 메시지를 0.5초 후에 표시 (UI가 모두 로드된 후)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.showInitialStatusMessage()
+        }
+        
+    #if DEBUG
         print("🚀 HomeViewModel 초기화 완료")
         print("🚀 디버그 모드 활성화!")
-        print("   - 타이머 속도: \(debugSpeedMultiplier)배 빠르게")
-        print("   - 스탯 변화: \(debugSpeedMultiplier)배")
-        print("   - 경험치 획득: \(debugSpeedMultiplier)배")
-        print("   - 에너지 회복: \(energyTimerInterval)초마다")
-        print("   - 스탯 감소: \(statDecreaseInterval)초마다")
-#endif
+    #endif
     }
     
     // Firebase 연동을 초기화합니다
@@ -1022,6 +1024,14 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    // 앱 시작 시 첫 상태 메시지 표시
+    private func showInitialStatusMessage() {
+        // 액션 메시지가 활성화되어 있지 않을 때만 실행
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
     // 액션 메시지를 표시하고 타이머 설정
     private func showActionMessage(_ message: String) {
         // 메시지 설정
@@ -1031,12 +1041,14 @@ class HomeViewModel: ObservableObject {
         // 기존 타이머 취소
         statusMessageTimer?.invalidate()
         
-        // 2초 후에 타이머 실행하여 메시지 초기화
+        // 2초 후에 메시지 숨기기
         statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.isActionMessageActive = false
-                self.updateStatusMessage() // 스탯 기반 메시지로 복귀
+                self.statusMessage = "" // 메시지 비우기
+                
+                print("💬 액션 메시지 숨김 (2초 타이머)")
             }
         }
         
@@ -1051,9 +1063,11 @@ class HomeViewModel: ObservableObject {
         }
         
         guard let character = character else {
-            statusMessage = "안녕하세요!"
             return
         }
+        
+        // 상태 메시지 생성
+        let newStatusMessage: String
         
         // 운석 상태인 경우 특별한 메시지 표시
         if character.status.phase == .egg {
@@ -1066,36 +1080,53 @@ class HomeViewModel: ObservableObject {
                 "*콩닥콩닥*",
                 "*똑똑*"
             ]
-            statusMessage = eggMessages.randomElement() ?? "..."
-            return
+            newStatusMessage = eggMessages.randomElement() ?? "..."
+        } else if isSleeping {
+            newStatusMessage = "쿨쿨... 잠을 자고 있어요."
         }
-        
-        if isSleeping {
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            return
-        }
-        
         // 우선순위에 따른 상태 메시지 (낮은 스탯 우선)
-        if satietyValue < 20 {
-            statusMessage = "너무 배고파요... 밥 주세요!"
+        else if satietyValue < 20 {
+            newStatusMessage = "너무 배고파요... 밥 주세요!"
         } else if activityValue < 20 {
-            statusMessage = "너무 지쳐요... 쉬고 싶어요."
+            newStatusMessage = "너무 지쳐요... 쉬고 싶어요."
         } else if staminaValue < 20 {
-            statusMessage = "몸이 너무 피곤해요..."
+            newStatusMessage = "몸이 너무 피곤해요..."
         } else if healthyValue < 30 {
-            statusMessage = "몸이 아파요... 병원에 가고 싶어요."
+            newStatusMessage = "몸이 아파요... 병원에 가고 싶어요."
         } else if cleanValue < 30 {
-            statusMessage = "더러워요... 씻겨주세요!"
+            newStatusMessage = "더러워요... 씻겨주세요!"
         } else if satietyValue < 50 {
-            statusMessage = "조금 배고파요..."
+            newStatusMessage = "조금 배고파요..."
         } else if activityValue < 50 {
-            statusMessage = "좀 피곤해요..."
+            newStatusMessage = "좀 피곤해요..."
         } else if affectionValue < 100 {
-            statusMessage = "심심해요... 놀아주세요!"
+            newStatusMessage = "심심해요... 놀아주세요!"
         } else if satietyValue > 80 && staminaValue > 80 && activityValue > 80 {
-            statusMessage = "정말 행복해요! 감사합니다!"
+            newStatusMessage = "정말 행복해요! 감사합니다!"
         } else {
-            statusMessage = "오늘도 좋은 하루에요!"
+            newStatusMessage = "오늘도 좋은 하루에요!"
+        }
+        
+        // 메시지가 실제로 변경되었고, 아직 표시되지 않았을 경우에만 표시
+        if statusMessage != newStatusMessage && !defaultStatusMessageShown {
+            statusMessage = newStatusMessage
+            defaultStatusMessageShown = true
+            
+            // 기존 타이머 취소
+            statusMessageTimer?.invalidate()
+            
+            // 2초 후에 메시지 숨기기
+            statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.statusMessage = "" // 메시지 비우기
+                    self.defaultStatusMessageShown = false
+                    
+                    print("💬 기본 상태 메시지 숨김 (2초 타이머)")
+                }
+            }
+            
+            print("💬 기본 상태 메시지 표시: \(newStatusMessage)")
         }
     }
     
