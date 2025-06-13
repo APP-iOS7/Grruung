@@ -206,7 +206,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
                        openAppStoreDirectly()
                    }
     case "약관 및 정책":
-        Text("앱 정보 화면")
+        TermsPolicyView()
     default:
         Text("준비 중")
     }

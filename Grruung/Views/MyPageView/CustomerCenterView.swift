@@ -165,7 +165,6 @@ struct FAQItemView: View {
                 HStack {
                     Text(faq.question)
                         .font(.body)
-                        .fontWeight(.medium)
                         .foregroundColor(.black)
                         .multilineTextAlignment(.leading)
                     
