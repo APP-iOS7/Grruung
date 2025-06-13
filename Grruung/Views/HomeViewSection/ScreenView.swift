@@ -147,10 +147,27 @@ struct ScreenView: View {
     @ViewBuilder
     private var quokkaAnimationView: some View {
         if let currentFrame = quokkaController.currentFrame {
-            Image(uiImage: currentFrame)
+            let imageView = Image(uiImage: currentFrame)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(height: 180)
+            
+            // evolutionStatus에 따라 다른 프레임과 오프셋을 적용
+            switch character?.status.evolutionStatus {
+            case .completeInfant, .toChild:
+                // 소아기(완료) 이후 단계에서는 크기 키우기.
+                imageView
+                    .frame(height: 160) // 예시: 프레임 높이를 220으로 설정
+                    .offset(y: 0)     // 예시: Y축 위치를 0만큼 이동
+            case .completeChild, .toAdolescent, .completeAdolescent, .toAdult, .completeAdult, .toElder, .completeElder:
+                // 소아기(완료) 이후 단계에서는 크기 키우기.
+                imageView
+                    .frame(height: 240) // 예시: 프레임 높이를 220으로 설정
+                    .offset(y: 0)     // 예시: Y축 위치를 0만큼 이동
+            default:
+                // 그 외 모든 상태(.egg)일 때
+                imageView
+                    .frame(height: 180) // 기본 프레임 높이 180
+            }
         } else {
             // 컨트롤러가 로드되지 않았을 때 기본 이미지 (e.g. 첫 프레임)
             // loadFirstFrame을 통해 초기 프레임을 설정해주는 것이 좋음
