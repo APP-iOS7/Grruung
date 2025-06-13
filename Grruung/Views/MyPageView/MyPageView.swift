@@ -23,7 +23,6 @@ struct MyPageView: View {
                 }
                 .padding()
             }
-            .scrollContentBackground(.hidden) // 기본 배경을 숨기고
             .background(
                 LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
@@ -124,7 +123,7 @@ private func SeviceDestination(for item: SeviceItem) -> some View {
     case "동산":
         CharDexView()
     default:
-        Text("준비 중")
+        Text("준비중 입니다.")
     }
 }
 
@@ -192,7 +191,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     case "고객센터":
         CustomerCenterView()
     case "평가 및 리뷰":
-        Text("App Store 링크 또는 리뷰 화면")
+        OpenAppStoreView()
     case "약관 및 정책":
         Text("앱 정보 화면")
     default:

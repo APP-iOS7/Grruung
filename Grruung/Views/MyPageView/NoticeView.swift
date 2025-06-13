@@ -33,7 +33,7 @@ struct NoticeView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            VStack {
                 ForEach(notices) { notice in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
@@ -57,7 +57,7 @@ struct NoticeView: View {
                                 .padding(.top, 4)
                         }
                     }
-                    .padding(.vertical, 14)
+                    .padding(.vertical, 16)
                     .padding(.horizontal)
                     .onTapGesture {
                         withAnimation {
