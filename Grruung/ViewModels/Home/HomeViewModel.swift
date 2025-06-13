@@ -81,6 +81,9 @@ class HomeViewModel: ObservableObject {
     @Published var showCleanStatus: Bool = false
     @Published var isHealthActionInProgress: Bool = false
     @Published var isCleanActionInProgress: Bool = false
+    
+    private var statusMessageTimer: Timer?
+    
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -768,17 +771,23 @@ class HomeViewModel: ObservableObject {
     
     // 모든 타이머를 정지합니다.
     private func stopAllTimers() {
-        energyTimer?.invalidate()
-        energyTimer = nil
-        
+        // 스탯 감소 타이머 정지
         statDecreaseTimer?.invalidate()
         statDecreaseTimer = nil
         
+        // 히든 스탯 감소 타이머 정지
         hiddenStatDecreaseTimer?.invalidate()
         hiddenStatDecreaseTimer = nil
         
+        // 주간 애정도 타이머 정지
         weeklyAffectionTimer?.invalidate()
         weeklyAffectionTimer = nil
+        
+        // 상태 메시지 타이머 정지
+        statusMessageTimer?.invalidate()
+        statusMessageTimer = nil
+        
+        print("⏱️ 모든 타이머 정지됨")
     }
     
     // 활동량(피로도) 회복 처리 - 15분마다 실행
@@ -1059,6 +1068,29 @@ class HomeViewModel: ObservableObject {
         } else {
             statusMessage = "오늘도 좋은 하루에요!"
         }
+        
+        // 2초 후에 상태 메시지 초기화를 위한 타이머 설정
+        startStatusMessageTimer()
+    }
+    
+    // 상태 메시지 타이머를 시작하는 메서드
+    private func startStatusMessageTimer() {
+        // 기존 타이머가 있다면 무효화
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 상태 메시지 초기화
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                // 상태 메시지 초기화 (UI 업데이트는 메인 스레드에서)
+                self?.clearStatusMessage()
+            }
+        }
+    }
+    
+    // 상태 메시지를 초기화하는 메서드
+    private func clearStatusMessage() {
+        // 상태 메시지 초기화 (빈 문자열로 설정)
+        statusMessage = ""
     }
     
     // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
@@ -1426,6 +1458,8 @@ class HomeViewModel: ObservableObject {
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
             statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
+            // 실패 메시지도 2초 후 사라지도록 타이머 설정
+            startStatusMessageTimer()
             return
         }
         
@@ -1472,14 +1506,16 @@ class HomeViewModel: ObservableObject {
             let oldExp = expValue
             addExp(action.expGain)
             
-#if DEBUG
+    #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-#endif
+    #endif
         }
         
         // 성공 메시지 표시
         if !action.successMessage.isEmpty {
             statusMessage = action.successMessage
+            // 성공 메시지도 2초 후 사라지도록 타이머 설정
+            startStatusMessageTimer()
         }
         
         // UI 업데이트
@@ -1498,10 +1534,10 @@ class HomeViewModel: ObservableObject {
         
         print("✅ '\(action.name)' 액션을 실행했습니다")
         
-#if DEBUG
+    #if DEBUG
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
-#endif
+    #endif
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -1634,9 +1670,13 @@ class HomeViewModel: ObservableObject {
     // MARK: - Resource Cleanup
     
     deinit {
-        cleanupResources()
+        stopAllTimers()
+        statusMessageTimer?.invalidate()
         
-        print("⏰ 모든 타이머 정리됨")
+        // Firebase 리스너 정리
+        characterListener?.remove()
+        
+        print("🧩 HomeViewModel 해제됨")
     }
     
     // 모든 리소스를 정리
@@ -1764,7 +1804,7 @@ class HomeViewModel: ObservableObject {
     // MARK: - 애니메이션 중 버튼 클릭 비활성화 기능 추가
     
     // 애니메이션 시작/종료 메서드
-    func startAnimation(duration: Double = 1.0) {
+    func startAnimation(duration: Double = 2.5) {
         isAnimationRunning = true
         
         // 애니메이션 완료 후 상태 변경
@@ -1786,6 +1826,8 @@ class HomeViewModel: ObservableObject {
         // 활동력 확인
         if activityValue < activityCost {
             statusMessage = failMessage
+            // 실패 메시지도 2초 후 사라지도록 타이머 설정
+            startStatusMessageTimer()
             return false
         }
         
@@ -1830,6 +1872,8 @@ class HomeViewModel: ObservableObject {
         
         // 성공 메시지 표시
         statusMessage = successMessage
+        // 성공 메시지도 2초 후 사라지도록 타이머 설정
+        startStatusMessageTimer()
         
         // UI 업데이트
         updateAllPercents()
