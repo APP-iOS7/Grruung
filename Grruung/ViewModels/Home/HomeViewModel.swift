@@ -133,19 +133,19 @@ class HomeViewModel: ObservableObject {
     
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("backpack.fill", true, "인벤토리"),
-        ("heart.text.square.fill", true, "건강관리"),
-        ("fireworks", true, "특수 이벤트"),
-        ("book.fill", true, "일기"),
-        ("microphone.fill", true, "채팅"),
+        ("backpackIcon2", true, "인벤토리"),
+        ("healthIcon", true, "건강관리"),
+        ("specialGiftIcon", true, "특수 이벤트"),
+        ("contractIcon", true, "일기"),
+        ("chatIcon", true, "채팅"),
         ("lock.fill", true, "잠금")
     ]
     
     @Published var actionButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("fork.knife", true, "밥주기"),
-        ("gamecontroller.fill", true, "놀아주기"),
-        ("shower.fill", true, "씻기기"),
-        ("bed.double", true, "재우기")
+        ("appleIcon", true, "밥주기"),
+        ("playIcon", true, "놀아주기"),
+        ("soapIcon", true, "씻기기"),
+        ("nightIcon", true, "재우기")
     ]
     
     // 스탯 표시 형식 수정 (3개의 보이는 스탯만)
@@ -405,18 +405,18 @@ class HomeViewModel: ObservableObject {
         // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
         actionButtons = [
             ("plus.circle", true, "캐릭터 생성"),
-            ("gamecontroller.fill", false, "놀아주기"),
-            ("shower.fill", false, "씻기기"),
-            ("bed.double", false, "재우기")
+            ("playIcon", false, "놀아주기"),
+            ("soapIcon", false, "씻기기"),
+            ("nightIcon", false, "재우기")
         ]
         
         // 사이드 버튼 비활성화
         sideButtons = [
-            ("backpack.fill", true, "인벤토리"),
-            ("heart.text.square.fill", true, "건강관리"),
-            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
-            ("book.fill", false, "일기"),
-            ("microphone.fill", false, "채팅"),
+            ("backpackIcon2", true, "인벤토리"),
+            ("healthIcon", true, "건강관리"),
+            ("specialGiftIcon", true, "특수 이벤트"), // 아이콘 변경
+            ("contractIcon", false, "일기"),
+            ("chatIcon", false, "채팅"),
             ("lock.fill", true, "잠금")
         ]
         
@@ -1472,7 +1472,7 @@ class HomeViewModel: ObservableObject {
         }
         
         // 잠자는 상태에서는 재우기/깨우기만 가능
-        if isSleeping && action.icon != "bed.double" {
+        if isSleeping && action.icon != "nightIcon" {
             print("😴 펫이 자고 있어서 깨우기만 가능합니다")
             return
         }
@@ -1483,7 +1483,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-        case "bed.double":
+        case "nightIcon":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
             
@@ -1618,58 +1618,58 @@ class HomeViewModel: ObservableObject {
     private func getActionId(for icon: String) -> String? {
         switch icon {
             // 운석 전용 액션들 (phaseExclusive = true)
-        case "hand.tap.fill":
+        case "Hands002Icon":
             return "tap_egg"               // 알 두드리기 - 경험치 적게 증가
-        case "flame.fill":
+        case "fireIcon":
             return "warm_egg"              // 알 데우기 - 경험치 중간 증가
-        case "bubble.left.fill":
+        case "chatIcon":
             return "talk_egg"              // 알에게 말하기 - 경험치 소량 증가
             
             // 기본 액션들 (유아기 이상)
-        case "fork.knife":
+        case "appleIcon":
             return "feed"                  // 밥 주기 - 포만감 증가
-        case "gamecontroller.fill":
+        case "playIcon":
             return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
-        case "shower.fill":
+        case "soapIcon":
             return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
-        case "bed.double":
+        case "nightIcon":
             return "sleep"                 // 재우기/깨우기 - 활동량 회복
             
-        case "drop.circle.fill":
+        case "milkIcon":
             return "milk_feeding"          // 우유 먹이기 - 포만감 소량 증가 (유아기)
             
             // 기타 관련 액션들
-        case "sun.max.fill":
+        case "sunIcon":
             return "weather_sunny"         // 햇빛 쬐기 - 건강 소량 증가
-        case "figure.walk":
+        case "walking":
             return "walk_together"         // 산책하기 - 체력 감소, 건강 증가
-        case "figure.seated.side":
+        case "healing":
             return "rest_together"         // 함께 쉬기 - 활동량 회복, 애정도 증가
             
             // 장소 관련 액션들
-        case "house.fill":
+        case "homeIcon":
             return "go_home"               // 집으로 이동 - 위치 변경
         case "tree.fill":
             return "go_outside"            // 외출하기 - 위치 변경
             
             // 감정 관리 액션들
-        case "hand.raised.fill":
+        case "loveHeartIcon":
             return "comfort"               // 안아주기 - 애정도 증가
         case "hands.clap.fill":
             return "encourage"             // 칭찬하기 - 애정도 중간 증가
             
             // 청결 관리 액션들
-        case "comb.fill":
+        case "Hands005Icon":
             return "brush_fur"             // 빗질하기 - 청결도 소량 증가 (기본 빗질)
             
             // 추가 액션들
-        case "figure.mixed.cardio":
+        case "yogaIcon":
             return "stretch_exercise"      // 스트레칭 - 건강 증가, 체력 회복
-        case "command":
+        case "toyIcon":
             return "teach_trick"           // 재주 가르치기 - 애정도 증가, 경험치 획득
-        case "hand.point.up.fill":
+        case "loveHeartIcon2":
             return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
-        case "hand.point.right.fill":
+        case "bearLoveIcon":
             return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
             
         default:

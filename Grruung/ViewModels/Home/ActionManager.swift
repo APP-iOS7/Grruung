@@ -142,7 +142,7 @@ class ActionManager {
             // phaseExclusive = true시 그 단계에서만 사용가능한 활동 액션 등장
             PetAction(
                 id: "tap_egg",
-                icon: "hand.tap.fill",
+                icon: "Hands002Icon",
                 name: "두드리기",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -155,7 +155,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "warm_egg",
-                icon: "flame.fill",
+                icon: "fireIcon",
                 name: "따뜻하게",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -168,7 +168,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "talk_egg",
-                icon: "bubble.left.fill",
+                icon: "chatIcon",
                 name: "말걸기",
                 unlockPhase: .egg,
                 phaseExclusive: true, // 운석 단계에서만 사용 가능
@@ -183,7 +183,7 @@ class ActionManager {
             // 모든 단계 공통 액션
             PetAction(
                 id: "sleep",
-                icon: "bed.double",
+                icon: "nightIcon",
                 name: "재우기",
                 unlockPhase: .egg, // 모든 단계에서 사용 가능
                 phaseExclusive: false,
@@ -198,7 +198,7 @@ class ActionManager {
             // 우유먹기 (유아기 필수 액션)
             PetAction(
                 id: "milk_feeding",
-                icon: "drop.circle.fill",
+                icon: "milkIcon",
                 name: "우유먹기",
                 unlockPhase: .infant,
                 phaseExclusive: true, // 유아기에만 사용 가능하도록 변경
@@ -213,7 +213,7 @@ class ActionManager {
             // 유아기 이상 액션
             PetAction(
                 id: "feed",
-                icon: "fork.knife",
+                icon: "appleIcon",
                 name: "밥주기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -226,7 +226,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "play",
-                icon: "gamecontroller.fill",
+                icon: "playIcon",
                 name: "놀아주기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -239,7 +239,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "wash",
-                icon: "shower.fill",
+                icon: "soapIcon",
                 name: "씻기기",
                 unlockPhase: .infant, // 유아기부터 사용 가능
                 phaseExclusive: false,
@@ -255,7 +255,7 @@ class ActionManager {
             // MARK: - 기타 관련 액션들
             PetAction(
                 id: "weather_sunny",
-                icon: "sun.max.fill",
+                icon: "sunIcon",
                 name: "날씨좋기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -269,7 +269,7 @@ class ActionManager {
             
             PetAction(
                 id: "walk_together",
-                icon: "figure.walk",
+                icon: "walking",
                 name: "같이 걷기",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -283,7 +283,7 @@ class ActionManager {
             
             PetAction(
                 id: "rest_together",
-                icon: "figure.seated.side",
+                icon: "healing",
                 name: "같이 쉬기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -298,7 +298,7 @@ class ActionManager {
             // MARK: - 장소 관련 액션들
             PetAction(
                 id: "go_home",
-                icon: "house.fill",
+                icon: "homeIcon",
                 name: "집가기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -313,7 +313,7 @@ class ActionManager {
             // MARK: - 감정 관리 액션들
             PetAction(
                 id: "comfort",
-                icon: "hand.raised.fill",
+                icon: "loveHeartIcon",
                 name: "달래주기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -327,7 +327,7 @@ class ActionManager {
             
             PetAction(
                 id: "encourage",
-                icon: "hands.clap.fill",
+                icon: "Hands005Icon",
                 name: "응원하기",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -342,7 +342,7 @@ class ActionManager {
             // MARK: - 청결 관리 액션들 (확장)
             PetAction(
                 id: "brush_fur",
-                icon: "comb.fill",
+                icon: "bathingIcon",
                 name: "털빗기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -357,7 +357,7 @@ class ActionManager {
             // 특별 액션들 중 특수 이벤트와 겹치지 않는 것만 유지
             PetAction(
                 id: "special_training",
-                icon: "figure.strengthtraining.traditional",
+                icon: "dumbbellIcom",
                 name: "특별훈련",
                 unlockPhase: .adolescent,
                 phaseExclusive: false,
@@ -379,7 +379,7 @@ class ActionManager {
             
             PetAction(
                 id: "stretch_exercise",
-                icon: "figure.mixed.cardio",
+                icon: "yogaIcon",
                 name: "스트레칭",
                 unlockPhase: .child,
                 phaseExclusive: false,
@@ -392,7 +392,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "teach_trick",
-                icon: "command",
+                icon: "toyIcon",
                 name: "재주 가르치기",
                 unlockPhase: .adolescent,
                 phaseExclusive: false,
@@ -405,7 +405,7 @@ class ActionManager {
             ),
             PetAction(
                 id: "pet_head",
-                icon: "hand.point.up.fill",
+                icon: "loveHeartIcon2",
                 name: "머리 쓰다듬기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
@@ -419,7 +419,7 @@ class ActionManager {
             
             PetAction(
                 id: "scratch_belly",
-                icon: "hand.point.right.fill",
+                icon: "bearLoveIcon",
                 name: "배 긁어주기",
                 unlockPhase: .child,
                 phaseExclusive: false,
