@@ -4,8 +4,6 @@
 //
 //  Created by NoelMacMini on 5/1/25.
 //
-// TODO: 10. 만들어 놓은거 전부 연결
-// 활동 액션 별로 골드 획득 / 수면시 일정 골드 획득 / 레벨업 할때 일정 골드 획득
 //
 
 import SwiftUI
@@ -54,27 +52,6 @@ struct HomeView: View {
                             
                             // 레벨 프로그레스 바
                             levelProgressBar
-                            
-                            // 캐릭터 상태 메시지
-                            VStack(spacing: 5) {
-                                // 상태 메시지
-                                Text(viewModel.statusMessage)
-                                    .font(viewModel.character?.status.phase == .egg ?
-                                          .system(.headline, design: .monospaced) : .headline)
-                                    .italic(viewModel.character?.status.phase == .egg)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.vertical, 5)
-                                    .foregroundColor(getMessageColor())
-                                
-                                // 골드 획득 메시지 (비어있지 않을 때만 표시)
-                                if !viewModel.goldMessage.isEmpty {
-                                    Text(viewModel.goldMessage)
-                                        .font(.headline)
-                                        .foregroundColor(.yellow)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.vertical, 5)
-                                }
-                            }
                             
                             Spacer()
                             
@@ -331,14 +308,24 @@ struct HomeView: View {
             VStack {
                 Spacer()
                 
-                ScreenView(
-                    character: viewModel.character,
-                    isSleeping: viewModel.isSleeping,
-                    onCreateCharacterTapped: {
-                        // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
-                        isShowingOnboarding = true
+                ZStack {
+                    ScreenView(
+                        character: viewModel.character,
+                        isSleeping: viewModel.isSleeping,
+                        onCreateCharacterTapped: {
+                            // 캐릭터 생성 버튼이 눌렸을 때 온보딩 표시
+                            isShowingOnboarding = true
+                        }
+                    )
+                    
+                    // 상태 메시지 말풍선 (비어있지 않을 때만 표시)Add commentMore actions
+                    if !viewModel.statusMessage.isEmpty && !viewModel.isSleeping {
+                        SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
+                            .offset(y: -140) // 말풍선 위치 조정
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .animation(.easeInOut(duration: 0.5), value: viewModel.statusMessage)
                     }
-                )
+                }
             }
             
             HStack {
