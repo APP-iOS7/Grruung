@@ -1472,7 +1472,7 @@ class HomeViewModel: ObservableObject {
         }
         
         // 잠자는 상태에서는 재우기/깨우기만 가능
-        if isSleeping && action.icon != "bed.double" {
+        if isSleeping && action.icon != "nightIcon" {
             print("😴 펫이 자고 있어서 깨우기만 가능합니다")
             return
         }
@@ -1483,7 +1483,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-        case "bed.double":
+        case "nightIcon":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
             
@@ -1632,7 +1632,7 @@ class HomeViewModel: ObservableObject {
             return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
         case "shower.fill":
             return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
-        case "bed.double":
+        case "nightIcon":
             return "sleep"                 // 재우기/깨우기 - 활동량 회복
             
         case "drop.circle.fill":

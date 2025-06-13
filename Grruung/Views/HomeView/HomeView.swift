@@ -444,7 +444,7 @@ struct HomeView: View {
                             .stroke(Color.white.opacity(0.3), lineWidth: 1)
                     )
                 }
-                .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "bed.double" && action.icon != "plus.circle"))
+                .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "nightIcon" && action.icon != "plus.circle"))
             }
         }
     }
