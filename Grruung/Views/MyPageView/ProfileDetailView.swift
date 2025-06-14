@@ -71,14 +71,14 @@ struct ProfileDetailView: View {
                                 }
                                 .overlay(Circle().stroke(Color.white, lineWidth: 4))
                             }
-                            .onChange(of: selectedItem) { newItem in
-                                Task {
-                                    if let data = try? await newItem?.loadTransferable(type: Data.self),
-                                       let uiImage = UIImage(data: data) {
-                                        profileImage = Image(uiImage: uiImage)
-                                    }
-                                }
-                            }
+                                         .onChange(of: selectedItem) { newItem in
+                                             Task {
+                                                 if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                                    let uiImage = UIImage(data: data) {
+                                                     profileImage = Image(uiImage: uiImage)
+                                                 }
+                                             }
+                                         }
                             
                             Image(systemName: "camera.fill")
                                 .foregroundColor(.white)
@@ -124,7 +124,7 @@ struct ProfileDetailView: View {
                         ForEach(settingSections) { section in
                             VStack {
                                 ForEach(section.items) { item in
-
+                                    
                                     if item.title == "결제내역" {
                                         NavigationLink {
                                             PurchaseHistoryView()
@@ -140,99 +140,92 @@ struct ProfileDetailView: View {
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
-                                    
-                                    if item.id != section.items.last?.id {
-                                        Divider()
-                                    }
                                 }
                             }
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
-                            )
-                            .padding(.horizontal)
                         }
-                        // FIXME: - End
-                        
-                        // 로그아웃 버튼
-                        Button(action: {
-                            authService.signOut()
-                        }) {
-                            SettingRow(icon: "rectangle.portrait.and.arrow.right", text: "로그아웃")
-                                .foregroundColor(.red)
-                        }
-                        .background(RoundedRectangle(cornerRadius: 15).fill(Color(.systemBackground)))
-                        
-                        Button {
-                            print("계정 삭제")
-                        } label: {
-                            HStack {
-                                Image(systemName: "trash")
-                                Text("계정 삭제")
-                            }
-                            .foregroundColor(.red)
-                            .padding(.top)
-                        }
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.3)))
                     }
-                    .padding(.horizontal)
-                }
-                .padding(.bottom, 50)
-            }
-            .scrollContentBackground(.hidden)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "#FFF5D2"), Color(hex: "#FFE38B")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            
-            // MARK: - 닉네임 편집 팝업
-            if isShowingNameEditorPopup {
-                VStack(spacing: 20) {
-                    HStack {
-                        Spacer()
-                        Button {
-                            isShowingNameEditorPopup = false
-                        } label: {
-                            Image(systemName: "xmark")
-                                .foregroundColor(.gray)
-                                .padding(8)
-                        }
-                    }
-                    .frame(height: 40)
-                    .overlay(
-                        Text("닉네임")
-                            .font(.headline)
-                    )
+                    // FIXME: - End
                     
-                    TextField("닉네임을 입력하세요", text: $newName)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .frame(maxWidth: .infinity)
-                        .cornerRadius(12)
+                    // 로그아웃 버튼
+                    Button(action: {
+                        authService.signOut()
+                    }) {
+                        SettingRow(icon: "rectangle.portrait.and.arrow.right", text: "로그아웃")
+                            .foregroundColor(.red)
+                    }
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.3)))
                     
                     Button {
-                        username = newName
-                        isShowingNameEditorPopup = false
+                        print("계정 삭제")
                     } label: {
-                        Text("완료")
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(12)
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("계정 삭제")
+                        }
+                        .foregroundColor(.red)
+                        .padding(.top)
                     }
                 }
-                .padding()
-                .frame(width: 300)
-                .background(Color.white)
-                .cornerRadius(12)
-                .shadow(radius: 20)
+                .padding(.horizontal)
             }
+            .padding(.bottom, 50)
+        }
+        .scrollContentBackground(.hidden)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: "#FEF9EA"), Color(hex: "#FDE0CA")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        
+        // MARK: - 닉네임 편집 팝업
+        if isShowingNameEditorPopup {
+            VStack(spacing: 20) {
+                HStack {
+                    Spacer()
+                    Button {
+                        isShowingNameEditorPopup = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .foregroundColor(.gray)
+                            .padding(8)
+                    }
+                }
+                .frame(height: 40)
+                .overlay(
+                    Text("닉네임")
+                        .font(.headline)
+                )
+                
+                TextField("닉네임을 입력하세요", text: $newName)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .frame(maxWidth: .infinity)
+                    .cornerRadius(12)
+                
+                Button {
+                    username = newName
+                    isShowingNameEditorPopup = false
+                } label: {
+                    Text("완료")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                }
+            }
+            .padding()
+            .frame(width: 300)
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(radius: 20)
         }
     }
 }
+
 
 // MARK: - 설정 뷰
 
