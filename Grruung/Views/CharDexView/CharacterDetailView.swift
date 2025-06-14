@@ -549,26 +549,36 @@ struct CharacterDetailView: View {
     private func setAsMainCharacter() {
         isProcessing = true
         
-        // 1단계: 먼저 메인 캐릭터로 설정
-        viewModel.setAsMainCharacter(characterUUID: characterUUID)
-        
-        // 2단계: 주소 변경은 메인 설정 완료 후 실행
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            viewModel.updateAddress(characterUUID: characterUUID, newAddress: .userHome)
-        }
-        
-        // 3단계: UI 업데이트를 위한 알림 발송
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            NotificationCenter.default.post(
-                name: NSNotification.Name("CharacterSetAsMain"),
-                object: nil,
-                userInfo: ["characterUUID": characterUUID]
-            )
+        FirebaseService.shared.setMainCharacterAndMoveOthersToParadise(characterID: characterUUID) { error in
             
-            // 4단계: 뷰 닫기
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isProcessing = false
-                dismiss()
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ 메인 캐릭터 설정 실패: \(error.localizedDescription)")
+                    viewModel.errorMessage = "메인 캐릭터 설정에 실패했습니다."
+                    isProcessing = false
+                } else {
+                    print("✅ 메인 캐릭터 설정 및 다른 캐릭터들을 동산으로 이동 완료")
+                    
+                    // UI 업데이트를 위한 알림 발송
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("CharacterSetAsMain"),
+                        object: nil,
+                        userInfo: ["characterUUID": characterUUID]
+                    )
+                    
+                    // 다른 캐릭터들의 주소 변경 알림
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("AllCharactersAddressUpdated"),
+                        object: nil,
+                        userInfo: ["mainCharacterUUID": characterUUID]
+                    )
+                    
+                    // 뷰 닫기
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isProcessing = false
+                        dismiss()
+                    }
+                }
             }
         }
     }
