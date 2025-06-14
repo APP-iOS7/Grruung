@@ -85,12 +85,6 @@ struct HomeView: View {
         } message: {
             Text("추후 업데이트 예정입니다.")
         }
-        .sheet(isPresented: $showInventory) {
-            //            InventoryView(character: viewModel.character)
-        }
-        .sheet(isPresented: $showPetGarden) {
-            //            PetGardenView(character: viewModel.character)
-        }
         .sheet(isPresented: $isShowingWriteStory) {
             if let character = viewModel.character {
                 NavigationStack {
@@ -112,9 +106,6 @@ struct HomeView: View {
                 
                 ChatPetView(character: character, prompt: prompt)
             }
-        }
-        .sheet(isPresented: $isShowingSettings) {
-            //            SettingsSheetView()
         }
         
         // 진화 화면 시트
@@ -169,11 +160,16 @@ struct HomeView: View {
             
             // 헬스케어
             if showHealthCare {
-                    HealthCareView(
-                        viewModel: viewModel,
-                        isPresented: $showHealthCare
-                    )
-                }
+                HealthCareView(
+                    viewModel: viewModel,
+                    isPresented: $showHealthCare
+                )
+            }
+            
+            // 인벤토리
+            if showInventory {
+                UserInventoryView(isPresented: $showInventory)
+            }
         }
     }
     
@@ -451,105 +447,68 @@ struct HomeView: View {
     
     // 아이콘 버튼
     @ViewBuilder
-    func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
-        if !unlocked {
-            // 잠긴 버튼
-            ZStack {
-                Image("lockIcon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 75)
-                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-            }
-        } else {
-            if systemName == "cartIcon" {
-                NavigationLink(destination: StoreView()) {
-                    ZStack {
-                        // 배경 블러 효과와 불투명도 증가
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
-                            .frame(width: 60, height: 60)
-                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        
-                        VStack(spacing: 3) {
-                            // 아이콘 크기 증가 및 그림자 추가
-                            Image(systemName: systemName)
-                                .font(.system(size: 28))
-                                .foregroundColor(GRColor.buttonColor_2)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                            
-                            // 텍스트 추가
-                            Text(name)
-                                .font(.system(size: 9))
-                                .bold()
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
-                        }
-                    }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-                }
-            } else if systemName == "backpackIcon2" {
-                NavigationLink(destination: UserInventoryView()) {
+    private func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
+        // "backpackIcon2"가 인벤토리 아이콘 이름인 것으로 보입니다
+        if systemName == "backpackIcon2" {
+            return AnyView(
+                Button(action: {
+                    // 인벤토리 오버레이 표시
+                    showInventory = true
+                }) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
                             .frame(width: 60, height: 60)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
 
                         VStack(spacing: 3) {
-                            Image("backpackIcon2")
+                            Image(systemName)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 45, height: 45)
+                                .foregroundColor(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
 
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(.white)
+                                .foregroundColor(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
                 }
-            } else {
+                .disabled(!unlocked)
+            )
+        } else {
+            // 기존 아이콘 버튼 코드 유지 (다른 버튼들)
+            return AnyView(
                 Button(action: {
                     handleButtonAction(systemName: systemName)
                 }) {
                     ZStack {
-                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
                             .frame(width: 60, height: 60)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                         
                         VStack(spacing: 3) {
-                            // 아이콘 크기 증가 및 그림자 추가
-                            Image(uiImage: UIImage(named: systemName) ?? UIImage(systemName: systemName)!)
+                            Image(systemName)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 28, height: 28)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                                .font(.system(size: 28))
-                                .foregroundColor(GRColor.buttonColor_2)
+                                .frame(width: 45, height: 45)
+                                .foregroundColor(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             
-                            // 텍스트 추가
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(.white)
+                                .foregroundColor(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
                 }
-            }
+                .disabled(!unlocked)
+            )
         }
     }
     
