@@ -53,7 +53,8 @@ struct HomeView: View {
                             // 레벨 프로그레스 바
                             levelProgressBar
                             
-                            Spacer()
+                            // 말풍선 섹션
+                            speechBubbleSection
                             
                             // 메인 캐릭터 섹션
                             characterSection
@@ -308,6 +309,15 @@ struct HomeView: View {
         .padding(.top, 10)
     }
     
+    // 말풍선 섹션
+    private var speechBubbleSection: some View {
+        // SpeechBubbleView는 항상 존재하지만, 메시지 유무에 따라 투명도만 조절
+        SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
+            .frame(height: 50, alignment: .bottom) // 말풍선이 차지할 고정 높이를 지정하여 레이아웃 밀림 방지
+            .opacity(!viewModel.statusMessage.isEmpty && !viewModel.isSleeping ? 1.0 : 0.0)
+            .animation(.easeInOut(duration: 0.4), value: viewModel.statusMessage.isEmpty)
+    }
+    
     // 캐릭터 섹션
     private var characterSection: some View {
         ZStack {
@@ -325,14 +335,6 @@ struct HomeView: View {
                             isShowingOnboarding = true
                         }
                     )
-                    
-                    // 상태 메시지 말풍선 (비어있지 않을 때만 표시)Add commentMore actions
-                    if !viewModel.statusMessage.isEmpty && !viewModel.isSleeping {
-                        SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
-                            .offset(y: -140) // 말풍선 위치 조정
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                            .animation(.easeInOut(duration: 0.5), value: viewModel.statusMessage)
-                    }
                 }
             }
             
