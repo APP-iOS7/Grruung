@@ -9,6 +9,9 @@ import SwiftUI
 
 // 캐릭터 스크린 뷰
 struct ScreenView: View {
+    // ✨1 HomeViewModel을 @ObservedObject로 받도록 변경
+    @ObservedObject var viewModel: HomeViewModel
+    
     // HomeView에서 필요한 데이터를 받아옴
     let character: GRCharacter?
     let isSleeping: Bool
@@ -65,13 +68,21 @@ struct ScreenView: View {
             setupControllers()
             startAppropriateAnimation()
         }
+        // ✨1 isSleeping 상태 변화 감지 로직 수정
         .onChange(of: isSleeping) { _, isNowSleeping in
+            // 다른 액션 애니메이션이 진행 중일 때는 수면/기상 애니메이션을 실행하지 않음
+            guard viewModel.activeActionAnimation == nil else { return }
             // 잠자기 상태가 변경될 때 애니메이션 전환
             handleSleepStateChange(isSleeping: isNowSleeping)
         }
+        // ✨1 activeActionAnimation 상태 변화를 감지하여 액션 애니메이션 재생
+        .onChange(of: viewModel.activeActionAnimation?.id) { _, newActionID in
+            if let newAnimation = viewModel.activeActionAnimation {
+                playActionAnimation(newAnimation)
+            }
+        }
         .onTapGesture {
             handleTap()
-            // handleTapWithEffect() // 이펙트 탭
         }
     }
     
@@ -253,6 +264,32 @@ struct ScreenView: View {
     }
     
     // MARK: - 헬퍼 메서드
+    // ✨1 액션 애니메이션을 재생하는 함수
+    private func playActionAnimation(_ animationInfo: (type: String, phase: CharacterPhase, id: String)) {
+        guard let character = character, character.species == .quokka else { return }
+        
+        quokkaController.playAnimation(
+            type: animationInfo.type,
+            phase: animationInfo.phase,
+            mode: .once,
+            progressUpdate: { progress in
+                // HomeViewModel의 진행률 상태를 업데이트
+                viewModel.feedingProgress = CGFloat(progress.percentage)
+                
+                // 이곳에서 특정 프레임에 대한 로직을 추가할 수 있습니다.
+                // 예: if progress.currentIndex == 150 { viewModel.doSomething() }
+            },
+            completion: {
+                // 애니메이션 완료 후 처리
+                viewModel.completeAction(actionId: animationInfo.id)
+                viewModel.isFeeding = false
+                viewModel.activeActionAnimation = nil
+                
+                // 액션이 끝난 후 현재 잠자기 상태에 맞는 기본 애니메이션으로 전환
+                handleSleepStateChange(isSleeping: self.isSleeping)
+            }
+        )
+    }
     
     // 컨트롤러들 설정
     private func setupControllers() {
@@ -364,21 +401,21 @@ struct ScreenView: View {
     }
 }
 
-#Preview {
-    ScreenView(
-        character: GRCharacter(
-            species: .CatLion,
-            name: "테스트",
-            imageName: "CatLion",
-            birthDate: Date()
-        ),
-        isSleeping: false,
-        onCreateCharacterTapped: {
-            print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
-        }
-    )
-    .padding()
-}
-
+//#Preview {
+//    ScreenView(
+//        character: GRCharacter(
+//            species: .CatLion,
+//            name: "테스트",
+//            imageName: "CatLion",
+//            birthDate: Date()
+//        ),
+//        isSleeping: false,
+//        onCreateCharacterTapped: {
+//            print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
+//        }
+//    )
+//    .padding()
+//}
+//
 
 
