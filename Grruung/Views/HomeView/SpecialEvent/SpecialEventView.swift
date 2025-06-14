@@ -2,15 +2,16 @@
 //  SpecialEventView.swift
 //  Grruung
 //
-//  Created by KimJunsoo on 6/10/25.
+//  Created by [Author] on [Date].
 //
 
+// FIXME: - Start 수정내용 - 스탯 수치 제거 및 레이아웃 안정화
 import SwiftUI
 
 struct SpecialEventView: View {
     // MARK: - Properties
     @ObservedObject var viewModel: HomeViewModel
-    @Binding var isPresented: Bool // 바인딩으로 변경
+    @Binding var isPresented: Bool
     
     @State private var currentIndex = 0
     @State private var events: [SpecialEvent] = []
@@ -20,7 +21,7 @@ struct SpecialEventView: View {
     // MARK: - Init
     init(viewModel: HomeViewModel, isPresented: Binding<Bool>) {
         self.viewModel = viewModel
-        self._isPresented = isPresented // 바인딩 초기화
+        self._isPresented = isPresented
         
         // 현재 레벨에 맞는 이벤트 목록 가져오기
         let level = viewModel.level
@@ -29,8 +30,6 @@ struct SpecialEventView: View {
     
     // MARK: - Body
     var body: some View {
-        // FIXME: - Start 수정내용
-        // Alert 형태의 오버레이 뷰로 변경
         ZStack {
             // 배경 - 반투명 오버레이
             Color.black.opacity(0.4)
@@ -43,213 +42,215 @@ struct SpecialEventView: View {
                 }
             
             // 메인 컨텐츠
-            VStack(spacing: 15) {
+            VStack(spacing: 0) {
                 // 헤더
-                HStack {
-                    Text("특수 이벤트")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(GRColor.fontMainColor)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        // X 버튼 터치 시 닫기
-                        withAnimation {
-                            isPresented = false
-                        }
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(GRColor.fontSubColor)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top)
+                headerView
+                    .padding(.bottom, 10)
                 
-                // 이벤트 카드
-                if !events.isEmpty {
-                    eventCardView
-                        .padding(.vertical, 10)
-                }
+                // 이벤트 카드 - 고정 높이로 설정
+                eventCardContainer
+                    .frame(height: 230)
+                    .padding(.bottom, 20)
                 
                 // 이벤트 이름 및 설명
                 if let event = getCurrentEvent() {
-                    VStack(spacing: 10) {
-                        Text(event.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(GRColor.fontMainColor)
-                        
-                        Text(event.description)
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(GRColor.fontSubColor)
-                            .padding(.horizontal)
-                        
-                        // 이벤트 효과 정보
-                        effectsInfoView(for: event)
-                            .padding(.vertical, 5)
-                        
-                        // 참여 버튼
-                        Button(action: {
-                            selectedEvent = event
-                            showingEventConfirmation = true
-                        }) {
-                            Text(event.unlocked ? "참여하기" : "잠금됨")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(width: 180)
-                                .background(
-                                    Group {
-                                        if event.unlocked {
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [GRColor.buttonColor_1, GRColor.buttonColor_2]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        } else {
-                                            Color.gray
-                                        }
-                                    }
-                                )
-                                .cornerRadius(10)
-                        }
-                        .disabled(!event.unlocked)
-                        
-                        // 요구 레벨 표시
-                        if !event.unlocked {
-                            Text("필요 레벨: \(event.requiredLevel)")
-                                .font(.caption)
-                                .foregroundColor(GRColor.fontSubColor)
-                                .padding(.top, 5)
-                        }
-                    }
-                    .padding()
+                    eventDetailView(event)
                 }
                 
-                Spacer()
+                Spacer(minLength: 20)
             }
-            .background(
+            .frame(width: UIScreen.main.bounds.width * 0.85, height: UIScreen.main.bounds.height * 0.7)
+            .background(GRColor.mainColor2_1)
+            .cornerRadius(20)
+            .shadow(color: GRColor.mainColor8_2.opacity(0.3), radius: 15, x: 0, y: 5)
+            .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(GRColor.mainColor5_1) // 밝은 배경색 사용
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                    .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1)
             )
-            .frame(width: UIScreen.main.bounds.width * 0.85, height: UIScreen.main.bounds.height * 0.6)
-            .alert("이벤트 참여", isPresented: $showingEventConfirmation) {
-                Button("취소", role: .cancel) {}
-                Button("참여하기") {
+        }
+        .transition(.opacity)
+        .alert("이벤트 참여", isPresented: $showingEventConfirmation) {
+            Button("취소", role: .cancel) { }
+            Button("참여하기") {
+                if let event = selectedEvent {
                     participateInEvent()
                 }
-            } message: {
-                if let event = selectedEvent {
-                    Text("\(event.name)에 참여하시겠습니까? 활동력 \(event.activityCost)이 소모됩니다.")
-                }
             }
-            // 클릭 이벤트가 컨텐츠 내부에서만 작동하도록 함
-            .contentShape(Rectangle())
-            .onTapGesture {} // 빈 탭 제스처로 내부 탭이 외부로 전파되지 않도록 함
+        } message: {
+            if let event = selectedEvent {
+                Text("\(event.name)에 참여하려면 활동력 \(event.activityCost)이 소모됩니다.")
+            }
         }
-        // FIXME: - END
     }
     
-    // MARK: - Components
+    // MARK: - Subviews
     
-    /// 이벤트 카드 뷰 (이전 구현 유지)
-    private var eventCardView: some View {
-        ZStack {
-            // 이벤트 이미지
-            if let event = getCurrentEvent() {
-                ZStack {
-                    // 이미지 배경
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [GRColor.mainColor3_1, GRColor.mainColor3_2]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 280, height: 200)
-                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 3)
-                    
-                    // 이벤트 ID에 따라 실제 이미지 표시
-                    // 실제 앱 출시 시에는 이미지 직접 그리던가 사진찍어서 해야합니다!!
-                    // 저작권에 걸립니다. (pixabay에서 구해온 이미지 입니다.)
-                    getEventImage(for: event)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 260, height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
-                    
-                    // 잠금 상태 표시
-                    if !event.unlocked {
-                        ZStack {
-                            Color.black.opacity(0.6)
-                            Image(systemName: "lock.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
-                                .foregroundColor(.white)
-                        }
-                        .cornerRadius(15)
-                    }
+    // 헤더
+    private var headerView: some View {
+        HStack {
+            Text("특수 이벤트")
+                .font(.title)
+                .fontWeight(.bold)
+                .foregroundColor(GRColor.fontMainColor)
+            
+            Spacer()
+            
+            Button(action: {
+                // X 버튼 터치 시 닫기
+                withAnimation {
+                    isPresented = false
                 }
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(GRColor.fontSubColor)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+    
+    // 이벤트 카드 컨테이너 - 고정 크기와 레이아웃 안정화
+    private var eventCardContainer: some View {
+        ZStack {
+            // 배경 공간 - 레이아웃 안정화를 위한 고정 크기
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: 300, height: 220)
+            
+            // 이벤트 카드 - 모든 이벤트 카드가 같은 크기로 유지됨
+            if !events.isEmpty {
+                eventCardView
             }
             
             // 이전/다음 버튼
             HStack {
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         currentIndex = (currentIndex - 1 + events.count) % events.count
                     }
                 }) {
                     Image(systemName: "chevron.left.circle.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2)
+                        .font(.system(size: 40))
+                        .foregroundColor(GRColor.mainColor3_2)
+                        .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
-                .padding(.leading, 20)
+                .padding(.leading, 0)
                 
                 Spacer()
                 
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         currentIndex = (currentIndex + 1) % events.count
                     }
                 }) {
                     Image(systemName: "chevron.right.circle.fill")
-                        .font(.largeTitle)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 2)
+                        .font(.system(size: 40))
+                        .foregroundColor(GRColor.mainColor3_2)
+                        .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
-                .padding(.trailing, 20)
+                .padding(.trailing, 0)
             }
             .frame(width: 300)
         }
     }
     
-    /// 이벤트 효과 정보 뷰 (이전 구현 유지)
-    private func effectsInfoView(for event: SpecialEvent) -> some View {
-        // 기존 코드 유지...
-        HStack(spacing: 15) {
-            ForEach(getEffectInfo(for: event), id: \.icon) { effectInfo in
-                VStack {
-                    Image(systemName: effectInfo.icon)
-                        .font(.title3)
-                        .foregroundColor(effectInfo.color)
-                    
-                    Text(effectInfo.value > 0 ? "+\(effectInfo.value)" : "\(effectInfo.value)")
-                        .font(.caption)
-                        .foregroundColor(effectInfo.value > 0 ? GRColor.grColorGreen : GRColor.grColorRed)
+    // 이벤트 카드 - 모든 카드는 동일한 크기
+    private var eventCardView: some View {
+        let event = getCurrentEvent() ?? events[0]
+        
+        return ZStack {
+            // 이미지 배경 - 고정 크기
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [GRColor.mainColor3_1, GRColor.mainColor3_2]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 280, height: 200)
+                .shadow(color: GRColor.mainColor8_2.opacity(0.3), radius: 5, x: 0, y: 3)
+            
+            // 이벤트 이미지 - 고정 크기
+            getEventImage(for: event)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 260, height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+            
+            // 잠금 상태 표시
+            if !event.unlocked {
+                ZStack {
+                    Color.black.opacity(0.6)
+                    VStack(spacing: 10) {
+                        Image(systemName: "lock.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.white)
+                        
+                        Text("Lv.\(event.requiredLevel) 필요")
+                            .font(.caption)
+                            .bold()
+                            .foregroundColor(.white)
+                    }
                 }
-                .padding(8)
-                .background(GRColor.mainColor1_1)
-                .cornerRadius(8)
+                .frame(width: 260, height: 180)
+                .cornerRadius(15)
             }
         }
-        .padding(.top, 5)
+    }
+    
+    // 이벤트 상세 정보 - 스탯 수치 제거
+    private func eventDetailView(_ event: SpecialEvent) -> some View {
+        VStack(spacing: 15) {
+            Text(event.name)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(GRColor.fontMainColor)
+            
+            Text(event.description)
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundColor(GRColor.fontSubColor)
+                .padding(.horizontal)
+                .fixedSize(horizontal: false, vertical: true)  // 텍스트가 잘리지 않도록
+                .frame(height: 60)  // 설명 영역 고정 높이
+            
+            // 활동력 소모 정보 - 간결하게 표시
+            HStack {
+                Image(systemName: "bolt.fill")
+                    .foregroundColor(GRColor.grColorYellow)
+                
+                Text("활동력 \(event.activityCost) 소모")
+                    .font(.subheadline)
+                    .foregroundColor(GRColor.fontSubColor)
+            }
+            .padding(.vertical, 5)
+            .padding(.horizontal, 15)
+            .background(GRColor.mainColor1_1)
+            .cornerRadius(15)
+            
+            // 참여 버튼
+            Button(action: {
+                selectedEvent = event
+                showingEventConfirmation = true
+            }) {
+                Text(event.unlocked ? "참여하기" : "잠김")
+                    .font(.headline)
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 14)
+                    .background(event.unlocked ? GRColor.mainColor3_2 : Color.gray.opacity(0.5))
+                    .foregroundColor(event.unlocked ? GRColor.fontMainColor : Color.white.opacity(0.7))
+                    .cornerRadius(15)
+                    .shadow(color: event.unlocked ? GRColor.mainColor8_2.opacity(0.3) : Color.clear, radius: 3, x: 0, y: 2)
+            }
+            .disabled(!event.unlocked)
+            .padding(.top, 10)
+        }
+        .padding(.horizontal)
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Methods
@@ -283,42 +284,6 @@ struct SpecialEventView: View {
         }
     }
     
-    /// 이벤트 효과 정보 가져오기 (이전 구현 유지)
-    private func getEffectInfo(for event: SpecialEvent) -> [(icon: String, color: Color, value: Int)] {
-        // 기존 코드 유지...
-        var result: [(icon: String, color: Color, value: Int)] = []
-        
-        // 포만감
-        if let value = event.effects["satiety"] {
-            result.append(("fork.knife", GRColor.grColorOrange, value))
-        }
-        
-        // 체력
-        if let value = event.effects["stamina"] {
-            result.append(("figure.run", GRColor.grColorBlue, value))
-        }
-        
-        // 활동력 (항상 -activityCost)
-        result.append(("bolt.fill", GRColor.grColorYellow, -event.activityCost))
-        
-        // 건강
-        if let value = event.effects["healthy"] {
-            result.append(("heart.fill", GRColor.grColorRed, value))
-        }
-        
-        // 청결
-        if let value = event.effects["clean"] {
-            result.append(("shower.fill", GRColor.grColorOcean, value))
-        }
-        
-        // 행복
-        if let value = event.effects["happiness"] {
-            result.append(("face.smiling", GRColor.grColorGreen, value))
-        }
-        
-        return result
-    }
-    
     // 이벤트에 맞는 이미지 반환
     private func getEventImage(for event: SpecialEvent) -> Image {
         switch event.id {
@@ -337,4 +302,10 @@ struct SpecialEventView: View {
             return Image(systemName: event.icon)
         }
     }
+}
+// FIXME: - END
+
+// MARK: - Preview
+#Preview {
+    SpecialEventView(viewModel: HomeViewModel(), isPresented: .constant(true))
 }

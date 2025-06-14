@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// FIXME: - Start 수정내용 - 색상 및 스타일 통일
 struct UserInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
@@ -82,25 +83,38 @@ struct UserInventoryView: View {
                 .resizable()
                 .frame(width: 60, height: 60)
                 .aspectRatio(contentMode: .fit)
-                .overlay {
+                .background(GRColor.mainColor3_1.opacity(0.3))
+                .cornerRadius(10)
+                .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(lineWidth: 1)
-                        .background(Color.gray.opacity(0.3))
-                }
+                        .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1)
+                )
                 .padding(.trailing, 8)
             
             VStack(alignment: .leading) {
                 HStack {
                     Text(item.userItemName)
-                        .font(.title2)
+                        .font(.headline)
                         .fontWeight(.bold)
+                        .foregroundColor(GRColor.fontMainColor)
                     Spacer()
                     Text(item.userItemType.rawValue)
-                        .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
+                        .font(.footnote)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(item.userItemType == .consumable ?
+                                   GRColor.grColorRed.opacity(0.7) :
+                                   GRColor.mainColor3_2.opacity(0.5))
+                        .foregroundColor(item.userItemType == .consumable ? .white : GRColor.fontMainColor)
+                        .cornerRadius(8)
                 }
                 Text(item.userItemDescription)
                     .lineLimit(1)
+                    .font(.subheadline)
+                    .foregroundColor(GRColor.fontSubColor)
                 Text("보유: \(item.userItemQuantity)")
+                    .font(.caption)
+                    .foregroundColor(GRColor.fontMainColor)
             }
         }
     }
@@ -120,7 +134,7 @@ struct UserInventoryView: View {
             
             // 메인 컨텐츠
             NavigationStack {
-                VStack {
+                VStack(spacing: 15) {
                     // 헤더
                     HStack {
                         Text("가방")
@@ -142,72 +156,13 @@ struct UserInventoryView: View {
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.top)
+                    .padding(.top, 10)
                     
                     // 카테고리 선택
-                    Picker("Choose a category", selection: $sortItemCategory) {
-                        ForEach(SortItemCategory.allCases, id: \.self) { category in
-                            Text(category.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding()
-                    .background(GRColor.mainColor3_2)
-                    .cornerRadius(15)
-                    .padding(.horizontal)
+                    categoryPicker
                     
                     // 아이템 목록
-                    ScrollView {
-                        if userInventoryViewModel.isLoading {
-                            ProgressView("불러오는 중...")
-                                .padding()
-                        } else if userInventoryViewModel.inventories.isEmpty {
-                            Text(inventoryEmptyText.randomElement() ?? "텅...")
-                                .lineLimit(1)
-                                .font(.title2)
-                                .foregroundStyle(.gray)
-                                .padding()
-                        } else {
-                            LazyVGrid(columns: columns) {
-                                ForEach(sortedItems, id: \.userItemNumber) { item in
-                                    // NavigationLink로 변경
-                                    NavigationLink(destination: UserInventoryDetailView(
-                                        item: item,
-                                        realUserId: realUserId,
-                                        isEdited: $isEdited
-                                    ).onDisappear {
-                                        // 화면 사라질 때 데이터 갱신 (필요한 경우)
-                                        if isEdited {
-                                            isEdited = false
-                                            Task {
-                                                try? await userInventoryViewModel.fetchInventories(userId: realUserId)
-                                            }
-                                        }
-                                    }) {
-                                        itemCellView(item)
-                                            .foregroundStyle(.black)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .padding(16)
-                                            .background(GRColor.mainColor2_1)
-                                            .overlay {
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(GRColor.mainColor3_2, lineWidth: 2)
-                                            }
-                                            .cornerRadius(10)
-                                            .padding(.horizontal, 16)
-                                            .padding(.bottom, 16)
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // 에러 메시지 표시
-                        if let errorMessage = userInventoryViewModel.errorMessage {
-                            Text("오류: \(errorMessage)")
-                                .foregroundColor(.red)
-                                .padding()
-                        }
-                    }
+                    itemsList
                 }
                 .background(GRColor.mainColor2_1)
                 .navigationBarHidden(true) // 기본 네비게이션 바 숨기기
@@ -233,7 +188,90 @@ struct UserInventoryView: View {
             }
         }
     }
+    
+    // MARK: - Subviews
+    
+    // 카테고리 선택 피커
+    private var categoryPicker: some View {
+        Picker("Choose a category", selection: $sortItemCategory) {
+            ForEach(SortItemCategory.allCases, id: \.self) { category in
+                Text(category.rawValue)
+                    .foregroundColor(GRColor.fontMainColor)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 15)
+        .background(GRColor.mainColor3_2.opacity(0.7))
+        .cornerRadius(15)
+        .padding(.horizontal)
+    }
+    
+    // 아이템 목록
+    private var itemsList: some View {
+        ScrollView {
+            if userInventoryViewModel.isLoading {
+                ProgressView("불러오는 중...")
+                    .foregroundColor(GRColor.fontMainColor)
+                    .padding()
+            } else if userInventoryViewModel.inventories.isEmpty {
+                VStack {
+                    Image(systemName: "backpack")
+                        .font(.system(size: 50))
+                        .foregroundColor(GRColor.fontSubColor.opacity(0.7))
+                        .padding(.bottom, 10)
+                        .padding(.top, 40)
+                    
+                    Text(inventoryEmptyText.randomElement() ?? "텅...")
+                        .lineLimit(1)
+                        .font(.title2)
+                        .foregroundStyle(GRColor.fontSubColor)
+                        .padding()
+                }
+            } else {
+                LazyVGrid(columns: columns) {
+                    ForEach(sortedItems, id: \.userItemNumber) { item in
+                        // NavigationLink로 변경
+                        NavigationLink(destination: UserInventoryDetailView(
+                            item: item,
+                            realUserId: realUserId,
+                            isEdited: $isEdited
+                        ).onDisappear {
+                            // 화면 사라질 때 데이터 갱신 (필요한 경우)
+                            if isEdited {
+                                isEdited = false
+                                Task {
+                                    try? await userInventoryViewModel.fetchInventories(userId: realUserId)
+                                }
+                            }
+                        }) {
+                            itemCellView(item)
+                                .padding(16)
+                                .background(GRColor.mainColor2_2.opacity(0.3))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1.5)
+                                )
+                                .cornerRadius(15)
+                                .shadow(color: GRColor.mainColor8_2.opacity(0.2), radius: 3, x: 0, y: 2)
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 16)
+                        }
+                    }
+                }
+                .padding(.top, 10)
+            }
+            
+            // 에러 메시지 표시
+            if let errorMessage = userInventoryViewModel.errorMessage {
+                Text("오류: \(errorMessage)")
+                    .foregroundColor(GRColor.grColorRed)
+                    .padding()
+            }
+        }
+    }
 }
+// FIXME: - END
 
 // MARK: - Preview
 #Preview {
