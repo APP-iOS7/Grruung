@@ -138,21 +138,20 @@ struct UserInventoryView: View {
                     // 헤더
                     HStack {
                         Text("가방")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(GRColor.fontMainColor)
+                            .font(.headline)
+                            .bold()
+                            .foregroundColor(.black)
                         
                         Spacer()
                         
-                        Button(action: {
-                            // X 버튼 터치 시 닫기
+                        Button {
                             withAnimation {
                                 isPresented = false
                             }
-                        }) {
+                        } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(GRColor.fontSubColor)
+                                .foregroundColor(GRColor.mainColor6_2)
+                                .font(.system(size: 22))
                         }
                     }
                     .padding(.horizontal)

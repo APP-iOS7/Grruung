@@ -45,6 +45,7 @@ struct HealthCareView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(GRColor.mainColor6_2)
+                            .font(.system(size: 22))
                     }
                 }
                 .padding(.horizontal)
