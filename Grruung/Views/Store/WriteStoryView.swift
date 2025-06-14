@@ -129,9 +129,6 @@ struct WriteStoryView: View {
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        //        .navigationBarItems(
-        //            trailing: saveButton
-        //        )
         .onAppear {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
@@ -145,6 +142,15 @@ struct WriteStoryView: View {
         }
         .interactiveDismissDisabled(isUploading)
         .toolbar {
+            // 왼쪽(뒤로가기) 버튼 추가
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("취소") {
+                    dismiss()
+                }
+                .foregroundColor(GRColor.mainColor6_2)
+            }
+            
+            // 오른쪽(저장/수정) 버튼
             ToolbarItem(placement: .navigationBarTrailing) {
                 if currentMode == .read {
                     Menu {
@@ -163,18 +169,12 @@ struct WriteStoryView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .foregroundColor(GRColor.mainColor6_2)
                     }
                 } else {
                     saveButton
                 }
             }
-            //            // MARK: - 키보드 툴바에 완료 버튼 추가 (선택 사항) 이 코드 사용시 화면을 더 가려서 일단 주석 처리
-            //            ToolbarItemGroup(placement: .keyboard) {
-            //                Spacer()
-            //                Button("완료") {
-            //                    isTextEditorFocused = false
-            //                }
-            //            }
         }
         .alert("이야기를 삭제하시겠습니까?", isPresented: $showDeleteAlert) {
             Button("취소", role: .cancel) {}
@@ -199,32 +199,49 @@ struct WriteStoryView: View {
         }
     }
     
-    // MARK: - UI Components
-    
+    // MARK: - 날짜 헤더 뷰
     private var dateHeaderView: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar.circle.fill")
-                        .foregroundColor(Color(GRColor.mainColor5_1))
-                        .font(.title3)
-                    
-                    Text(currentDateString)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                }
-            }
+            Text(currentDateString)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(GRColor.fontMainColor)
+            
             Spacer()
         }
     }
     
+    // MARK: - 이미지 섹션
     private var imageSection: some View {
-        Group {
-            if currentMode == .read {
-                readModeImageView
-            } else {
-                editModeImageView
+        VStack {
+            if isImageLoading {
+                loadingIndicator
+            } else if let displayedImage = displayedImage {
+                diaryImageView(uiImage: displayedImage)
+            } else if currentMode != .read {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    imagePickerPlaceholder
+                }
+                .onChange(of: selectedPhotoItem) { newItem in
+                    guard let newItem = newItem else { return }
+                    
+                    isImageLoading = true
+                    
+                    Task {
+                        if let data = try? await newItem.loadTransferable(type: Data.self) {
+                            selectedImageData = data
+                            if let uiImage = UIImage(data: data) {
+                                displayedImage = uiImage
+                            }
+                        } else {
+                            print("이미지 로딩 중 오류 발생")
+                            selectedImageData = nil
+                        }
+                        
+                        isImageLoading = false
+                    }
+                }
+                .padding(.horizontal)
             }
         }
     }
