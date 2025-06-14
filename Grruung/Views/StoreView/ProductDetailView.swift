@@ -21,6 +21,7 @@ struct ProductDetailView: View {
     @State private var isRotating = false
     @State private var isBouncing = false
     @State private var isOutOfLimitedQuantity: Bool = false
+    @Binding var refreshTrigger: Bool
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
@@ -140,6 +141,7 @@ struct ProductDetailView: View {
             // 하단 버튼
             HStack {
                 Button(action: {
+                    refreshTrigger.toggle()
                     dismiss()
                 }, label: {
                     Text("취소하기")
@@ -192,10 +194,10 @@ struct ProductDetailView: View {
 }
 
 
-#Preview {
-    if let product = diamondProducts.first {
-        ProductDetailView(product: product)
-    } else {
-        Text("샘플 데이터 없음")
-    }
-}
+//#Preview {
+//    if let product = diamondProducts.first {
+//        ProductDetailView(product: product)
+//    } else {
+//        Text("샘플 데이터 없음")
+//    }
+//}
