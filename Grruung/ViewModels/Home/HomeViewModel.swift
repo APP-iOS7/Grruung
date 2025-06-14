@@ -11,6 +11,17 @@ import Combine
 import FirebaseFirestore
 import SwiftData 
 
+// ✨1 애니메이션 재생 계기를 명확히 하기 위한 열거형 추가
+enum AnimationTrigger: Equatable {
+    case appLaunch // 앱 첫 실행
+    case userWakeUp // 사용자가 '깨우기' 버튼 누름
+    case navigation // 다른 화면에서 홈으로 복귀
+    case levelUp // 레벨업 발생
+    case action(type: String, phase: CharacterPhase, id: String) // '우유먹기' 같은 특정 액션 애니메이션
+    case sleep // 재우기 애니메이션 시작
+    case returnToNormal // 일반 액션 완료 후 등, 기본 상태로 돌아가기
+}
+
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
     // 컨트롤러
@@ -65,9 +76,8 @@ class HomeViewModel: ObservableObject {
     @Published var isFeeding: Bool = false
     @Published var feedingProgress: CGFloat = 0.0
     
-    // ✨1 ScreenView에 특정 애니메이션 재생을 요청하기 위한 프로퍼티
-    // (타입, 단계, 액션ID) 튜플로 관리
-    @Published var activeActionAnimation: (type: String, phase: CharacterPhase, id: String)?
+    // ✨1 ScreenView에 애니메이션 재생을 요청하기 위한 통합 트리거
+    @Published var animationTrigger: AnimationTrigger?
     
     // Firebase 연동 상태
     @Published var isFirebaseConnected: Bool = false
@@ -1002,6 +1012,9 @@ class HomeViewModel: ObservableObject {
         // 모든 타이머 다시 시작
         startStatDecreaseTimers()
         
+        // ✨1 앱이 활성화될 때 애니메이션 트리거 설정
+        animationTrigger = .appLaunch
+        
 #if DEBUG
         print("📱 앱이 포그라운드로 복귀 - 모든 타이머 재시작")
 #endif
@@ -1264,6 +1277,9 @@ class HomeViewModel: ObservableObject {
         let goldReward = calculateLevelUpGoldReward()
         addGold(goldReward)
         
+        // ✨1 레벨업 시 애니메이션 트리거 설정
+        animationTrigger = .levelUp
+        
 #if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
 #endif
@@ -1428,6 +1444,8 @@ class HomeViewModel: ObservableObject {
             // 이미 자고 있으면 깨우기
             isSleeping = false
             showActionMessage("일어났어요! 이제 활동할 수 있어요!")
+            // ✨1 사용자가 직접 깨웠으므로 애니메이션 트리거 설정
+            animationTrigger = .userWakeUp
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
@@ -1436,6 +1454,8 @@ class HomeViewModel: ObservableObject {
             activityValue = min(100, activityValue + sleepBonus)
             
             showActionMessage("쿨쿨... 잠을 자고 있어요.")
+            // ✨1 재우기 애니메이션을 시작하도록 트리거 설정
+            animationTrigger = .sleep
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1547,8 +1567,8 @@ class HomeViewModel: ObservableObject {
         if actionId == "milk_feeding" {
             isFeeding = true
             feedingProgress = 0.0
-            // ScreenView가 이 값을 보고 애니메이션을 재생하도록 요청
-            activeActionAnimation = (type: "eating", phase: .infant, id: "milk_feeding")
+            // ✨1 ScreenView가 애니메이션을 재생하도록 트리거 설정
+            animationTrigger = .action(type: "eating", phase: .infant, id: "milk_feeding")
             
             // 스탯 적용은 애니메이션이 끝난 후 completeAction에서 처리하므로 여기서는 종료
             return
@@ -1592,14 +1612,19 @@ class HomeViewModel: ObservableObject {
             }
         }
         
-        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
+        // ✨2 경험치 획득 및 레벨업 체크 로직 수정 (중복 코드 제거)
+        let oldLevel = self.level
         if action.expGain > 0 {
             let oldExp = expValue
             addExp(action.expGain)
-            
     #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
     #endif
+        }
+        
+        // ✨2 레벨업이 발생하지 않은 경우에만 .returnToNormal 트리거 설정
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
         }
         
         // 성공 메시지 표시
@@ -1676,8 +1701,15 @@ class HomeViewModel: ObservableObject {
         }
         
         // 경험치 획득
+        /// ✨3 경험치 획득 후 다음 애니메이션을 재생시키기 위한 트리거 설정 로직 추가
+        let oldLevel = self.level
         if action.expGain > 0 {
             addExp(action.expGain)
+        }
+        
+        // ✨3 레벨업이 일어나지 않았다면, normal 애니메이션 재생 신호를 보냄
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
         }
         
         // 성공 메시지 표시
@@ -1695,6 +1727,11 @@ class HomeViewModel: ObservableObject {
         let goldReward = calculateGoldReward(for: actionId)
         if goldReward > 0 {
             addGold(goldReward)
+        }
+        
+        // ✨1 isFeeding 상태 해제
+        if actionId == "milk_feeding" {
+            isFeeding = false
         }
         
         // 버튼 갱신

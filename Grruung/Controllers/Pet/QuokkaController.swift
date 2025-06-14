@@ -48,7 +48,7 @@ class QuokkaController: ObservableObject {
     private var currentPlayMode: PlayMode = .pingPong
     private var onComplete: (() -> Void)? = nil
     
-    private var onProgressUpdate: ((AnimationProgress) -> Void)? = nil // ✨1 진행률 업데이트를 위한 콜백 핸들러 타입을 AnimationProgress로 변경
+    private var onProgressUpdate: ((AnimationProgress) -> Void)? = nil // 진행률 업데이트를 위한 콜백 핸들러 타입을 AnimationProgress로 변경
     
     // MARK: - 고정 설정 (quokka만 처리)
     private let characterType = "quokka"
@@ -582,7 +582,7 @@ extension QuokkaController {
         isAnimating = false
         isReversing = false
         onComplete = nil // 완료 핸들러 초기화
-        onProgressUpdate = nil // ✨1 진행률 핸들러 초기화
+        onProgressUpdate = nil // 진행률 핸들러 초기화
         print("⏹️ 애니메이션 정지")
     }
     
@@ -608,7 +608,7 @@ extension QuokkaController {
     
     // .once 모드 프레임 업데이트
     private func updateOnceFrame() {
-        // ✨1 AnimationProgress 구조체를 생성하여 콜백으로 전달
+        // AnimationProgress 구조체를 생성하여 콜백으로 전달
         let progress = AnimationProgress(currentIndex: currentFrameIndex, totalFrames: animationFrames.count)
         onProgressUpdate?(progress)
         
@@ -616,7 +616,7 @@ extension QuokkaController {
         
         // 마지막 프레임에 도달하면 애니메이션 중지 및 완료 핸들러 호출
         if currentFrameIndex >= animationFrames.count {
-            // ✨1 완료 직전에 마지막 상태를 전달 (currentIndex가 totalFrames와 같아짐)
+            // 완료 직전에 마지막 상태를 전달 (currentIndex가 totalFrames와 같아짐)
             let finalProgress = AnimationProgress(currentIndex: animationFrames.count, totalFrames: animationFrames.count)
             onProgressUpdate?(finalProgress)
             

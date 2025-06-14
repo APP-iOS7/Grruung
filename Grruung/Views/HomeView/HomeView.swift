@@ -78,6 +78,12 @@ struct HomeView: View {
                 .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
+                
+                // ✨1 홈 뷰가 다시 나타날 때 네비게이션 트리거 설정
+                // (데이터가 로드된 이후, 즉 최초 실행이 아닌 화면 전환 시에만)
+                if viewModel.isDataReady {
+                    viewModel.animationTrigger = .navigation
+                }
             }
         }
         .alert("안내", isPresented: $showUpdateAlert) {
