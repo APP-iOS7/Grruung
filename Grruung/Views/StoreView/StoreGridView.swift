@@ -9,13 +9,14 @@ import SwiftUI
 
 struct StoreGridView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    @Binding var refreshTrigger: Bool
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(products) { product in
-                        NavigationLink(destination: ProductDetailView(product: product)) {
+                        NavigationLink(destination: ProductDetailView(product: product, refreshTrigger: $refreshTrigger)) {
                             ProductItemView(product: product)
                         }
                         .buttonStyle(PlainButtonStyle())

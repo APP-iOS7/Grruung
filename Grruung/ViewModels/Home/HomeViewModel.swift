@@ -11,6 +11,17 @@ import Combine
 import FirebaseFirestore
 import SwiftData 
 
+// ✨1 애니메이션 재생 계기를 명확히 하기 위한 열거형 추가
+enum AnimationTrigger: Equatable {
+    case appLaunch // 앱 첫 실행
+    case userWakeUp // 사용자가 '깨우기' 버튼 누름
+    case navigation // 다른 화면에서 홈으로 복귀
+    case levelUp // 레벨업 발생
+    case action(type: String, phase: CharacterPhase, id: String) // '우유먹기' 같은 특정 액션 애니메이션
+    case sleep // 재우기 애니메이션 시작
+    case returnToNormal // 일반 액션 완료 후 등, 기본 상태로 돌아가기
+}
+
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
     // 컨트롤러
@@ -61,6 +72,13 @@ class HomeViewModel: ObservableObject {
     @Published var needsAnimationUpdate: Bool = false // 애니메이션 업데이트 필요 여부
     @Published var showUpdateScreen: Bool = false // 애니메이션 업데이트 화면 여부
     
+    // ✨1 우유 먹기 액션 상태 관리를 위한 프로퍼티 추가
+    @Published var isFeeding: Bool = false
+    @Published var feedingProgress: CGFloat = 0.0
+    
+    // ✨1 ScreenView에 애니메이션 재생을 요청하기 위한 통합 트리거
+    @Published var animationTrigger: AnimationTrigger?
+    
     // Firebase 연동 상태
     @Published var isFirebaseConnected: Bool = false
     @Published var isLoadingFromFirebase: Bool = false
@@ -81,6 +99,11 @@ class HomeViewModel: ObservableObject {
     @Published var showCleanStatus: Bool = false
     @Published var isHealthActionInProgress: Bool = false
     @Published var isCleanActionInProgress: Bool = false
+    
+    private var statusMessageTimer: Timer?
+    private var isActionMessageActive = false
+    private var defaultStatusMessageShown = false
+    
     // 디버그 모드 설정 추가
 #if DEBUG
     private let isDebugMode = true
@@ -128,19 +151,19 @@ class HomeViewModel: ObservableObject {
     
     // 버튼 관련 (모두 풀려있는 상태)
     @Published var sideButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("backpack.fill", true, "인벤토리"),
-        ("heart.text.square.fill", true, "건강관리"),
-        ("fireworks", true, "특수 이벤트"),
-        ("book.fill", true, "일기"),
-        ("microphone.fill", true, "채팅"),
+        ("backpackIcon2", true, "인벤토리"),
+        ("healthIcon", true, "건강관리"),
+        ("specialGiftIcon", true, "특수 이벤트"),
+        ("contractIcon", true, "일기"),
+        ("chatIcon", true, "채팅"),
         ("lock.fill", true, "잠금")
     ]
     
     @Published var actionButtons: [(icon: String, unlocked: Bool, name: String)] = [
-        ("fork.knife", true, "밥주기"),
-        ("gamecontroller.fill", true, "놀아주기"),
-        ("shower.fill", true, "씻기기"),
-        ("bed.double", true, "재우기")
+        ("appleIcon", true, "밥주기"),
+        ("playIcon", true, "놀아주기"),
+        ("soapIcon", true, "씻기기"),
+        ("nightIcon", true, "재우기")
     ]
     
     // 스탯 표시 형식 수정 (3개의 보이는 스탯만)
@@ -199,12 +222,12 @@ class HomeViewModel: ObservableObject {
         )
         
         // 아이템 효과 적용 이벤트 구독 추가
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(handleItemEffectApplied(_:)),
-                name: NSNotification.Name("ItemEffectApplied"),
-                object: nil
-            )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleItemEffectApplied(_:)),
+            name: NSNotification.Name("ItemEffectApplied"),
+            object: nil
+        )
         
         // 경험치 추가 알림 관찰자 등록
         NotificationCenter.default.addObserver(
@@ -213,15 +236,16 @@ class HomeViewModel: ObservableObject {
             name: NSNotification.Name("AddExperiencePoints"),
             object: nil
         )
-#if DEBUG
+        
+        // 초기 상태 메시지를 0.5초 후에 표시 (UI가 모두 로드된 후)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.showInitialStatusMessage()
+        }
+        
+    #if DEBUG
         print("🚀 HomeViewModel 초기화 완료")
         print("🚀 디버그 모드 활성화!")
-        print("   - 타이머 속도: \(debugSpeedMultiplier)배 빠르게")
-        print("   - 스탯 변화: \(debugSpeedMultiplier)배")
-        print("   - 경험치 획득: \(debugSpeedMultiplier)배")
-        print("   - 에너지 회복: \(energyTimerInterval)초마다")
-        print("   - 스탯 감소: \(statDecreaseInterval)초마다")
-#endif
+    #endif
     }
     
     // Firebase 연동을 초기화합니다
@@ -399,18 +423,18 @@ class HomeViewModel: ObservableObject {
         // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
         actionButtons = [
             ("plus.circle", true, "캐릭터 생성"),
-            ("gamecontroller.fill", false, "놀아주기"),
-            ("shower.fill", false, "씻기기"),
-            ("bed.double", false, "재우기")
+            ("playIcon", false, "놀아주기"),
+            ("soapIcon", false, "씻기기"),
+            ("nightIcon", false, "재우기")
         ]
         
         // 사이드 버튼 비활성화
         sideButtons = [
-            ("backpack.fill", true, "인벤토리"),
-            ("heart.text.square.fill", true, "건강관리"),
-            ("fireworks", true, "특수 이벤트"), // 아이콘 변경
-            ("book.fill", false, "일기"),
-            ("microphone.fill", false, "채팅"),
+            ("backpackIcon2", true, "인벤토리"),
+            ("healthIcon", true, "건강관리"),
+            ("specialGiftIcon", true, "특수 이벤트"), // 아이콘 변경
+            ("contractIcon", false, "일기"),
+            ("chatIcon", false, "채팅"),
             ("lock.fill", true, "잠금")
         ]
         
@@ -768,17 +792,23 @@ class HomeViewModel: ObservableObject {
     
     // 모든 타이머를 정지합니다.
     private func stopAllTimers() {
-        energyTimer?.invalidate()
-        energyTimer = nil
-        
+        // 스탯 감소 타이머 정지
         statDecreaseTimer?.invalidate()
         statDecreaseTimer = nil
         
+        // 히든 스탯 감소 타이머 정지
         hiddenStatDecreaseTimer?.invalidate()
         hiddenStatDecreaseTimer = nil
         
+        // 주간 애정도 타이머 정지
         weeklyAffectionTimer?.invalidate()
         weeklyAffectionTimer = nil
+        
+        // 상태 메시지 타이머 정지
+        statusMessageTimer?.invalidate()
+        statusMessageTimer = nil
+        
+        print("⏱️ 모든 타이머 정지됨")
     }
     
     // 활동량(피로도) 회복 처리 - 15분마다 실행
@@ -982,6 +1012,9 @@ class HomeViewModel: ObservableObject {
         // 모든 타이머 다시 시작
         startStatDecreaseTimers()
         
+        // ✨1 앱이 활성화될 때 애니메이션 트리거 설정
+        animationTrigger = .appLaunch
+        
 #if DEBUG
         print("📱 앱이 포그라운드로 복귀 - 모든 타이머 재시작")
 #endif
@@ -1006,16 +1039,56 @@ class HomeViewModel: ObservableObject {
             ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
         ]
         
-        // 상태 메시지 업데이트
-        updateStatusMessage()
+        // 액션 메시지가 활성화되어 있지 않을 때만 상태 메시지 업데이트
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
+    // 앱 시작 시 첫 상태 메시지 표시
+    private func showInitialStatusMessage() {
+        // 액션 메시지가 활성화되어 있지 않을 때만 실행
+        if !isActionMessageActive {
+            updateStatusMessage()
+        }
+    }
+    
+    // 액션 메시지를 표시하고 타이머 설정
+    private func showActionMessage(_ message: String) {
+        // 메시지 설정
+        statusMessage = message
+        isActionMessageActive = true
+        
+        // 기존 타이머 취소
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 메시지 숨기기
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isActionMessageActive = false
+                self.statusMessage = "" // 메시지 비우기
+                
+                print("💬 액션 메시지 숨김 (2초 타이머)")
+            }
+        }
+        
+        print("💬 액션 메시지 표시: \(message)")
     }
     
     // 캐릭터 상태에 따른 메시지를 업데이트
     private func updateStatusMessage() {
-        guard let character = character else {
-            statusMessage = "안녕하세요!"
+        // 액션 메시지가 활성화되어 있으면 스탯 메시지 업데이트 안함
+        if isActionMessageActive {
             return
         }
+        
+        guard let character = character else {
+            return
+        }
+        
+        // 상태 메시지 생성
+        let newStatusMessage: String
         
         // 운석 상태인 경우 특별한 메시지 표시
         if character.status.phase == .egg {
@@ -1028,37 +1101,74 @@ class HomeViewModel: ObservableObject {
                 "*콩닥콩닥*",
                 "*똑똑*"
             ]
-            statusMessage = eggMessages.randomElement() ?? "..."
-            return
+            newStatusMessage = eggMessages.randomElement() ?? "..."
+        } else if isSleeping {
+            newStatusMessage = "쿨쿨... 잠을 자고 있어요."
         }
-        
-        if isSleeping {
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            return
-        }
-        
         // 우선순위에 따른 상태 메시지 (낮은 스탯 우선)
-        if satietyValue < 20 {
-            statusMessage = "너무 배고파요... 밥 주세요!"
+        else if satietyValue < 20 {
+            newStatusMessage = "너무 배고파요... 밥 주세요!"
         } else if activityValue < 20 {
-            statusMessage = "너무 지쳐요... 쉬고 싶어요."
+            newStatusMessage = "너무 지쳐요... 쉬고 싶어요."
         } else if staminaValue < 20 {
-            statusMessage = "몸이 너무 피곤해요..."
+            newStatusMessage = "몸이 너무 피곤해요..."
         } else if healthyValue < 30 {
-            statusMessage = "몸이 아파요... 병원에 가고 싶어요."
+            newStatusMessage = "몸이 아파요... 병원에 가고 싶어요."
         } else if cleanValue < 30 {
-            statusMessage = "더러워요... 씻겨주세요!"
+            newStatusMessage = "더러워요... 씻겨주세요!"
         } else if satietyValue < 50 {
-            statusMessage = "조금 배고파요..."
+            newStatusMessage = "조금 배고파요..."
         } else if activityValue < 50 {
-            statusMessage = "좀 피곤해요..."
+            newStatusMessage = "좀 피곤해요..."
         } else if affectionValue < 100 {
-            statusMessage = "심심해요... 놀아주세요!"
+            newStatusMessage = "심심해요... 놀아주세요!"
         } else if satietyValue > 80 && staminaValue > 80 && activityValue > 80 {
-            statusMessage = "정말 행복해요! 감사합니다!"
+            newStatusMessage = "정말 행복해요! 감사합니다!"
         } else {
-            statusMessage = "오늘도 좋은 하루에요!"
+            newStatusMessage = "오늘도 좋은 하루에요!"
         }
+        
+        // 메시지가 실제로 변경되었고, 아직 표시되지 않았을 경우에만 표시
+        if statusMessage != newStatusMessage && !defaultStatusMessageShown {
+            statusMessage = newStatusMessage
+            defaultStatusMessageShown = true
+            
+            // 기존 타이머 취소
+            statusMessageTimer?.invalidate()
+            
+            // 2초 후에 메시지 숨기기
+            statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    self.statusMessage = "" // 메시지 비우기
+                    self.defaultStatusMessageShown = false
+                    
+                    print("💬 기본 상태 메시지 숨김 (2초 타이머)")
+                }
+            }
+            
+            print("💬 기본 상태 메시지 표시: \(newStatusMessage)")
+        }
+    }
+    
+    // 상태 메시지 타이머를 시작하는 메서드
+    private func startStatusMessageTimer() {
+        // 기존 타이머가 있다면 무효화
+        statusMessageTimer?.invalidate()
+        
+        // 2초 후에 상태 메시지 초기화
+        statusMessageTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                // 상태 메시지 초기화 (UI 업데이트는 메인 스레드에서)
+                self?.clearStatusMessage()
+            }
+        }
+    }
+    
+    // 상태 메시지를 초기화하는 메서드
+    private func clearStatusMessage() {
+        // 상태 메시지 초기화 (빈 문자열로 설정)
+        statusMessage = ""
     }
     
     // 캐릭터 모델의 상태 정보를 현재 ViewModel 값들로 업데이트
@@ -1166,6 +1276,9 @@ class HomeViewModel: ObservableObject {
         // 레벨업 시 골드 획득 추가
         let goldReward = calculateLevelUpGoldReward()
         addGold(goldReward)
+        
+        // ✨1 레벨업 시 애니메이션 트리거 설정
+        animationTrigger = .levelUp
         
 #if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
@@ -1330,7 +1443,9 @@ class HomeViewModel: ObservableObject {
         if isSleeping {
             // 이미 자고 있으면 깨우기
             isSleeping = false
-            statusMessage = "일어났어요! 이제 활동할 수 있어요!"
+            showActionMessage("일어났어요! 이제 활동할 수 있어요!")
+            // ✨1 사용자가 직접 깨웠으므로 애니메이션 트리거 설정
+            animationTrigger = .userWakeUp
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
@@ -1338,8 +1453,9 @@ class HomeViewModel: ObservableObject {
             let sleepBonus = isDebugMode ? (15 * debugSpeedMultiplier) : 15
             activityValue = min(100, activityValue + sleepBonus)
             
-            statusMessage = "쿨쿨... 잠을 자고 있어요."
-            updateAllPercents()
+            showActionMessage("쿨쿨... 잠을 자고 있어요.")
+            // ✨1 재우기 애니메이션을 시작하도록 트리거 설정
+            animationTrigger = .sleep
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1355,14 +1471,20 @@ class HomeViewModel: ObservableObject {
         let sleepChanges = ["sleep_state": isSleeping ? 1 : 0]
         recordAndSaveStatChanges(sleepChanges, reason: isSleeping ? "sleep_start" : "sleep_end")
         
-#if DEBUG
+    #if DEBUG
         print("😴 " + (isSleeping ? "펫을 재웠습니다" : "펫을 깨웠습니다"))
-#endif
+    #endif
     }
     
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
     func performAction(at index: Int) {
+        // ✨1 isFeeding 상태일 때 다른 액션 방지
+        guard !isFeeding else {
+            print("🥛 우유를 먹는 중에는 다른 액션을 할 수 없습니다.")
+            return
+        }
+        
         // 애니메이션 중이면 액션 수행하지 않음
         guard !isAnimationRunning else {
             print("🚫 애니메이션 실행 중: 액션 무시됨")
@@ -1384,9 +1506,15 @@ class HomeViewModel: ObservableObject {
         }
         
         // 잠자는 상태에서는 재우기/깨우기만 가능
-        if isSleeping && action.icon != "bed.double" {
+        if isSleeping && action.icon != "nightIcon" {
             print("😴 펫이 자고 있어서 깨우기만 가능합니다")
             return
+        }
+        
+        // ✨1 '우유먹기'가 아닌 다른 액션일 때만 기본 애니메이션 시작
+        if getActionId(for: action.icon) != "milk_feeding" {
+            let animationDuration = 1.0
+            startAnimation(duration: animationDuration)
         }
         
         // 애니메이션 시작 (액션에 따라 적절한 지속 시간 설정)
@@ -1395,7 +1523,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 아이콘에 따라 해당 메서드 호출
         switch action.icon {
-        case "bed.double":
+        case "nightIcon":
             putPetToSleep()
             print(isSleeping ? "😴 펫을 재웠습니다" : "😊 펫을 깨웠습니다")
             
@@ -1406,6 +1534,11 @@ class HomeViewModel: ObservableObject {
             } else {
                 print("❓ 알 수 없는 액션: \(action.name), 아이콘: \(action.icon)")
             }
+        }
+        
+        // ✨1 '우유먹기' 중이 아닐 때만 버튼 즉시 갱신
+        if !isFeeding {
+            refreshActionButtons()
         }
         
         // 액션 실행 후 액션 버튼 갱신
@@ -1425,7 +1558,19 @@ class HomeViewModel: ObservableObject {
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
-            statusMessage = action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage
+            // 실패 메시지 표시
+            showActionMessage(action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage)
+            return
+        }
+        
+        // ✨1 '우유먹기' 액션 특별 처리
+        if actionId == "milk_feeding" {
+            isFeeding = true
+            feedingProgress = 0.0
+            // ✨1 ScreenView가 애니메이션을 재생하도록 트리거 설정
+            animationTrigger = .action(type: "eating", phase: .infant, id: "milk_feeding")
+            
+            // 스탯 적용은 애니메이션이 끝난 후 completeAction에서 처리하므로 여기서는 종료
             return
         }
         
@@ -1467,23 +1612,28 @@ class HomeViewModel: ObservableObject {
             }
         }
         
-        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
+        // ✨2 경험치 획득 및 레벨업 체크 로직 수정 (중복 코드 제거)
+        let oldLevel = self.level
         if action.expGain > 0 {
             let oldExp = expValue
             addExp(action.expGain)
-            
-#if DEBUG
+    #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
-#endif
+    #endif
+        }
+        
+        // ✨2 레벨업이 발생하지 않은 경우에만 .returnToNormal 트리거 설정
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
         }
         
         // 성공 메시지 표시
         if !action.successMessage.isEmpty {
-            statusMessage = action.successMessage
+            showActionMessage(action.successMessage)
         }
         
-        // UI 업데이트
-        updateAllPercents()
+        // UI 업데이트 - 액션 메시지가 덮어씌워지지 않도록 updateAllPercents 메서드 수정
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
@@ -1498,10 +1648,113 @@ class HomeViewModel: ObservableObject {
         
         print("✅ '\(action.name)' 액션을 실행했습니다")
         
-#if DEBUG
+    #if DEBUG
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
-#endif
+    #endif
+    }
+    
+    // ✨1 애니메이션이 끝난 후 스탯을 적용하기 위한 새로운 메소드
+    func completeAction(actionId: String) {
+        guard let action = actionManager.getAction(id: actionId) else {
+            print("❌ 완료할 액션을 찾을 수 없습니다: \(actionId)")
+            return
+        }
+        
+        print("✅ '\(action.name)' 액션 완료 처리 시작")
+
+        var statChanges: [String: Int] = [:]
+
+        // 활동량 소모
+        let oldActivity = activityValue
+        activityValue = max(0, activityValue - action.activityCost)
+        statChanges["activity"] = activityValue - oldActivity
+        
+        // 액션 효과 적용
+        for (statName, value) in action.effects {
+            let adjustedValue = isDebugMode ? (value * debugSpeedMultiplier) : value
+            
+            switch statName {
+            case "satiety":
+                let oldValue = satietyValue
+                satietyValue = max(0, min(100, satietyValue + adjustedValue))
+                statChanges["satiety"] = satietyValue - oldValue
+            case "stamina":
+                let oldValue = staminaValue
+                staminaValue = max(0, min(100, staminaValue + adjustedValue))
+                statChanges["stamina"] = staminaValue - oldValue
+            case "happiness", "affection":
+                let oldValue = weeklyAffectionValue
+                weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(adjustedValue)))
+                statChanges["affection"] = weeklyAffectionValue - oldValue
+            case "clean":
+                let oldValue = cleanValue
+                cleanValue = max(0, min(100, cleanValue + adjustedValue))
+                statChanges["clean"] = cleanValue - oldValue
+            case "healthy":
+                let oldValue = healthyValue
+                healthyValue = max(0, min(100, healthyValue + adjustedValue))
+                statChanges["healthy"] = healthyValue - oldValue
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득
+        /// ✨3 경험치 획득 후 다음 애니메이션을 재생시키기 위한 트리거 설정 로직 추가
+        let oldLevel = self.level
+        if action.expGain > 0 {
+            addExp(action.expGain)
+        }
+        
+        // ✨3 레벨업이 일어나지 않았다면, normal 애니메이션 재생 신호를 보냄
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
+        }
+        
+        // 성공 메시지 표시
+        if !action.successMessage.isEmpty {
+            showActionMessage(action.successMessage)
+        }
+        
+        // UI 업데이트 및 저장
+        updateAllPercentsWithoutMessageUpdate()
+        updateCharacterStatus()
+        updateLastActivityDate()
+        recordAndSaveStatChanges(statChanges, reason: "action_complete_\(actionId)")
+        
+        // 골드 획득
+        let goldReward = calculateGoldReward(for: actionId)
+        if goldReward > 0 {
+            addGold(goldReward)
+        }
+        
+        // ✨1 isFeeding 상태 해제
+        if actionId == "milk_feeding" {
+            isFeeding = false
+        }
+        
+        // 버튼 갱신
+        refreshActionButtons()
+    }
+    
+    private func updateAllPercentsWithoutMessageUpdate() {
+        // 보이는 스탯 퍼센트 업데이트 (0~100 → 0.0~1.0)
+        satietyPercent = CGFloat(satietyValue) / 100.0
+        staminaPercent = CGFloat(staminaValue) / 100.0
+        activityPercent = CGFloat(activityValue) / 100.0
+        
+        // 경험치 퍼센트 업데이트
+        expPercent = expMaxValue > 0 ? CGFloat(expValue) / CGFloat(expMaxValue) : 0.0
+        
+        // UI 표시용 스탯 배열 업데이트 (3개의 보이는 스탯만)
+        stats = [
+            ("fork.knife", Color.orange, colorForValue(satietyValue), satietyPercent),      // 포만감
+            ("figure.run", Color.blue, colorForValue(staminaValue), staminaPercent),       // 운동량
+            ("bolt.fill", Color.yellow, colorForValue(activityValue), activityPercent)     // 활동량
+        ]
+        
+        // 상태 메시지는 업데이트하지 않음
     }
     
     // 액션 아이콘으로부터 ActionManager의 액션 ID를 가져옵니다.
@@ -1510,58 +1763,58 @@ class HomeViewModel: ObservableObject {
     private func getActionId(for icon: String) -> String? {
         switch icon {
             // 운석 전용 액션들 (phaseExclusive = true)
-        case "hand.tap.fill":
+        case "Hands002Icon":
             return "tap_egg"               // 알 두드리기 - 경험치 적게 증가
-        case "flame.fill":
+        case "fireIcon":
             return "warm_egg"              // 알 데우기 - 경험치 중간 증가
-        case "bubble.left.fill":
+        case "chatIcon":
             return "talk_egg"              // 알에게 말하기 - 경험치 소량 증가
             
             // 기본 액션들 (유아기 이상)
-        case "fork.knife":
+        case "appleIcon":
             return "feed"                  // 밥 주기 - 포만감 증가
-        case "gamecontroller.fill":
+        case "playIcon":
             return "play"                  // 놀아주기 - 애정도 증가, 활동량 감소
-        case "shower.fill":
+        case "soapIcon":
             return "wash"                  // 씻기기 - 청결도 증가 (기본 씻기기)
-        case "bed.double":
+        case "nightIcon":
             return "sleep"                 // 재우기/깨우기 - 활동량 회복
             
-        case "drop.circle.fill":
+        case "milkIcon":
             return "milk_feeding"          // 우유 먹이기 - 포만감 소량 증가 (유아기)
             
             // 기타 관련 액션들
-        case "sun.max.fill":
+        case "sunIcon":
             return "weather_sunny"         // 햇빛 쬐기 - 건강 소량 증가
-        case "figure.walk":
+        case "walking":
             return "walk_together"         // 산책하기 - 체력 감소, 건강 증가
-        case "figure.seated.side":
+        case "healing":
             return "rest_together"         // 함께 쉬기 - 활동량 회복, 애정도 증가
             
             // 장소 관련 액션들
-        case "house.fill":
+        case "homeIcon":
             return "go_home"               // 집으로 이동 - 위치 변경
         case "tree.fill":
             return "go_outside"            // 외출하기 - 위치 변경
             
             // 감정 관리 액션들
-        case "hand.raised.fill":
+        case "loveHeartIcon":
             return "comfort"               // 안아주기 - 애정도 증가
         case "hands.clap.fill":
             return "encourage"             // 칭찬하기 - 애정도 중간 증가
             
             // 청결 관리 액션들
-        case "comb.fill":
+        case "Hands005Icon":
             return "brush_fur"             // 빗질하기 - 청결도 소량 증가 (기본 빗질)
             
             // 추가 액션들
-        case "figure.mixed.cardio":
+        case "yogaIcon":
             return "stretch_exercise"      // 스트레칭 - 건강 증가, 체력 회복
-        case "command":
+        case "toyIcon":
             return "teach_trick"           // 재주 가르치기 - 애정도 증가, 경험치 획득
-        case "hand.point.up.fill":
+        case "loveHeartIcon2":
             return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
-        case "hand.point.right.fill":
+        case "bearLoveIcon":
             return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
             
         default:
@@ -1634,9 +1887,13 @@ class HomeViewModel: ObservableObject {
     // MARK: - Resource Cleanup
     
     deinit {
-        cleanupResources()
+        stopAllTimers()
+        statusMessageTimer?.invalidate()
         
-        print("⏰ 모든 타이머 정리됨")
+        // Firebase 리스너 정리
+        characterListener?.remove()
+        
+        print("🧩 HomeViewModel 해제됨")
     }
     
     // 모든 리소스를 정리
@@ -1764,7 +2021,7 @@ class HomeViewModel: ObservableObject {
     // MARK: - 애니메이션 중 버튼 클릭 비활성화 기능 추가
     
     // 애니메이션 시작/종료 메서드
-    func startAnimation(duration: Double = 1.0) {
+    func startAnimation(duration: Double = 2.5) {
         isAnimationRunning = true
         
         // 애니메이션 완료 후 상태 변경
@@ -1785,7 +2042,8 @@ class HomeViewModel: ObservableObject {
     ) -> Bool {
         // 활동력 확인
         if activityValue < activityCost {
-            statusMessage = failMessage
+            // 실패 메시지 표시
+            showActionMessage(failMessage)
             return false
         }
         
@@ -1829,15 +2087,17 @@ class HomeViewModel: ObservableObject {
         addExp(expGain)
         
         // 성공 메시지 표시
-        statusMessage = successMessage
+        showActionMessage(successMessage)
         
         // UI 업데이트
-        updateAllPercents()
+        updateAllPercentsWithoutMessageUpdate()
         updateCharacterStatus()
         updateLastActivityDate()
         
         // Firebase에 스탯 변화 기록
         recordAndSaveStatChanges(statChanges, reason: "special_event_\(eventId)")
+        
+        print("🎪 특수 이벤트 참여 성공: \(name)")
         
         return true
     }
@@ -2094,7 +2354,7 @@ class HomeViewModel: ObservableObject {
         }
         
         // 상태 메시지 업데이트
-        statusMessage = message
+        showActionMessage(message)
         
         // 활동 날짜 업데이트
         updateLastActivityDate()
