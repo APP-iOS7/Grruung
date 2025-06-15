@@ -18,7 +18,7 @@ struct SpeechBubbleView: View {
     var body: some View {
         Text(message)
             .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.black)
+            .foregroundStyle(.black)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -41,8 +41,8 @@ struct SpeechBubbleView: View {
                             BubbleTriangle()
                                 .stroke(color.opacity(0.6), lineWidth: 1.5)
                         )
-                        .rotationEffect(.degrees(180))
-                        .offset(y: 14)
+                        .rotationEffect(.degrees(0))
+                        .offset(y: 22)
                 }
             )
             .opacity(isVisible ? 1 : 0)

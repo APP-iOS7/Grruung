@@ -34,7 +34,7 @@ struct HealthCareView: View {
                     Text("건강 & 청결 관리")
                         .font(.headline)
                         .bold()
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                     
                     Spacer()
                     
@@ -44,7 +44,8 @@ struct HealthCareView: View {
                         }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(GRColor.mainColor6_2)
+                            .foregroundStyle(GRColor.mainColor6_2)
+                            .font(.system(size: 22))
                     }
                 }
                 .padding(.horizontal)
@@ -104,7 +105,7 @@ struct HealthCareView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("건강 관리 액션")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -168,14 +169,14 @@ struct HealthCareView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(GRColor.mainColor6_2)
+                    .foregroundStyle(GRColor.mainColor6_2)
                 Text("건강 상태 정보")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                 Spacer()
                 Text("? / 100")
                     .fontWeight(.bold)
-                    .foregroundColor(Color.gray)
+                    .foregroundStyle(Color.gray)
             }
             
             // 상태 게이지 바 (잠김 상태)
@@ -188,7 +189,7 @@ struct HealthCareView: View {
                             ForEach(0..<5) { _ in
                                 Image(systemName: "questionmark")
                                     .font(.system(size: 8))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                             }
                         }
                     )
@@ -198,7 +199,7 @@ struct HealthCareView: View {
             // 안내 메시지
             Text("건강 체크를 통해 현재 상태를 확인할 수 있습니다.")
                 .font(.subheadline)
-                .foregroundColor(Color.black.opacity(0.7))
+                .foregroundStyle(Color.black.opacity(0.7))
         }
         .padding()
         .background(GRColor.mainColor1_1)
@@ -231,7 +232,7 @@ struct HealthCareView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("청결 관리 액션")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .padding(.horizontal)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -295,14 +296,14 @@ struct HealthCareView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(GRColor.mainColor6_2)
+                    .foregroundStyle(GRColor.mainColor6_2)
                 Text("청결 상태 정보")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                 Spacer()
                 Text("? / 100")
                     .fontWeight(.bold)
-                    .foregroundColor(Color.gray)
+                    .foregroundStyle(Color.gray)
             }
             
             // 상태 게이지 바 (잠김 상태)
@@ -315,7 +316,7 @@ struct HealthCareView: View {
                             ForEach(0..<5) { _ in
                                 Image(systemName: "questionmark")
                                     .font(.system(size: 8))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                             }
                         }
                     )
@@ -325,7 +326,7 @@ struct HealthCareView: View {
             // 안내 메시지
             Text("청결 체크를 통해 현재 상태를 확인할 수 있습니다.")
                 .font(.subheadline)
-                .foregroundColor(Color.black.opacity(0.7))
+                .foregroundStyle(Color.black.opacity(0.7))
         }
         .padding()
         .background(GRColor.mainColor1_1)
@@ -349,7 +350,7 @@ struct HealthCareView: View {
             VStack(spacing: 8) {
                 Text(title)
                     .fontWeight(selectedTab == index ? .bold : .regular)
-                    .foregroundColor(selectedTab == index ? GRColor.mainColor6_2 : Color.black.opacity(0.6))
+                    .foregroundStyle(selectedTab == index ? GRColor.mainColor6_2 : Color.black.opacity(0.6))
                 
                 Rectangle()
                     .fill(selectedTab == index ? GRColor.mainColor6_2 : Color.clear)
@@ -364,14 +365,14 @@ struct HealthCareView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundColor(color)
+                    .foregroundStyle(color)
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                 Spacer()
                 Text("\(value)/\(maxValue)")
                     .fontWeight(.bold)
-                    .foregroundColor(getStatusColor(value: value, maxValue: maxValue))
+                    .foregroundStyle(getStatusColor(value: value, maxValue: maxValue))
             }
             
             // 상태 게이지 바
@@ -393,7 +394,7 @@ struct HealthCareView: View {
             // 상태 메시지
             Text(getStatusMessage(value: value, isHealth: icon == "heart.fill"))
                 .font(.subheadline)
-                .foregroundColor(Color.black.opacity(0.8))
+                .foregroundStyle(Color.black.opacity(0.8))
 
         }
         .padding()
@@ -412,7 +413,7 @@ struct HealthCareView: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundColor(GRColor.mainColor6_2)
+                    .foregroundStyle(GRColor.mainColor6_2)
                     .frame(width: 40, height: 40)
                     .background(GRColor.mainColor1_1)
                     .clipShape(Circle())
@@ -421,17 +422,17 @@ struct HealthCareView: View {
                 Text(title)
                     .font(.caption)
                     .bold()
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
                 
                 Text(description)
                     .font(.caption2)
-                    .foregroundColor(Color.black.opacity(0.7))
+                    .foregroundStyle(Color.black.opacity(0.7))
                     .multilineTextAlignment(.center)
                 
                 Text(cost)
                     .font(.caption2)
-                    .foregroundColor(GRColor.grColorOrange)
+                    .foregroundStyle(GRColor.grColorOrange)
                     .fontWeight(.bold)
             }
             .frame(width: 90, height: 140)
@@ -455,12 +456,12 @@ struct HealthCareView: View {
     private func tipCard(tip: String, icon: String, isWarning: Bool) -> some View {
         HStack(alignment: .top, spacing: 15) {
             Image(systemName: icon)
-                .foregroundColor(isWarning ? GRColor.grColorOrange : GRColor.grColorGreen)
+                .foregroundStyle(isWarning ? GRColor.grColorOrange : GRColor.grColorGreen)
                 .frame(width: 24, height: 24)
             
             Text(tip)
                 .font(.footnote)
-                .foregroundColor(Color.black.opacity(0.8))
+                .foregroundStyle(Color.black.opacity(0.8))
             
             Spacer()
         }

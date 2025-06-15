@@ -45,13 +45,13 @@ struct CustomTabBar: View {
                                 // 아이콘
                                 Image(systemName: item.icon)
                                     .font(.system(size: 24))
-                                    .foregroundColor(selectedTab == index ? .orange : .gray)
+                                    .foregroundStyle(selectedTab == index ? .orange : .gray)
                                 
                                 // 이름
                                 /*
                                 Text(item.name)
                                     .font(.system(size: 12))
-                                    .foregroundColor(selectedTab == index ? .blue : .gray)
+                                    .foregroundStyle(selectedTab == index ? .blue : .gray)
                                  */
                             }
                             .frame(maxWidth: .infinity)

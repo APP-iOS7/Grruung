@@ -81,7 +81,7 @@ struct OnboardingView: View {
                             }
                         }
                         .padding()
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                     }
                     
                     Spacer()
@@ -123,7 +123,7 @@ struct OnboardingView: View {
                     )
                         .padding(.horizontal, 20)
                         .padding(.top, 10)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                     
                     Spacer()
                     
@@ -140,7 +140,7 @@ struct OnboardingView: View {
                     // 클릭 안내 텍스트
                     Text("화면을 탭하여 계속하기")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .padding(.bottom, 20)
                 }
                 .contentShape(Rectangle()) // 전체 영역을 탭 가능하게

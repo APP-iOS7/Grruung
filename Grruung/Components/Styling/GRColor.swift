@@ -26,7 +26,7 @@ struct GRColorInfo: Identifiable, Hashable {
 // MARK: - 구르릉 색상 관리
 // 코드 사용 예시
 // .background(GRColor.pointColor)
-// .foregroundColor(GRColor.pointColor)
+// .foregroundStyle(GRColor.pointColor)
 // .foregroundStyle(GRColor.pointColor)
 // .tint(GRColor.pointColor)
 

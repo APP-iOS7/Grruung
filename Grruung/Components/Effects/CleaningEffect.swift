@@ -115,11 +115,11 @@ struct CleaningEffect: View {
                 if index % 3 == 0 {
                     Text("✨")
                         .font(.title2)
-                        .foregroundColor(colors[0])
+                        .foregroundStyle(colors[0])
                 } else if index % 3 == 1 {
                     Text("💎")
                         .font(.caption)
-                        .foregroundColor(colors[1])
+                        .foregroundStyle(colors[1])
                 } else {
                     Circle()
                         .fill(
@@ -246,7 +246,7 @@ extension CleaningEffect {
                     }
                     .padding()
                     .background(Color.blue)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .cornerRadius(10)
                 }
             }
