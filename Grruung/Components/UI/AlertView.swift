@@ -54,35 +54,35 @@ struct AlertView: View {
                 HStack(spacing: 8) {
                     Text("가격: ")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                     if product.itemCurrencyType == .won {
                         Text("₩")
                     } else {
                         Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
-                            .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                            .foregroundStyle(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
                     }
                     
                     Text("\(product.itemPrice * quantity)")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                 }
                 
                 // 설명
                 if product.itemName == "다이아 → 골드" {
                     Text("\(product.itemPrice * quantity) 다이아로 \(quantity * diamondToGold) 골드를 구매합니다.")
                         .font(.subheadline)
-                        .foregroundColor(.black.opacity(0.9))
+                        .foregroundStyle(.black.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 } else {
                     Text("\(product.itemName)")
                         .font(.subheadline)
-                        .foregroundColor(.black.opacity(0.9))
+                        .foregroundStyle(.black.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                     Text("\(quantity)개를 구매합니다.")
                         .font(.subheadline)
-                        .foregroundColor(.black.opacity(0.9))
+                        .foregroundStyle(.black.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                     if !isProcessing {
@@ -98,7 +98,7 @@ struct AlertView: View {
                             .scaleEffect(0.8)
                         Text("구매 처리 중...")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .padding()
                 }

@@ -51,13 +51,13 @@ struct PetNameSelectionView: View {
                 // 펫 종류 안내 (실제로는 아직 운석 상태)
                 Text("우주에서 온 신비한 운석")
                     .font(.headline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                 
                 // 이름 입력 필드
                 VStack(alignment: .leading, spacing: 8) {
                     Text("이름")
                         .font(.headline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                     
                     TextField("이름을 입력하세요", text: $petName)
                         .padding()
@@ -74,7 +74,7 @@ struct PetNameSelectionView: View {
                 }) {
                     Text("친구 만들기")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(petName.isEmpty ? Color.gray : Color.blue)
@@ -95,7 +95,7 @@ struct PetNameSelectionView: View {
                 Text("이 친구는 처음에는 운석 상태로 시작해요.\n사랑과 관심으로 키워주세요!")
                     .font(.caption)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .padding(.bottom, 20)
             }
             .padding()

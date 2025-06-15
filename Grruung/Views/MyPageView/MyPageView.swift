@@ -52,7 +52,7 @@ struct ProfileSection: View {
             }
             Spacer()
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
         }
         .buttonStyle(.plain)
     }
@@ -94,12 +94,12 @@ struct SeviceGrid: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 40, height: 40)
-                                .foregroundColor(.black)
+                                .foregroundStyle(.black)
                                 .padding()
                             
                             Text(item.title)
                                 .font(.caption)
-                                .foregroundColor(.black)
+                                .foregroundStyle(.black)
                         }
                     }
                 }
@@ -159,14 +159,14 @@ struct SettingsSection: View {
                     } label: {
                         HStack {
                             Image(systemName: item.iconName)
-                                .foregroundColor(.black)
+                                .foregroundStyle(.black)
                                 .frame(width: 24)
                             
                             Text(item.title)
-                                .foregroundColor(.black)
+                                .foregroundStyle(.black)
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         .padding()
                     }

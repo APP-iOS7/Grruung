@@ -34,7 +34,7 @@ struct AllActionsDebugView: View {
                             
                             Text(action.name)
                                 .font(.caption)
-                                .foregroundColor(.primary)
+                                .foregroundStyle(.primary)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.center)
                         }

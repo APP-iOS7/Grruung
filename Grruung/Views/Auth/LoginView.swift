@@ -48,7 +48,7 @@ struct LoginView: View {
                         .bold()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     // 이메일 입력 필드
-                    TextField("", text: $email, prompt: Text("ex) grruung＠test.com").foregroundColor(.gray.opacity(0.3)))
+                    TextField("", text: $email, prompt: Text("ex) grruung＠test.com").foregroundStyle(.gray.opacity(0.3)))
                         .padding(.bottom, 8)
                         .focused($emailFieldIsFocused)
                         .submitLabel(.next)  // 키보드에 "다음" 버튼
@@ -59,7 +59,7 @@ struct LoginView: View {
                         .overlay(
                             Rectangle()
                                 .frame(height: 2)
-                                .foregroundColor(emailFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                .foregroundStyle(emailFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
                                 .animation(.easeInOut(duration: 0.3), value: emailFieldIsFocused),
                             alignment: .bottom
                         )
@@ -91,7 +91,7 @@ struct LoginView: View {
                             .overlay(
                                 Rectangle()
                                     .frame(height: 2)
-                                    .foregroundColor(passwordFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
+                                    .foregroundStyle(passwordFieldIsFocused ? GRColor.mainColor4_2 : .gray.opacity(0.3))
                                     .animation(.easeInOut(duration: 0.6), value: passwordFieldIsFocused),
                                 alignment: .bottom
                             )
@@ -106,7 +106,7 @@ struct LoginView: View {
                                 }
                             }) {
                                 Image(systemName: isSecure ? "eye.slash" : "eye")
-                                    .foregroundColor(.gray)
+                                    .foregroundStyle(.gray)
                             }
                             .padding(.trailing, 8)
                             
@@ -115,7 +115,7 @@ struct LoginView: View {
                         if !isValidPassword && !password.isEmpty {
                             Text("비밀번호는 최소 6자 이상이어야 합니다")
                                 .padding(.top, 4)
-                                .foregroundColor(.red)
+                                .foregroundStyle(.red)
                                 .font(.caption)
                         }
                     }
@@ -144,7 +144,7 @@ struct LoginView: View {
                                     }
                                 }
                             )
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                     .disabled(!isValidInput || isLoading)

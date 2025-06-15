@@ -91,7 +91,7 @@ struct SpecialEventView: View {
             Text("특수 이벤트")
                 .font(.headline)
                 .bold()
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             Spacer()
             
@@ -101,7 +101,7 @@ struct SpecialEventView: View {
                 }
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(GRColor.mainColor6_2)
+                    .foregroundStyle(GRColor.mainColor6_2)
                     .font(.system(size: 22))
             }
         }
@@ -131,7 +131,7 @@ struct SpecialEventView: View {
                 }) {
                     Image(systemName: "chevron.left.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundColor(GRColor.mainColor3_2)
+                        .foregroundStyle(GRColor.mainColor3_2)
                         .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
                 .padding(.leading, 0)
@@ -145,7 +145,7 @@ struct SpecialEventView: View {
                 }) {
                     Image(systemName: "chevron.right.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundColor(GRColor.mainColor3_2)
+                        .foregroundStyle(GRColor.mainColor3_2)
                         .shadow(color: Color.black.opacity(0.3), radius: 3, x: 0, y: 2)
                 }
                 .padding(.trailing, 0)
@@ -187,12 +187,12 @@ struct SpecialEventView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 40, height: 40)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                         
                         Text("Lv.\(event.requiredLevel) 필요")
                             .font(.caption)
                             .bold()
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                 }
                 .frame(width: 260, height: 180)
@@ -207,12 +207,12 @@ struct SpecialEventView: View {
             Text(event.name)
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundColor(GRColor.fontMainColor)
+                .foregroundStyle(GRColor.fontMainColor)
             
             Text(event.description)
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundColor(GRColor.fontSubColor)
+                .foregroundStyle(GRColor.fontSubColor)
                 .padding(.horizontal)
                 .fixedSize(horizontal: false, vertical: true)  // 텍스트가 잘리지 않도록
                 .frame(height: 60)  // 설명 영역 고정 높이
@@ -220,11 +220,11 @@ struct SpecialEventView: View {
             // 활동력 소모 정보 - 간결하게 표시
             HStack {
                 Image(systemName: "bolt.fill")
-                    .foregroundColor(GRColor.grColorYellow)
+                    .foregroundStyle(GRColor.grColorYellow)
                 
                 Text("활동력 \(event.activityCost) 소모")
                     .font(.subheadline)
-                    .foregroundColor(GRColor.fontSubColor)
+                    .foregroundStyle(GRColor.fontSubColor)
             }
             .padding(.vertical, 5)
             .padding(.horizontal, 15)
@@ -241,7 +241,7 @@ struct SpecialEventView: View {
                     .padding(.horizontal, 40)
                     .padding(.vertical, 14)
                     .background(event.unlocked ? GRColor.mainColor3_2 : Color.gray.opacity(0.5))
-                    .foregroundColor(event.unlocked ? GRColor.fontMainColor : Color.white.opacity(0.7))
+                    .foregroundStyle(event.unlocked ? GRColor.fontMainColor : Color.white.opacity(0.7))
                     .cornerRadius(15)
                     .shadow(color: event.unlocked ? GRColor.mainColor8_2.opacity(0.3) : Color.clear, radius: 3, x: 0, y: 2)
             }

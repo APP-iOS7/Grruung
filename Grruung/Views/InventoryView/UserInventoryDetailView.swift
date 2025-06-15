@@ -49,7 +49,7 @@ struct UserInventoryDetailView: View {
         }) {
             HStack(spacing: 2) {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(Color(hex: "8B4513"))  // 갈색으로 설정
+                    .foregroundStyle(Color(hex: "8B4513"))  // 갈색으로 설정
                     .font(.system(size: 17, weight: .semibold))
             }
         }
@@ -81,11 +81,11 @@ struct UserInventoryDetailView: View {
             Text(item.userItemName)
                 .font(.title3)
                 .bold()
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             Text(item.userItemType.rawValue)
                 .font(.caption)
-                .foregroundColor(.red)
+                .foregroundStyle(.red)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.red.opacity(0.1))
@@ -101,12 +101,12 @@ struct UserInventoryDetailView: View {
             Text(item.userItemDescription)
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             Text("보유: \(item.userItemQuantity)")
                 .font(.subheadline)
                 .padding(.top, 4)
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
         }
         .padding()
         .background(GRColor.mainColor2_2.opacity(0.3))
@@ -118,14 +118,14 @@ struct UserInventoryDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("사용 효과")
                 .font(.headline)
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             VStack(alignment: .leading, spacing: 8) {
                 // 효과 내용을 행별로 분리하여 표시
                 // 예: "포만감 +100\n체력 +100\n활동량 +100"
                 ForEach(item.userItemEffectDescription.split(separator: "\n"), id: \.self) { line in
                     Text(String(line))
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                 }
             }
             .padding()
@@ -145,7 +145,7 @@ struct UserInventoryDetailView: View {
             VStack(spacing: 10) {
                 Text("수량:")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                 
                 // 수량 입력 및 +/- 버튼
                 HStack {
@@ -158,7 +158,7 @@ struct UserInventoryDetailView: View {
                     }) {
                         Image(systemName: "minus.circle.fill")
                             .font(.title2)
-                            .foregroundColor(useItemCount > 1 ? .gray : .gray.opacity(0.5))
+                            .foregroundStyle(useItemCount > 1 ? .gray : .gray.opacity(0.5))
                     }
                     .disabled(useItemCount <= 1)
                     
@@ -185,7 +185,7 @@ struct UserInventoryDetailView: View {
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
-                            .foregroundColor(useItemCount < Double(item.userItemQuantity) ? .gray : .gray.opacity(0.5))
+                            .foregroundStyle(useItemCount < Double(item.userItemQuantity) ? .gray : .gray.opacity(0.5))
                     }
                     .disabled(useItemCount >= Double(item.userItemQuantity))
                 }
@@ -217,7 +217,7 @@ struct UserInventoryDetailView: View {
         VStack {
             Text("영구 아이템은 버리거나 사용할 수 없습니다.")
                 .padding()
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             Button("확인") {
                 dismiss()
@@ -225,7 +225,7 @@ struct UserInventoryDetailView: View {
             .padding()
             .frame(maxWidth: .infinity)
             .background(GRColor.mainColor3_2)
-            .foregroundColor(.black)
+            .foregroundStyle(.black)
             .cornerRadius(15)
         }
     }
@@ -240,7 +240,7 @@ struct UserInventoryDetailView: View {
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(GRColor.mainColor3_2)
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
                 .cornerRadius(15)
         }
     }
@@ -256,7 +256,7 @@ struct UserInventoryDetailView: View {
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(Color.red.opacity(0.7))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .cornerRadius(15)
         }
     }

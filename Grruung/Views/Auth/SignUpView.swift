@@ -69,7 +69,7 @@ struct SignUpView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         // 이메일 입력 필드
                         VStack {
-                            TextField("", text: $email, prompt: Text("ex) grruung＠test.com").foregroundColor(.gray.opacity(0.3)))
+                            TextField("", text: $email, prompt: Text("ex) grruung＠test.com").foregroundStyle(.gray.opacity(0.3)))
                                 .padding(.bottom, 8)
                                 .overlay(
                                     Rectangle()
@@ -92,7 +92,7 @@ struct SignUpView: View {
                             
                             if !isValidEmail && !email.isEmpty {
                                 Text("유효한 이메일 주소를 입력해주세요")
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(.red)
                                     .font(.caption)
                             } else {
                                 // 빈 텍스트로 높이 유지
@@ -129,7 +129,7 @@ struct SignUpView: View {
                                 .disabled(isLoading)
                             if !isValidUserName && !userName.isEmpty {
                                 Text("이름은 최소 2자 이상이어야 합니다")
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(.red)
                                     .font(.caption)
                             } else {
                                 // 빈 텍스트로 높이 유지
@@ -166,7 +166,7 @@ struct SignUpView: View {
                                 .disabled(isLoading)
                             if !isValidPassword && !password.isEmpty {
                                 Text("비밀번호는 최소 6자 이상이어야 합니다")
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(.red)
                                     .font(.caption)
                             } else {
                                 // 빈 텍스트로 높이 유지

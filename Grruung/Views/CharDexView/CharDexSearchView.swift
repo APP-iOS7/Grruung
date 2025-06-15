@@ -67,7 +67,7 @@ struct CharDexSearchView: View {
                                     searchText = ""
                                 }, label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.gray)
+                                        .foregroundStyle(.gray)
                                 })
                                 .padding(.trailing, 20)
                             }
@@ -131,6 +131,7 @@ struct CharDexSearchView: View {
                         
                     } label: {
                         Label("정렬", systemImage: "line.3.horizontal")
+                            .foregroundStyle(GRColor.buttonColor_2)
                     }
                 }
             }
@@ -219,7 +220,7 @@ struct CharDexSearchView: View {
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
         .cornerRadius(UIConstants.cornerRadius)
-        .foregroundColor(.gray)
+        .foregroundStyle(.gray)
         .padding(.bottom, 16)
     }
 }

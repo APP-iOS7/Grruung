@@ -62,7 +62,7 @@ struct ChatPetView: View {
                     Button("대화종료") {
                         presentationMode.wrappedValue.dismiss()
                     }
-                    .foregroundColor(GRColor.mainColor6_2)
+                    .foregroundStyle(GRColor.mainColor6_2)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -70,7 +70,7 @@ struct ChatPetView: View {
                         showSettings.toggle()
                     }) {
                         Image(systemName: "gearshape.fill")
-                            .foregroundColor(GRColor.mainColor6_2)
+                            .foregroundStyle(GRColor.mainColor6_2)
                     }
                 }
             }
@@ -140,7 +140,7 @@ struct ChatPetView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 60, height: 60)
-                        .foregroundColor(GRColor.mainColor6_2)
+                        .foregroundStyle(GRColor.mainColor6_2)
                         .padding(8)
                         .background(
                             Circle()
@@ -150,7 +150,7 @@ struct ChatPetView: View {
                     // 펫 이름
                     Text(character.name)
                         .font(.headline)
-                        .foregroundColor(GRColor.fontMainColor)
+                        .foregroundStyle(GRColor.fontMainColor)
                 }
                 .padding(.vertical, 8)
             }
@@ -164,12 +164,12 @@ struct ChatPetView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "message.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(GRColor.mainColor6_2)
+                            .foregroundStyle(GRColor.mainColor6_2)
                         
                         Text("\(viewModel.remainingChats)/3")
                             .font(.subheadline)
                             .fontWeight(.bold)
-                            .foregroundColor(viewModel.remainingChats > 0 ? GRColor.mainColor6_2 : GRColor.grColorOrange)
+                            .foregroundStyle(viewModel.remainingChats > 0 ? GRColor.mainColor6_2 : GRColor.grColorOrange)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -305,7 +305,7 @@ struct MessageBubble: View {
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "pawprint.fill")
-                                .foregroundColor(GRColor.mainColor6_2)
+                                .foregroundStyle(GRColor.mainColor6_2)
                         )
                     
                     // 메시지 버블
@@ -324,7 +324,7 @@ struct MessageBubble: View {
                         if showSubtitle {
                             Text(formatTime(message.timestamp))
                                 .font(.caption2)
-                                .foregroundColor(GRColor.fontSubColor)
+                                .foregroundStyle(GRColor.fontSubColor)
                                 .padding(.leading, 8)
                         }
                     }
@@ -341,14 +341,14 @@ struct MessageBubble: View {
                         // 메시지 내용
                         Text(message.text)
                             .padding(12)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .background(GRColor.buttonColor_2)
                             .cornerRadius(16)
                         
                         // 시간 표시
                         Text(formatTime(message.timestamp))
                             .font(.caption2)
-                            .foregroundColor(GRColor.fontSubColor)
+                            .foregroundStyle(GRColor.fontSubColor)
                             .padding(.trailing, 8)
                     }
                     
@@ -358,7 +358,7 @@ struct MessageBubble: View {
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "person.fill")
-                                .foregroundColor(GRColor.mainColor8_2)
+                                .foregroundStyle(GRColor.mainColor8_2)
                         )
                 }
             }
@@ -392,7 +392,7 @@ struct ChatPetSettingsView: View {
                         Label("음성 변경", systemImage: "speaker.wave.2")
                         Spacer()
                         Text("업데이트 예정")
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .opacity(0.6)
                 }
@@ -403,7 +403,7 @@ struct ChatPetSettingsView: View {
             .navigationBarItems(trailing: Button("완료") {
                 presentationMode.wrappedValue.dismiss()
             }
-            .foregroundColor(GRColor.buttonColor_2))
+            .foregroundStyle(GRColor.buttonColor_2))
         }
     }
 }

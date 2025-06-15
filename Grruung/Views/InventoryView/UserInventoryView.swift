@@ -96,7 +96,7 @@ struct UserInventoryView: View {
                     Text(item.userItemName)
                         .font(.headline)
                         .fontWeight(.bold)
-                        .foregroundColor(GRColor.fontMainColor)
+                        .foregroundStyle(GRColor.fontMainColor)
                     Spacer()
                     Text(item.userItemType.rawValue)
                         .font(.footnote)
@@ -105,16 +105,16 @@ struct UserInventoryView: View {
                         .background(item.userItemType == .consumable ?
                                    GRColor.grColorRed.opacity(0.7) :
                                    GRColor.mainColor3_2.opacity(0.5))
-                        .foregroundColor(item.userItemType == .consumable ? .white : GRColor.fontMainColor)
+                        .foregroundStyle(item.userItemType == .consumable ? .white : GRColor.fontMainColor)
                         .cornerRadius(8)
                 }
                 Text(item.userItemDescription)
                     .lineLimit(1)
                     .font(.subheadline)
-                    .foregroundColor(GRColor.fontSubColor)
+                    .foregroundStyle(GRColor.fontSubColor)
                 Text("보유: \(item.userItemQuantity)")
                     .font(.caption)
-                    .foregroundColor(GRColor.fontMainColor)
+                    .foregroundStyle(GRColor.fontMainColor)
             }
         }
     }
@@ -140,7 +140,7 @@ struct UserInventoryView: View {
                         Text("가방")
                             .font(.headline)
                             .bold()
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                         
                         Spacer()
                         
@@ -150,7 +150,7 @@ struct UserInventoryView: View {
                             }
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(GRColor.mainColor6_2)
+                                .foregroundStyle(GRColor.mainColor6_2)
                                 .font(.system(size: 22))
                         }
                     }
@@ -195,7 +195,7 @@ struct UserInventoryView: View {
         Picker("Choose a category", selection: $sortItemCategory) {
             ForEach(SortItemCategory.allCases, id: \.self) { category in
                 Text(category.rawValue)
-                    .foregroundColor(GRColor.fontMainColor)
+                    .foregroundStyle(GRColor.fontMainColor)
             }
         }
         .pickerStyle(.segmented)
@@ -211,13 +211,13 @@ struct UserInventoryView: View {
         ScrollView {
             if userInventoryViewModel.isLoading {
                 ProgressView("불러오는 중...")
-                    .foregroundColor(GRColor.fontMainColor)
+                    .foregroundStyle(GRColor.fontMainColor)
                     .padding()
             } else if userInventoryViewModel.inventories.isEmpty {
                 VStack {
                     Image(systemName: "backpack")
                         .font(.system(size: 50))
-                        .foregroundColor(GRColor.fontSubColor.opacity(0.7))
+                        .foregroundStyle(GRColor.fontSubColor.opacity(0.7))
                         .padding(.bottom, 10)
                         .padding(.top, 40)
                     
@@ -264,7 +264,7 @@ struct UserInventoryView: View {
             // 에러 메시지 표시
             if let errorMessage = userInventoryViewModel.errorMessage {
                 Text("오류: \(errorMessage)")
-                    .foregroundColor(GRColor.grColorRed)
+                    .foregroundStyle(GRColor.grColorRed)
                     .padding()
             }
         }

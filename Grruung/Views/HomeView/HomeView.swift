@@ -190,7 +190,7 @@ struct HomeView: View {
                     .font(.body)
                     .fontWeight(.medium)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
             .background(
@@ -217,7 +217,7 @@ struct HomeView: View {
                     .font(.body)
                     .fontWeight(.medium)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
             .background(
@@ -372,7 +372,7 @@ struct HomeView: View {
                 HStack(spacing: 15) {
                     // 아이콘
                     Image(systemName: stat.icon)
-                        .foregroundColor(stat.iconColor)
+                        .foregroundStyle(stat.iconColor)
                         .frame(width: 30)
                     
                     // 상태 바
@@ -381,12 +381,12 @@ struct HomeView: View {
                             // 배경 바 (전체 너비)
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(height: 12)
-                                .foregroundColor(Color.gray.opacity(0.1))
+                                .foregroundStyle(Color.gray.opacity(0.1))
                             
                             // 진행 바
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: geometry.size.width * stat.value, height: 12)
-                                .foregroundColor(stat.color)
+                                .foregroundStyle(stat.color)
                                 .animation(.easeInOut(duration: 0.6), value: stat.value)
                         }
                     }
@@ -418,7 +418,7 @@ struct HomeView: View {
 
                         if !action.unlocked {
                             Image(systemName: "lock.fill")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                         } else {
                             VStack(spacing: 5) {
@@ -431,7 +431,7 @@ struct HomeView: View {
                                 Text(action.name)
                                     .font(.caption2)
                                     .bold()
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                                     .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                             }
                             .padding(8)
@@ -469,13 +469,13 @@ struct HomeView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 45, height: 45)
-                                .foregroundColor(unlocked ? .white : .gray)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
 
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(unlocked ? .white : .gray)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
@@ -499,13 +499,13 @@ struct HomeView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 28, height: 28)
-                                .foregroundColor(unlocked ? .orange : .gray)
+                                .foregroundStyle(unlocked ? .orange : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(unlocked ? .white : .gray)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
@@ -529,13 +529,13 @@ struct HomeView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 45, height: 45)
-                                .foregroundColor(unlocked ? .white : .gray)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(unlocked ? .white : .gray)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }

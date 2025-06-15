@@ -115,7 +115,7 @@ struct CharacterDetailView: View {
                     }) {
                         HStack(spacing: 2) {
                             Image(systemName: "chevron.left")
-                                .foregroundColor(GRColor.buttonColor_2)
+                                .foregroundStyle(GRColor.buttonColor_2)
                         }
                     }
                 }
@@ -219,7 +219,7 @@ struct CharacterDetailView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.title2)
-                .foregroundColor(GRColor.buttonColor_2)
+                .foregroundStyle(GRColor.buttonColor_2)
         }
     }
     
@@ -258,7 +258,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(GRColor.buttonColor_2)
+                    .foregroundStyle(GRColor.buttonColor_2)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -280,13 +280,13 @@ struct CharacterDetailView: View {
                             Text(getPhaseNameFor(index: index))
                                 .font(.caption)
                                 .fontWeight(index == currentStageIndex ? .semibold : .regular)
-                                .foregroundColor(index == currentStageIndex ? GRColor.buttonColor_2 : .gray)
+                                .foregroundStyle(index == currentStageIndex ? GRColor.buttonColor_2 : .gray)
                         }
                         
                         // 화살표 (마지막이 아닌 경우)
                         if index != currentStageIndex {
                             Image(systemName: "arrow.right")
-                                .foregroundColor(GRColor.gray400)
+                                .foregroundStyle(GRColor.gray400)
                                 .font(.caption)
                         }
                     }
@@ -312,7 +312,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
-                    .foregroundColor(GRColor.buttonColor_2)
+                    .foregroundStyle(GRColor.buttonColor_2)
             }
             
             Spacer()
@@ -329,7 +329,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.right")
                     .font(.title2)
-                    .foregroundColor(GRColor.buttonColor_2)
+                    .foregroundStyle(GRColor.buttonColor_2)
             }
         }
         .padding(.horizontal, UIConstants.horizontalPadding)
@@ -342,7 +342,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(GRColor.grColorRed)
+                    .foregroundStyle(GRColor.grColorRed)
                 Text("함께 했던 순간")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -354,11 +354,11 @@ struct CharacterDetailView: View {
                 VStack {
                     Image(systemName: "pawprint.circle.fill")
                         .font(.system(size: UIIconSize.large))
-                        .foregroundColor(GRColor.buttonColor_2)
+                        .foregroundStyle(GRColor.buttonColor_2)
                     
                     Text("총 활동량")
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.textSecondary)
                 }
                 
                 Divider()
@@ -389,7 +389,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "book.fill")
-                    .foregroundColor(GRColor.grColorBrown)
+                    .foregroundStyle(GRColor.grColorBrown)
                 Text("들려준 이야기")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -398,7 +398,7 @@ struct CharacterDetailView: View {
                 if !viewModel.posts.isEmpty {
                     Text("\(viewModel.posts.count)개")
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.textSecondary)
                 }
             }
             .padding(.horizontal, UIConstants.horizontalPadding)
@@ -407,10 +407,10 @@ struct CharacterDetailView: View {
                 VStack(spacing: 10) {
                     Image(systemName: "book.closed")
                         .font(.system(size: UIIconSize.large))
-                        .foregroundColor(GRColor.gray400)
+                        .foregroundStyle(GRColor.gray400)
                     
                     Text("이번 달에 기록된 이야기가 없습니다")
-                        .foregroundColor(GRColor.gray500)
+                        .foregroundStyle(GRColor.gray500)
                         .font(.subheadline)
                 }
                 .frame(height: 100)
@@ -720,13 +720,13 @@ struct InfoRow: View {
         HStack {
             Text(title + ":")
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.textSecondary)
                 .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(.textPrimary)
+                .foregroundStyle(.textPrimary)
             
             Spacer()
         }
@@ -743,18 +743,18 @@ struct StatRow: View {
         HStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.textSecondary)
                 .frame(width: 50, alignment: .leading)
             
             Text("\(value)")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .frame(width: 30, alignment: .trailing)
             
             Text("/ \(maxValue)")
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.textSecondary)
             
             Spacer()
         }
@@ -794,7 +794,7 @@ struct StoryRowView: View {
                                 .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                                 .overlay(
                                     Image(systemName: "photo")
-                                        .foregroundColor(GRColor.gray500)
+                                        .foregroundStyle(GRColor.gray500)
                                 )
                         @unknown default:
                             EmptyView()
@@ -806,7 +806,7 @@ struct StoryRowView: View {
                         .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                         .overlay(
                             Image(systemName: "photo")
-                                .foregroundColor(GRColor.gray500)
+                                .foregroundStyle(GRColor.gray500)
                         )
                 }
                 
@@ -816,18 +816,18 @@ struct StoryRowView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                        .foregroundColor(.textPrimary)
+                        .foregroundStyle(.textPrimary)
                     
                     Text(formatDate(post.createdAt))
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.textSecondary)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(GRColor.gray400)
+                    .foregroundStyle(GRColor.gray400)
             }
             .padding(.vertical, UIConstants.verticalPadding / 2)
             .padding(.horizontal, UIConstants.horizontalPadding)
@@ -859,7 +859,7 @@ struct LoadingOverlay: View {
                     .tint(.white)
                 
                 Text("로딩 중...")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .font(.subheadline)
             }
             .padding(UIConstants.horizontalPadding)

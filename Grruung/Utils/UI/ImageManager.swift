@@ -55,13 +55,13 @@ class ImageManager {
             
             let speciesAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 20, weight: .bold),
-                .foregroundColor: UIColor.label,
+                .foregroundStyle: UIColor.label,
                 .paragraphStyle: paragraphStyle
             ]
             
             let phaseAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 16, weight: .medium),
-                .foregroundColor: UIColor.secondaryLabel,
+                .foregroundStyle: UIColor.secondaryLabel,
                 .paragraphStyle: paragraphStyle
             ]
             

@@ -48,12 +48,12 @@ struct ProductDetailView: View {
                                     Image(systemName: "diamond.fill")
                                         .resizable()
                                         .frame(width: 20, height: 25)
-                                        .foregroundColor(.cyan)
+                                        .foregroundStyle(.cyan)
                                 } else {
                                     Image(systemName: "circle.fill")
                                         .resizable()
                                         .frame(width: 25, height: 25)
-                                        .foregroundColor(.yellow)
+                                        .foregroundStyle(.yellow)
                                 }
                             }
                             
@@ -96,7 +96,7 @@ struct ProductDetailView: View {
                     // 설명
                     Text(product.itemDescription)
                         .font(.body)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .padding(.horizontal)
                 }
                 .padding(.vertical)
@@ -152,7 +152,7 @@ struct ProductDetailView: View {
                         .background(
                             LinearGradient(colors: [Color.red.opacity(0.4), Color.red.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
                         )
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .cornerRadius(10)
                         
                 })
@@ -168,7 +168,7 @@ struct ProductDetailView: View {
                         .background(
                             LinearGradient(colors: [GRColor.buttonColor_1, GRColor.buttonColor_2], startPoint: .leading, endPoint: .trailing)
                         )
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .cornerRadius(10)
                 }
             }

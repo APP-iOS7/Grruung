@@ -18,7 +18,7 @@ struct AnimatedConfirmButton: View {
         }) {
             Text("Yes")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(width: 130, height: 50)
                 .background(
                     ZStack {
@@ -41,7 +41,7 @@ struct AnimatedConfirmButton: View {
                         
                         // 입체감용 위 blur
                         RoundedRectangle(cornerRadius: 16)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .blur(radius: 2)
                             .offset(x: -2, y: -2)
                         
@@ -92,7 +92,7 @@ struct AnimatedCancelButton: View {
         }) {
             Text("No")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(width: 130, height: 50)
                 .background(
                     ZStack {
@@ -115,7 +115,7 @@ struct AnimatedCancelButton: View {
                         
                         // 입체감용 위 blur
                         RoundedRectangle(cornerRadius: 16)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .blur(radius: 2)
                             .offset(x: -2, y: -2)
                         
