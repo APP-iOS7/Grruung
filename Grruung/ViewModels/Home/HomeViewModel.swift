@@ -1648,7 +1648,7 @@ class HomeViewModel: ObservableObject {
             
             // 장소 관련 액션들
         case "homeIcon":
-            return "go_home"               // 집으로 이동 - 위치 변경
+            return "secret_hideout"               // 아지트에서 놀기
         case "tree.fill":
             return "go_outside"            // 외출하기 - 위치 변경
             
@@ -1671,6 +1671,11 @@ class HomeViewModel: ObservableObject {
             return "pet_head"              // 머리 쓰다듬기 - 애정도 증가, 활동량 회복
         case "bearLoveIcon":
             return "scratch_belly"         // 배 긁어주기 - 애정도 증가, 활동량 회복
+            
+        case "treeIcon":
+            return "shade_rest"
+        case "pancake":
+            return "snack_give"
             
         default:
 #if DEBUG
