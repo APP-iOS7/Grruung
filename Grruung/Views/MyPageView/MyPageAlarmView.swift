@@ -22,7 +22,7 @@ struct MyPageAlarmView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(.orange)
                             Text("알림 비활성화")
                                 .font(.headline)
                                 .bold()
@@ -37,7 +37,7 @@ struct MyPageAlarmView: View {
                             HStack {
                                 Text("시스템 설정 열기")
                             }
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding()
                             .frame(maxWidth: .infinity)
                             .background(
@@ -60,7 +60,7 @@ struct MyPageAlarmView: View {
                     
                     Text("Grruung에서 보내는 푸시 알림을 설정합니다.")
                         .font(.footnote)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
                 
                 // 알림 스위치 (항상 활성화)

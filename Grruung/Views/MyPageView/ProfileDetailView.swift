@@ -81,7 +81,7 @@ struct ProfileDetailView: View {
                                          }
                             
                             Image(systemName: "camera.fill")
-                                .foregroundColor(.white)
+                                .foregroundStyle(.white)
                                 .padding(6)
                                 .background(Circle().fill(Color.orange))
                                 .offset(x: 3, y: 3)
@@ -95,11 +95,11 @@ struct ProfileDetailView: View {
                             HStack(spacing: 6) {
                                 Text(username)
                                     .font(.system(size: 22, weight: .semibold))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                                 
                                 Image(systemName: "pencil.line")
                                     .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(.white)
                             }
                         }
                         .padding()
@@ -120,7 +120,6 @@ struct ProfileDetailView: View {
                     
                     // MARK: - 설정 섹션
                     VStack(spacing: 30) {
-                        // FIXME: - Start 결제 내역
                         ForEach(settingSections) { section in
                             VStack {
                                 ForEach(section.items) { item in
@@ -145,6 +144,7 @@ struct ProfileDetailView: View {
                         }
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.3)))
                     }
+
                     // FIXME: - End
                     
                     // 로그아웃 버튼
@@ -159,6 +159,7 @@ struct ProfileDetailView: View {
                     Button {
                         print("계정 삭제")
                     } label: {
+
                         HStack {
                             Image(systemName: "trash")
                             Text("계정 삭제")
@@ -237,15 +238,15 @@ struct SettingRow: View {
         HStack {
             Image(systemName: icon)
                 .frame(width: 24)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
             
             Text(text)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
             
             Spacer()
             
             Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
+                .foregroundStyle(.gray)
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 20)

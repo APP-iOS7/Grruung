@@ -42,7 +42,7 @@ struct PetNameSelectionView: View {
                         .fontWeight(.bold)
                         .padding(.top, 40)
                         .multilineTextAlignment(.center)
-                    
+
                     // 펫 이미지 (운석 단계 이미지 표시)
                     ZStack {
                         Circle()
@@ -60,7 +60,7 @@ struct PetNameSelectionView: View {
                     // 펫 종류 안내 (실제로는 아직 운석 상태)
                     Text("우주에서 온 신비한 운석")
                         .font(.headline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                     
                     // 이름 입력 필드
                     VStack(alignment: .leading, spacing: 8) {

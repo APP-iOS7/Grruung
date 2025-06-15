@@ -45,7 +45,7 @@ struct EvolutionView: View {
                 Text(getScreenTitle())
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 
                 Spacer()
                 
@@ -58,7 +58,7 @@ struct EvolutionView: View {
                 // 상태 메시지 (QuokkaController 메시지 우선 사용)
                 Text(quokkaController.downloadMessage.isEmpty ? statusMessage : quokkaController.downloadMessage)
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
                 
@@ -100,9 +100,9 @@ struct EvolutionView: View {
                     // 완료됐을 때 기본 이미지
                     Image(systemName: "heart.fill")
                         .font(.system(size: 60))
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                 } else {
-                    Image(systemName: "sparkles").font(.system(size: 60)).foregroundColor(.yellow)
+                    Image(systemName: "sparkles").font(.system(size: 60)).foregroundStyle(.yellow)
                 }
             }
         }
@@ -117,7 +117,7 @@ struct EvolutionView: View {
                 
                 // 퍼센트 표시
                 Text("\(Int(quokkaController.downloadProgress * 100))%")
-                    .font(.caption).fontWeight(.medium).foregroundColor(.blue)
+                    .font(.caption).fontWeight(.medium).foregroundStyle(.blue)
             }
         }
     }
