@@ -35,6 +35,11 @@ struct UserInventoryDetailView: View {
     // 영구 아이템 버리기 클릭 시 alert 변수
     @State private var showingNoDeleteAlert: Bool = false
     
+    // 랜덤박스 관련 변수
+    @State private var selectedItems: [GRStoreItem] = []
+    @State private var currentIndex = 0
+    @State private var showPopup = false
+    
     // 키보드 내리기 변수
     @FocusState private var isFocused: Bool
     
@@ -42,232 +47,269 @@ struct UserInventoryDetailView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            ZStack {
                 // MARK: 아이템 설명 UI
-                HStack {
-                    Image(item.userItemImage)
-                        .resizable()
-                        .frame(width: 60, height: 60)
-                        .aspectRatio(contentMode: .fit)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(lineWidth: 1)
-                                .background(Color.gray.opacity(0.3))
-                        }
-                        .padding(.trailing, 8)
+                if showPopup, currentIndex < selectedItems.count {
+                    Color.black.opacity(0.4).ignoresSafeArea()
                     
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Text(item.userItemName)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                            Spacer()
-                            Text(item.userItemType.rawValue)
-                                .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
-                        }
-                        Text(item.userItemDescription)
-                            .lineLimit(1)
-                        Text("보유: \(item.userItemQuantity)")
-                    }
-                }
-                .padding(16)
-                // MARK: onAppear
-                .onAppear {
-                    // 아이템 수량 가져옴
-                    remainItemCount = Double(item.userItemQuantity)
-                }
-                // MARK: 각종 alert들
-                .alert("올바른 수를 입력해주세요", isPresented: $showingItemCountAlert) {
-                    Button("확인", role: .cancel) {}
-                }
-                .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
-                    Button("취소", role: .cancel) {}
-                    // FIXME: - Start 아이템 사용 후 홈뷰로 이동하도록 수정
-                    Button("확인", role: .destructive) {
-                        isEdited = true
-                        if useItemCount > 0 {
-                            // 아이템 효과 적용
-                            let result = ItemEffectApplier.shared.applyItemEffect(
-                                item: item,
-                                quantity: Int(useItemCount)
-                            )
-                            
-                            // 상태 메시지 업데이트 (NotificationCenter를 통해 전달)
-                            if result.success {
-                                NotificationCenter.default.post(
-                                    name: NSNotification.Name("ItemEffectApplied"),
-                                    object: nil,
-                                    userInfo: ["message": result.message]
-                                )
+                    ItemPopupView(
+                        item: selectedItems[currentIndex],
+                        userId: realUserId,
+                        isPresented: Binding(
+                            get: { showPopup },
+                            set: { newValue in
+                                if !newValue {
+                                    // 다음 아이템으로 넘어감
+                                    if currentIndex + 1 < selectedItems.count {
+                                        currentIndex += 1
+                                    } else {
+                                        showPopup = false
+                                        dismiss()
+                                    }
+                                }
                             }
-                            
-                            // 아이템 수량 감소 처리
-                            item.userItemQuantity -= Int(useItemCount)
-                            if item.userItemQuantity <= 0 {
-                                userInventoryViewModel.deleteItem(userId: realUserId, item: item)
-                            } else {
-                                remainItemCount = Double(item.userItemQuantity)
-                                useItemCount = 0
-                                typeItemCount = Int(useItemCount).description
-                                userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
+                        )
+                    )
+                } else {
+                VStack {
+                    HStack {
+                        Image(item.userItemImage)
+                            .resizable()
+                            .frame(width: 60, height: 60)
+                            .aspectRatio(contentMode: .fit)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(lineWidth: 1)
+                                    .background(Color.gray.opacity(0.3))
                             }
-                            
-                            // 홈뷰로 이동
-                            dismiss()
-                        }
-                    }
-                    // FIXME: - END
-                }
-                .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
-                    Button("취소", role: .cancel) {}
-                    Button("확인", role: .destructive) {
-                        if item.userItemType == .permanent {
-                            showingNoDeleteAlert = true
-                        } else {
-                            showingReDeleteAlert = true
-                        }
-                    }
-                }
-                .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
-                    Button("취소", role: .cancel) {}
-                    Button("확인", role: .destructive) {
-                        isEdited = true
-                        userInventoryViewModel.deleteItem(userId: realUserId, item: item)
-                        dismiss()
-                    }
-                }
-                .alert("영구 아이템은 버릴 수 없습니다.", isPresented: $showingNoDeleteAlert) {
-                    Button("확인", role: .cancel) {}
-                }
-                
-                if item.userItemType == .consumable {
-                    if let remainItemCount {
-                        // MARK: 아이템 수량 관련 UI
-                        VStack {
+                            .padding(.trailing, 8)
+                        
+                        VStack(alignment: .leading) {
                             HStack {
-                                Text("수량: ")
-                                TextField("입력", text: $typeItemCount)
-                                    .keyboardType(.numberPad)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(maxWidth: 50)
-                                    .focused($isFocused)
+                                Text(item.userItemName)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                Spacer()
+                                Text(item.userItemType.rawValue)
+                                    .foregroundStyle(item.userItemType == .consumable ? .red : .gray)
                             }
+                            Text(item.userItemDescription)
+                                .lineLimit(1)
+                            Text("보유: \(item.userItemQuantity)")
+                        }
+                    }
+                    .padding(16)
+                    // MARK: onAppear
+                    .onAppear {
+                        // 아이템 수량 가져옴
+                        remainItemCount = Double(item.userItemQuantity)
+                    }
+                    // MARK: 각종 alert들
+                    .alert("올바른 수를 입력해주세요", isPresented: $showingItemCountAlert) {
+                        Button("확인", role: .cancel) {}
+                    }
+                    .alert("아이템을 사용합니다.", isPresented: $showingUseAlert) {
+                        Button("취소", role: .cancel) {}
+                        // FIXME: - Start 아이템 사용 후 홈뷰로 이동하도록 수정
+                        Button("확인", role: .destructive) {
+                            isEdited = true
                             
-                            HStack {
-                                Button(action: {
-                                    useItemCount = 0
-                                    typeItemCount = "0"
-                                }, label: {
-                                    Text("최소")
-                                        .foregroundStyle(.black)
-                                })
-                                Button(action: {
-                                    if useItemCount > 0 {
-                                        useItemCount -= 1
-                                        typeItemCount = Int(useItemCount).description
+                            // 랜덤박스선물 아이템일 경우 팝업 창 띄움
+                            if item.userItemName == "랜덤박스선물" {
+                                // 놀이 + 회복 아이템 합치고 랜덤 선택
+                                let allItems = playProducts + recoveryProducts
+                                let randomItems = (0..<Int(useItemCount)).compactMap { _ in allItems.randomElement() } // 예: 3개 사용
+                                selectedItems = randomItems
+                                currentIndex = 0
+                                showPopup = true
+                            }
+                                if useItemCount > 0 {
+                                    // 아이템 효과 적용
+                                    let result = ItemEffectApplier.shared.applyItemEffect(
+                                        item: item,
+                                        quantity: Int(useItemCount)
+                                    )
+                                    
+                                    // 상태 메시지 업데이트 (NotificationCenter를 통해 전달)
+                                    if result.success {
+                                        NotificationCenter.default.post(
+                                            name: NSNotification.Name("ItemEffectApplied"),
+                                            object: nil,
+                                            userInfo: ["message": result.message]
+                                        )
                                     }
                                     
-                                }, label: {
-                                    Image(systemName: "minus.circle.fill")
-                                        .resizable()
-                                        .frame(width: 25, height: 25)
-                                        .foregroundStyle(useItemCount <= 0 ? .gray : .black)
-                                })
-                                .disabled(useItemCount <= 0)
-                                
-                                if remainItemCount > 0 {
-                                    Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
+                                    // 아이템 수량 감소 처리
+                                    item.userItemQuantity -= Int(useItemCount)
+                                    if item.userItemQuantity <= 0 {
+                                        userInventoryViewModel.deleteItem(userId: realUserId, item: item)
+                                    } else {
+                                        remainItemCount = Double(item.userItemQuantity)
+                                        useItemCount = 0
+                                        typeItemCount = Int(useItemCount).description
+                                        userInventoryViewModel.updateItemQuantity(userId: realUserId, item: item, newQuantity: item.userItemQuantity)
+                                    }
+                                    
+                                    // 홈뷰로 이동
+                                    if selectedItems.isEmpty {
+                                        dismiss()
+                                    }
+                                }
+                        }
+                        // FIXME: - END
+                    }
+                    .alert("아이템을 버립니다.", isPresented: $showingDeleteAlert) {
+                        Button("취소", role: .cancel) {}
+                        Button("확인", role: .destructive) {
+                            if item.userItemType == .permanent {
+                                showingNoDeleteAlert = true
+                            } else {
+                                showingReDeleteAlert = true
+                            }
+                        }
+                    }
+                    .alert("버리면 되돌릴 수 없습니다. 계속하시겠습니까?", isPresented: $showingReDeleteAlert) {
+                        Button("취소", role: .cancel) {}
+                        Button("확인", role: .destructive) {
+                            isEdited = true
+                            userInventoryViewModel.deleteItem(userId: realUserId, item: item)
+                            dismiss()
+                        }
+                    }
+                    .alert("영구 아이템은 버릴 수 없습니다.", isPresented: $showingNoDeleteAlert) {
+                        Button("확인", role: .cancel) {}
+                    }
+                    .animation(.easeInOut, value: showPopup)
+                    if item.userItemType == .consumable {
+                        if let remainItemCount {
+                            // MARK: 아이템 수량 관련 UI
+                            VStack {
+                                HStack {
+                                    Text("수량: ")
+                                    TextField("입력", text: $typeItemCount)
+                                        .keyboardType(.numberPad)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(maxWidth: 50)
+                                        .focused($isFocused)
                                 }
                                 
-                                Button(action: {
-                                    if useItemCount < remainItemCount {
-                                        useItemCount += 1
-                                        typeItemCount = Int(useItemCount).description
+                                HStack {
+                                    Button(action: {
+                                        useItemCount = 0
+                                        typeItemCount = "0"
+                                    }, label: {
+                                        Text("최소")
+                                            .foregroundStyle(.black)
+                                    })
+                                    Button(action: {
+                                        if useItemCount > 0 {
+                                            useItemCount -= 1
+                                            typeItemCount = Int(useItemCount).description
+                                        }
+                                        
+                                    }, label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .resizable()
+                                            .frame(width: 25, height: 25)
+                                            .foregroundStyle(useItemCount <= 0 ? .gray : .black)
+                                    })
+                                    .disabled(useItemCount <= 0)
+                                    
+                                    if remainItemCount > 0 {
+                                        Slider(value: $useItemCount, in: 0...remainItemCount, step: 1)
                                     }
-                                }, label: {
-                                    Image(systemName: "plus.circle.fill")
-                                        .resizable()
-                                        .frame(width: 25, height: 25)
-                                        .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
-                                })
-                                .disabled(useItemCount >= remainItemCount)
-                                Button(action: {
-                                    useItemCount = remainItemCount
-                                    typeItemCount = Int(remainItemCount).description
-                                }, label: {
-                                    Text("최대")
-                                        .foregroundStyle(.black)
-                                })
+                                    
+                                    Button(action: {
+                                        if useItemCount < remainItemCount {
+                                            useItemCount += 1
+                                            typeItemCount = Int(useItemCount).description
+                                        }
+                                    }, label: {
+                                        Image(systemName: "plus.circle.fill")
+                                            .resizable()
+                                            .frame(width: 25, height: 25)
+                                            .foregroundStyle(useItemCount >= remainItemCount ? .gray : .black)
+                                    })
+                                    .disabled(useItemCount >= remainItemCount)
+                                    Button(action: {
+                                        useItemCount = remainItemCount
+                                        typeItemCount = Int(remainItemCount).description
+                                    }, label: {
+                                        Text("최대")
+                                            .foregroundStyle(.black)
+                                    })
+                                }
+                                .padding(.horizontal, 16)
+                                
+                                Text("(\(Int(useItemCount)) / \(Int(remainItemCount)))")
                             }
-                            .padding(.horizontal, 16)
-                            
-                            Text("(\(Int(useItemCount)) / \(Int(remainItemCount)))")
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.gray.opacity(0.3))
+                            )
+                            .padding(.horizontal)
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.gray.opacity(0.3))
-                        )
-                        .padding(.horizontal)
+                    }
+                    
+                    // MARK: 아이템 효과 설명 UI
+                    Text(item.userItemEffectDescription)
+                    
+                    // MARK: 아이템 버튼 UI
+                    HStack {
+                        if item.userItemType == .permanent {
+                            Button(action: {
+                                dismiss()
+                            }, label: {
+                                Text("확인")
+                                    .foregroundColor(.black)
+                                    .padding()
+                                    .frame(maxWidth: UIScreen.main.bounds.width / 3)
+                                    .background(.green)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                    .padding(16)
+                            })
+                        } else {
+                            Button(action: {
+                                showingDeleteAlert = true
+                            }, label: {
+                                Text("버리기")
+                                    .foregroundColor(.black)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(.red)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                    .padding(16)
+                            })
+                            
+                            Button(action: {
+                                showingUseAlert = true
+                            }, label: {
+                                Text("사용하기")
+                                    .foregroundColor(.black)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(useItemCount <= 0 ? Color.gray : Color.green)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                    .cornerRadius(10)
+                                    .padding(16)
+                            })
+                            .disabled(useItemCount <= 0)
+                        }
                     }
                 }
-                
-                // MARK: 아이템 효과 설명 UI
-                Text(item.userItemEffectDescription)
-                
-                // MARK: 아이템 버튼 UI
-                HStack {
-                    if item.userItemType == .permanent {
-                        Button(action: {
-                            dismiss()
-                        }, label: {
-                            Text("확인")
-                                .foregroundColor(.black)
-                                .padding()
-                                .frame(maxWidth: UIScreen.main.bounds.width / 3)
-                                .background(.green)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                                .cornerRadius(10)
-                                .padding(16)
-                        })
-                    } else {
-                        Button(action: {
-                            showingDeleteAlert = true
-                        }, label: {
-                            Text("버리기")
-                                .foregroundColor(.black)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(.red)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                                .cornerRadius(10)
-                                .padding(16)
-                        })
-                        
-                        Button(action: {
-                            showingUseAlert = true
-                        }, label: {
-                            Text("사용하기")
-                                .foregroundColor(.black)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(useItemCount <= 0 ? Color.gray : Color.green)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                                .cornerRadius(10)
-                                .padding(16)
-                        })
-                        .disabled(useItemCount <= 0)
-                    }
-                }
+            }
             }
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
