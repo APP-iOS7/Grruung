@@ -16,11 +16,11 @@ struct TermsPolicyView: View {
                     HStack {
                         Text("서비스 이용약관")
                             .font(.system(size: 16))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 20)
@@ -38,11 +38,11 @@ struct TermsPolicyView: View {
                     HStack {
                         Text("개인정보 처리 방침")
                             .font(.system(size: 16))
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 20)
@@ -107,7 +107,7 @@ struct ServiceTermsView: View {
             
             Text(content)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .lineSpacing(4)
         }
     }
@@ -162,7 +162,7 @@ struct PrivacyPolicyView: View {
             
             Text(content)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
                 .lineSpacing(4)
         }
     }

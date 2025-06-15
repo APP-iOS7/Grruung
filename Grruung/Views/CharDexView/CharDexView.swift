@@ -21,9 +21,7 @@ struct CharDexView: View {
     @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
     
-    // FIXME: - Start 실시간 리스너를 위한 속성 추가
     @State private var charactersListener: ListenerRegistration?
-    // FIXME: - End
     
     // 정렬 옵션
     @State private var sortType: SortType = .original
@@ -191,18 +189,47 @@ struct CharDexView: View {
                 ],
                                startPoint: .top, endPoint: .bottom)
             ) 
-            .navigationTitle("캐릭터 동산")
+//            .navigationTitle("캐릭터 동산")
             .toolbar {
                 // 검색 버튼
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: CharDexSearchView(searchCharacters: sortedCharacters)) {
                         Image(systemName: "magnifyingglass")
+                            .foregroundStyle(GRColor.buttonColor_2)
                     }
                 }
                 
                 // 정렬 옵션 메뉴
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    sortOptionsMenu
+                    Menu {
+                        Button {
+                            sortType = .original
+                        } label: {
+                            Label("기본", systemImage: sortType == .original ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .alphabet
+                        } label: {
+                            Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdAscending
+                        } label: {
+                            Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdDescending
+                        } label: {
+                            Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
+                        }
+                    } label: {
+                        Label("정렬", systemImage: "line.3.horizontal")
+                            .tint(GRColor.buttonColor_2)
+                    }
+                    .tint(GRColor.buttonColor_2)
                 }
                 
 #if DEBUG
@@ -214,7 +241,7 @@ struct CharDexView: View {
                         showingCustomAlert = true
                     }) {
                         Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(.orange)
                     }
                 }
 #endif
@@ -284,37 +311,6 @@ struct CharDexView: View {
         }
     }
     
-    // 정렬 옵션 메뉴
-    private var sortOptionsMenu: some View {
-        Menu {
-            Button {
-                sortType = .original
-            } label: {
-                Label("기본", systemImage: sortType == .original ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .alphabet
-            } label: {
-                Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .createdAscending
-            } label: {
-                Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .createdDescending
-            } label: {
-                Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
-            }
-        } label: {
-            Label("정렬", systemImage: "line.3.horizontal")
-        }
-    }
-    
     // 캐릭터 슬롯 뷰
     private func characterSlot(_ character: GRCharacter) -> some View {
         VStack(alignment: .center) {
@@ -368,14 +364,14 @@ struct CharDexView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 20, height: 20)
                         .offset(x: 60, y: -40)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(GRColor.buttonColor_2)
                 } else if character.status.address == "paradise" {
                     Image(systemName: "mountain.2")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 20, height: 20)
                         .offset(x: 60, y: -40)
-                        .foregroundStyle(.black)
+                        .foregroundStyle(GRColor.buttonColor_1)
                 }
             }
             Text(character.name)
@@ -393,7 +389,7 @@ struct CharDexView: View {
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
         .cornerRadius(UIConstants.cornerRadius)
-        .foregroundColor(.gray)
+        .foregroundStyle(.gray)
         .padding(.bottom, 16)
     }
     
@@ -427,6 +423,7 @@ struct CharDexView: View {
                 .frame(height: 180)
                 .frame(maxWidth: .infinity)
                 .background(Color.brown.opacity(0.5))
+                .foregroundStyle(GRColor.buttonColor_2)
                 .cornerRadius(20)
         }
         .padding(.bottom, 16)
@@ -449,7 +446,7 @@ struct CharDexView: View {
                 // 제목
                 Text("슬롯을 해제하면 더 많은 캐릭터를 추가할 수 있습니다.")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
                     .padding(.top)
                 
@@ -469,7 +466,7 @@ struct CharDexView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.brown.opacity(0.5)) // 앱 스타일에 맞는 갈색 배경
-                        .foregroundColor(.black) // 텍스트 색상을 검정으로 변경
+                        .foregroundStyle(.black) // 텍스트 색상을 검정으로 변경
                         .cornerRadius(10)
                 }
                 .padding(.horizontal)
@@ -534,7 +531,6 @@ struct CharDexView: View {
         }
     }
     
-    // FIXME: - Start 실시간 캐릭터 리스너 설정
     /// Firebase 실시간 리스너를 설정하여 캐릭터 변화를 감지
     private func setupRealtimeCharacterListener() {
         guard let userID = authService.user?.uid else {
@@ -659,7 +655,6 @@ struct CharDexView: View {
             status: status
         )
     }
-    // FIXME: - End
     
     /// 동산 데이터 업데이트
     private func updateCharDexData() async {
@@ -753,7 +748,7 @@ extension CharDexView {
         func makeBody(configuration: Configuration) -> some View {
             HStack {
                 Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
-                    .foregroundColor(configuration.isOn ? Color.brown : Color.gray.opacity(0.5)) // 체크박스 색상 갈색으로 변경
+                    .foregroundStyle(configuration.isOn ? Color.brown : Color.gray.opacity(0.5)) // 체크박스 색상 갈색으로 변경
                     .font(.system(size: 16, weight: .semibold))
                     .onTapGesture {
                         configuration.isOn.toggle()
@@ -761,7 +756,7 @@ extension CharDexView {
                 
                 configuration.label
                     .font(.footnote)
-                    .foregroundColor(.black) // 텍스트 색상 검정으로 설정
+                    .foregroundStyle(.black) // 텍스트 색상 검정으로 설정
             }
         }
     }

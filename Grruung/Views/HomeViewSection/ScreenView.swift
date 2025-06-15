@@ -112,11 +112,11 @@ struct ScreenView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 80)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                 
                 Text("캐릭터 생성")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
             }
         }
     }

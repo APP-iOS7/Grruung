@@ -53,7 +53,7 @@ struct WriteStoryStartView: View {
                     Text("\(charViewModel.character.name)에게 \(charViewModel.user.userName)님의 이야기를 들려주세요.")
                         .multilineTextAlignment(.center)
                         .font(.footnote)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                     
                     Spacer()
                 }
@@ -69,7 +69,7 @@ struct WriteStoryStartView: View {
                 } label: {
                     Image(systemName: "plus")
                         .font(.title2)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .frame(width: 56, height: 56)
                         .background(Color.blue) // 항상 파란색 (이용 가능)
                         .clipShape(Circle())
@@ -88,7 +88,7 @@ struct WriteStoryStartView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Text("오늘 남은 보상: \(writingCountVM.remainingRewards())/5")
                     .font(.subheadline)
-                    .foregroundColor(writingCountVM.remainingRewards() > 0 ? .green : .gray)
+                    .foregroundStyle(writingCountVM.remainingRewards() > 0 ? .green : .gray)
                     .padding(.top, 8)
             }
         }

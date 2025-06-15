@@ -30,17 +30,17 @@ struct EvolutionPopupView: View {
                 Text("🥚 부화 준비 완료!")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 
                 // 설명 텍스트
                 VStack(spacing: 10) {
                     Text("지금 알을 부화시킬 수 있습니다")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                     
                     Text("부화하면 귀여운 쿼카가 태어나요!")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
                 .multilineTextAlignment(.center)
                 
@@ -54,7 +54,7 @@ struct EvolutionPopupView: View {
                         Text("보류")
                             .font(.body)
                             .fontWeight(.medium)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .frame(width: 100, height: 44)
                             .background(Color.gray.opacity(0.1))
                             .cornerRadius(22)
@@ -68,7 +68,7 @@ struct EvolutionPopupView: View {
                         Text("부화")
                             .font(.body)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(width: 100, height: 44)
                             .background(
                                 LinearGradient(
@@ -110,7 +110,7 @@ struct EvolutionPopupView: View {
                     }
                     .padding()
                     .background(Color.blue)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .cornerRadius(10)
                 }
             }

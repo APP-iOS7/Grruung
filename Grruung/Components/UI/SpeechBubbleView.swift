@@ -18,7 +18,7 @@ struct SpeechBubbleView: View {
     var body: some View {
         Text(message)
             .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.black)
+            .foregroundStyle(.black)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
