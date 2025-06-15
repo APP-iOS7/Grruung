@@ -144,7 +144,7 @@ struct UserInventoryDetailView: View {
             VStack(spacing: 10) {
                 Text("수량:")
                     .font(.headline)
-                    .foregroundStyle(.black)
+                    .foregroundColor(.black)
                 
                 // 수량 입력 및 +/- 버튼
                 HStack {
@@ -157,7 +157,7 @@ struct UserInventoryDetailView: View {
                     }) {
                         Image(systemName: "minus.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(useItemCount > 1 ? .gray : .gray.opacity(0.5))
+                            .foregroundColor(useItemCount > 1 ? .gray : .gray.opacity(0.5))
                     }
                     .disabled(useItemCount <= 1)
                     
@@ -184,17 +184,25 @@ struct UserInventoryDetailView: View {
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(useItemCount < Double(item.userItemQuantity) ? .gray : .gray.opacity(0.5))
+                            .foregroundColor(useItemCount < Double(item.userItemQuantity) ? .gray : .gray.opacity(0.5))
                     }
                     .disabled(useItemCount >= Double(item.userItemQuantity))
                 }
                 
-                // 슬라이더
-                Slider(value: $useItemCount, in: 1...Double(max(1, item.userItemQuantity)), step: 1)
-                    .onChange(of: useItemCount) { _, newValue in
-                        typeItemCount = "\(Int(newValue))"
-                    }
-                    .accentColor(GRColor.mainColor3_2)
+                // 슬라이더 - 버그 수정: 최소값과 최대값이 같을 때 슬라이더를 비활성화
+                if item.userItemQuantity > 1 {
+                    Slider(value: $useItemCount, in: 1...Double(item.userItemQuantity), step: 1)
+                        .onChange(of: useItemCount) { _, newValue in
+                            typeItemCount = "\(Int(newValue))"
+                        }
+                        .accentColor(GRColor.mainColor3_2)
+                } else {
+                    // 수량이 1 이하인 경우 슬라이더 대신 텍스트 표시
+                    Text("수량이 1개 뿐입니다.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.vertical, 8)
+                }
             }
             .padding()
             .background(GRColor.mainColor2_2.opacity(0.2))
