@@ -43,17 +43,17 @@ struct NoticeView: View {
                                 .multilineTextAlignment(.leading)
                             Spacer()
                             Image(systemName: expandedNoticeID == notice.id ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         
                         Text(notice.date)
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                         
                         if expandedNoticeID == notice.id {
                             Text(notice.content)
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .padding(.top, 4)
                         }
                     }

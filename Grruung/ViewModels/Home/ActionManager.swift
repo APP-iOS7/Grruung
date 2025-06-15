@@ -256,10 +256,10 @@ class ActionManager {
             PetAction(
                 id: "weather_sunny",
                 icon: "sunIcon",
-                name: "날씨좋기",
+                name: "햇살 즐기기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
-                activityCost: 0, // 날씨는 활동량 소모 없음
+                activityCost: 5, // 날씨는 활동량 소모 없음
                 effects: ["happiness": 8, "stamina": 3],
                 expGain: 2,
                 successMessage: "좋은 날씨에 기분이 좋아져요!",
@@ -297,16 +297,16 @@ class ActionManager {
             
             // MARK: - 장소 관련 액션들
             PetAction(
-                id: "go_home",
+                id: "secret_hideout",
                 icon: "homeIcon",
-                name: "집가기",
+                name: "비밀 아지트에서 놀기",
                 unlockPhase: .infant,
                 phaseExclusive: false,
                 activityCost: 5,
                 effects: ["happiness": 10, "stamina": 5, "clean": 3],
                 expGain: 2,
-                successMessage: "집에 돌아와서 안전해요!",
-                failMessage: "너무 지쳐서 집에 갈 힘이 없어요...",
+                successMessage: "아지트에서 조용히 쉬고 있어요!",
+                failMessage: "아지트에 가고 싶지 않은 기분이에요...",
                 timeRestriction: nil
             ),
             
@@ -369,14 +369,6 @@ class ActionManager {
                 timeRestriction: TimeRestriction(startHour: 9, endHour: 17, isInverted: false) // 훈련소 운영시간
             ),
             
-            // 다음 액션들은 제거 (특수 이벤트로 이동):
-            // - 파티하기 (party)
-            // - 온천가기 (hot_spring)
-            // - 캠핑가기
-            // - 놀이공원
-            // - 해변여행
-            // - 등산하기
-            
             PetAction(
                 id: "stretch_exercise",
                 icon: "yogaIcon",
@@ -428,6 +420,33 @@ class ActionManager {
                 expGain: 4,
                 successMessage: "배를 긁어주니 너무 좋아요!",
                 failMessage: "지금은 배를 만지기 싫어요...",
+                timeRestriction: nil
+            ),
+            
+            PetAction(
+                id: "shade_rest",
+                icon: "treeIcon",
+                name: "그늘 아래 쉬기",
+                unlockPhase: .infant,
+                phaseExclusive: false,
+                activityCost: 4,
+                effects: ["stamina": 7, "happiness": 10, "clean": 3],
+                expGain: 2,
+                successMessage: "시원한 그늘 아래서 쉬니까 정말 편안해요!",
+                failMessage: "지금은 쉬고 싶은 기분이 아니에요...",
+                timeRestriction: TimeRestriction(startHour: 10, endHour: 18, isInverted: false)
+            ),
+            PetAction(
+                id: "snack_give",
+                icon: "pancake",
+                name: "간식주기",
+                unlockPhase: .infant,
+                phaseExclusive: false,
+                activityCost: 2,
+                effects: ["satiety": 6, "happiness": 4],
+                expGain: 2,
+                successMessage: "간식을 맛있게 먹었어요!",
+                failMessage: "지금은 간식이 먹고 싶지 않아요...",
                 timeRestriction: nil
             ),
         ]

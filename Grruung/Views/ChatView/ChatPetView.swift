@@ -3,6 +3,7 @@
 //  Grruung
 //
 //  Created by KimJunsoo on 5/7/25.
+//  Updated by YourName on 6/15/25.
 //
 
 import SwiftUI
@@ -13,6 +14,7 @@ struct ChatPetView: View {
     @FocusState private var isInputFocused: Bool
     @State private var showUpdateAlert = false // 업데이트 알림 표시 여부
     @State private var showingShopView = false // 상점 화면 표시 여부
+    @State private var showSettings = false // 설정 표시 여부
 
     // 캐릭터와 프롬프트 직접 저장
     let character: GRCharacter
@@ -27,44 +29,50 @@ struct ChatPetView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(UIColor.systemBackground)
+                // 배경색 변경 - 건강관리뷰와 동일하게 메인 컬러 사용
+                GRColor.mainColor1_1
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    remainingChatInfo
+                    // 챗펫 정보 헤더 (남은 채팅 기회 포함)
+                    petInfoHeader
                     
+                    // 대화 내역
                     chatMessagesArea
                     
+                    // 메시지 입력 영역
                     messageInputArea
                 }
                 
+                // 로딩 표시
                 if viewModel.isLoading {
                     ProgressView()
                         .scaleEffect(1.5)
-                        .background(Color.black.opacity(0.2))
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.black.opacity(0.2))
+                                .frame(width: 100, height: 100)
+                        )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle("음성 대화")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("대화종료") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .foregroundStyle(GRColor.mainColor6_2)
                 }
                 
-                // 키보드 툴바
-                /*
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        isInputFocused = false
+                        showSettings.toggle()
                     }) {
-                        Image(systemName: "keyboard.chevron.compact.down")
-                            .foregroundColor(.primary)
+                        Image(systemName: "gearshape.fill")
+                            .foregroundStyle(GRColor.mainColor6_2)
                     }
-                }*/
+                }
             }
             .alert(item: Binding<AlertItem?>(
                 get: {
@@ -103,6 +111,9 @@ struct ChatPetView: View {
             } message: {
                 Text("대화 티켓이 부족합니다. 상점에서 티켓을 구매하시겠습니까?")
             }
+            .sheet(isPresented: $showSettings) {
+                ChatPetSettingsView(showSubtitle: $viewModel.showSubtitle)
+            }
             .onTapGesture {
                 // 배경 탭 시 키보드 숨기기
                 if isInputFocused {
@@ -112,29 +123,73 @@ struct ChatPetView: View {
         }
     }
     
-    private var remainingChatInfo: some View {
-        HStack {
-            Spacer()
-            HStack(spacing: 8) {
-                // 무료 채팅 정보
-                HStack(spacing: 4) {
-                    Image(systemName: "bubble.left.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.blue)
+    // MARK: - 펫 정보 헤더 (남은 채팅 기회 포함)
+    private var petInfoHeader: some View {
+        ZStack {
+            // 배경
+            RoundedRectangle(cornerRadius: 15)
+                .fill(GRColor.mainColor2_1)
+                .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+            
+            // 내용
+            VStack(spacing: 8) {
+                // 펫 이미지와 이름
+                VStack(spacing: 4) {
+                    // 펫 이미지 - 실제로는 character.image 사용
+                    Image(systemName: "pawprint.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 60, height: 60)
+                        .foregroundStyle(GRColor.mainColor6_2)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(GRColor.mainColor6_1.opacity(0.3))
+                        )
                     
-                    Text("\(viewModel.remainingChats)/3")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // 펫 이름
+                    Text(character.name)
+                        .font(.headline)
+                        .foregroundStyle(GRColor.fontMainColor)
+                }
+                .padding(.vertical, 8)
+            }
+            
+            // 오른쪽 상단에 남은 채팅 횟수 표시
+            VStack {
+                HStack {
+                    Spacer()
+                    
+                    // 남은 채팅 횟수 아이콘과 숫자
+                    HStack(spacing: 4) {
+                        Image(systemName: "message.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(GRColor.mainColor6_2)
+                        
+                        Text("\(viewModel.remainingChats)/3")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(viewModel.remainingChats > 0 ? GRColor.mainColor6_2 : GRColor.grColorOrange)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(GRColor.mainColor3_1)
+                            .overlay(
+                                Capsule()
+                                    .stroke(GRColor.mainColor3_2.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .padding(10)
                 }
                 
+                Spacer()
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Color(UIColor.systemGray6))
-            .cornerRadius(12)
-            .padding(.trailing, 16)
-            .padding(.top, 8)
         }
+        .frame(height: 120)
+        .padding(.horizontal)
+        .padding(.top, 8)
     }
     
     // MARK: - 대화 내역 영역
@@ -143,8 +198,12 @@ struct ChatPetView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     ForEach(viewModel.messages) { message in
-                        MessageBubble(message: message, showSubtitle: viewModel.showSubtitle)
-                            .id(message.id)
+                        MessageBubble(
+                            message: message,
+                            showSubtitle: viewModel.showSubtitle,
+                            character: character
+                        )
+                        .id(message.id)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -159,33 +218,43 @@ struct ChatPetView: View {
                     }
                 }
             }
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(Color.white)
+                    .shadow(color: GRColor.mainColor8_2.opacity(0.1), radius: 3, x: 0, y: 2)
+                    .padding(.horizontal, 8)
+            )
         }
     }
     
+    // MARK: - 메시지 입력 영역
     private var messageInputArea: some View {
         VStack(spacing: 0) {
             Divider()
+                .background(GRColor.mainColor3_2.opacity(0.3))
             
             HStack(spacing: 12) {
                 if !viewModel.isListening {
                     TextField("메시지 입력", text: $viewModel.inputText)
                         .padding(10)
-                        .background(Color(UIColor.systemGray6))
+                        .background(GRColor.mainColor1_1)
                         .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1)
+                        )
                         .focused($isInputFocused)
-                        // 엔터키로 메시지 보내기
-                        /*.onSubmit {
-                            if !viewModel.inputText.isEmpty {
-                                viewModel.sendMessage()
-                            }
-                        }*/
                 } else {
                     Text("음성 변환 중...")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(GRColor.fontSubColor)
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(UIColor.systemGray6))
+                        .background(GRColor.mainColor1_1)
                         .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(GRColor.mainColor3_2.opacity(0.5), lineWidth: 1)
+                        )
                 }
                 
                 // 음성 대화 모드 버튼 - 클릭 시 업데이트 예정 알림
@@ -194,9 +263,9 @@ struct ChatPetView: View {
                 }) {
                     Image(systemName: "mic")
                         .font(.system(size: 20))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(GRColor.fontMainColor)
                         .padding(8)
-                        .background(Color(UIColor.systemGray5))
+                        .background(GRColor.mainColor4_1)
                         .clipShape(Circle())
                 }
                 
@@ -208,21 +277,22 @@ struct ChatPetView: View {
                     }) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(GRColor.buttonColor_2)
                     }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
+            .background(GRColor.mainColor2_1)
         }
     }
-    
 }
 
-
+// MARK: - 메시지 버블 컴포넌트
 struct MessageBubble: View {
     let message: ChatMessage
     let showSubtitle: Bool
+    let character: GRCharacter
     
     var body: some View {
         HStack {
@@ -231,11 +301,11 @@ struct MessageBubble: View {
                 HStack(alignment: .bottom, spacing: 8) {
                     // 펫 프로필 이미지
                     Circle()
-                        .fill(Color.blue.opacity(0.2))
+                        .fill(GRColor.mainColor6_1)
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "pawprint.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(GRColor.mainColor6_2)
                         )
                     
                     // 메시지 버블
@@ -243,14 +313,20 @@ struct MessageBubble: View {
                         // 메시지 내용
                         Text(message.text)
                             .padding(12)
-                            .background(Color.blue.opacity(0.1))
+                            .background(GRColor.mainColor5_1)
                             .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(GRColor.mainColor5_2.opacity(0.3), lineWidth: 1)
+                            )
                         
                         // 시간 표시
-                        Text(formatTime(message.timestamp))
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                            .padding(.leading, 8)
+                        if showSubtitle {
+                            Text(formatTime(message.timestamp))
+                                .font(.caption2)
+                                .foregroundStyle(GRColor.fontSubColor)
+                                .padding(.leading, 8)
+                        }
                     }
                     
                     Spacer()
@@ -265,24 +341,24 @@ struct MessageBubble: View {
                         // 메시지 내용
                         Text(message.text)
                             .padding(12)
-                            .foregroundColor(.white)
-                            .background(Color.blue)
+                            .foregroundStyle(.white)
+                            .background(GRColor.buttonColor_2)
                             .cornerRadius(16)
                         
                         // 시간 표시
                         Text(formatTime(message.timestamp))
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(GRColor.fontSubColor)
                             .padding(.trailing, 8)
                     }
                     
                     // 사용자 프로필 이미지
                     Circle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(GRColor.mainColor8_1)
                         .frame(width: 36, height: 36)
                         .overlay(
                             Image(systemName: "person.fill")
-                                .foregroundColor(.gray)
+                                .foregroundStyle(GRColor.mainColor8_2)
                         )
                 }
             }
@@ -297,3 +373,37 @@ struct MessageBubble: View {
     }
 }
 
+// MARK: - 챗펫 설정 뷰
+struct ChatPetSettingsView: View {
+    @Binding var showSubtitle: Bool
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("대화 설정")) {
+                    Toggle(isOn: $showSubtitle) {
+                        Label("자막 표시", systemImage: "text.bubble")
+                    }
+                    .tint(GRColor.buttonColor_2)
+                    
+                    // 음성 변경 옵션 (비활성화 상태)
+                    HStack {
+                        Label("음성 변경", systemImage: "speaker.wave.2")
+                        Spacer()
+                        Text("업데이트 예정")
+                            .foregroundStyle(.gray)
+                    }
+                    .opacity(0.6)
+                }
+                .listRowBackground(GRColor.mainColor1_1)
+            }
+            .background(GRColor.mainColor1_1.edgesIgnoringSafeArea(.all))
+            .navigationBarTitle("설정", displayMode: .inline)
+            .navigationBarItems(trailing: Button("완료") {
+                presentationMode.wrappedValue.dismiss()
+            }
+            .foregroundStyle(GRColor.buttonColor_2))
+        }
+    }
+}

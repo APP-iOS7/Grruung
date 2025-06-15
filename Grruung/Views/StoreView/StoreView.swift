@@ -12,6 +12,7 @@ struct StoreView: View {
     @State private var selectedTab = 0
     @State private var gold = 0
     @State private var diamond = 0
+    @State private var refreshTrigger: Bool = false
     
     @StateObject var userInventoryViewModel = UserInventoryViewModel()
     @EnvironmentObject var userViewModel: UserViewModel
@@ -23,42 +24,45 @@ struct StoreView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Text("상점")
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.largeTitle)
-                    .foregroundStyle(.black)
-                    .bold()
+//                Text("")
+//                    .padding()
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//                    .font(.largeTitle)
+//                    .foregroundStyle(.black)
+//                    .bold()
+//                Spacer()
+                Spacer()
+                
                 HStack {
-                    HStack {
-                        // 다이아
-                        HStack(spacing: 8) {
-                            Image(systemName: "diamond.fill")
-                                .resizable()
-                                .frame(width: 20, height: 25)
-                                .foregroundColor(.cyan)
-                            Text("\(diamond)")
-                                .lineLimit(1)
-                                .font(.title3)
-                                .foregroundStyle(.black)
-                        }
-                        
-                        Spacer()
-                        
-                        // 골드
-                        HStack(spacing: 8) {
-                            Image(systemName: "circle.fill")
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.yellow)
-                            Text("\(gold)")
-                                .lineLimit(1)
-                                .font(.title3)
-                                .foregroundStyle(.black)
-                        }
+                    // 다이아
+                    HStack(spacing: 8) {
+                        Image(systemName: "diamond.fill")
+                            .resizable()
+                            .frame(width: 20, height: 25)
+                            .foregroundStyle(.cyan)
+                        Text("\(diamond)")
+                            .lineLimit(1)
+                            .font(.title3)
+                            .foregroundStyle(.black)
                     }
+                    .padding(.leading, 20)
+                    
+                    Spacer()
+                    
+                    // 골드
+                    HStack(spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundStyle(.yellow)
+                        Text("\(gold)")
+                            .lineLimit(1)
+                            .font(.title3)
+                            .foregroundStyle(.black)
+                    }
+                    .padding(.trailing, 20)
                 }
-                .padding(.top, 8)
+                .padding(.top, 20)
                 .padding(.leading, 50)
                 .padding(.trailing, 50)
                 // 상단 탭
@@ -73,7 +77,7 @@ struct StoreView: View {
                                 VStack {
                                     Text(tabs[index])
                                         .font(.headline)
-                                        .foregroundColor(selectedTab == index ? .black : .gray)
+                                        .foregroundStyle(selectedTab == index ? .black : .gray)
                                     Capsule()
                                         .fill(selectedTab == index ? GRColor.buttonColor_2 : Color.clear)
                                         .frame(height: 3)
@@ -91,16 +95,16 @@ struct StoreView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 45) {
                             // 각 섹션은 ID로 scrollTo 대상
-                            SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy)
+                            SectionView(title: "전체", id: "전체", products: allProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy)
+                            SectionView(title: "놀이", id: "놀이", products: playProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy)
+                            SectionView(title: "음식", id: "음식", products: recoveryProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy)
+                            SectionView(title: "다이아", id: "다이아", products: diamondProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
-                            SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy)
+                            SectionView(title: "티켓", id: "티켓", products: ticketProducts, proxy: proxy, refreshTrigger: $refreshTrigger)
                                 .environmentObject(userInventoryViewModel)
                         }
                         .padding()
@@ -146,6 +150,7 @@ struct StoreView: View {
                 }
             }
         }
+        .id(refreshTrigger)
         .environmentObject(userInventoryViewModel)
     }
 }
@@ -163,6 +168,7 @@ struct SectionView: View {
         GridItem(.flexible())
     ]
     
+    @Binding var refreshTrigger: Bool
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     
@@ -176,7 +182,7 @@ struct SectionView: View {
                 Text(title)
                     .font(.title2)
                     .bold()
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
             }
             .id(id)
             .padding(.horizontal)
@@ -189,7 +195,7 @@ struct SectionView: View {
             
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(products) { product in
-                    NavigationLink(destination: ProductDetailView(product: product))
+                    NavigationLink(destination: ProductDetailView(product: product, refreshTrigger: $refreshTrigger))
                     {
                         ProductItemView(product: product)
                     }

@@ -9,13 +9,14 @@ import SwiftUI
 
 struct StoreGridView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    @Binding var refreshTrigger: Bool
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(products) { product in
-                        NavigationLink(destination: ProductDetailView(product: product)) {
+                        NavigationLink(destination: ProductDetailView(product: product, refreshTrigger: $refreshTrigger)) {
                             ProductItemView(product: product)
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -38,13 +39,13 @@ struct ProductItemView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
                 
                 if product.itemTag == ItemTag.limited {
                     Text("한정")
                         .font(.caption2)
                         .bold()
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(4)
                         .background(Color.red)
                         .clipShape(Capsule())
@@ -60,7 +61,7 @@ struct ProductItemView: View {
             Text(product.itemName)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundColor(.black)
+                .foregroundStyle(.black)
             
             HStack(spacing: 8) {
                 if product.itemCurrencyType == .won {
@@ -68,12 +69,12 @@ struct ProductItemView: View {
                         .foregroundStyle(.black)
                 } else {
                     Image(systemName: product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? "diamond.fill" : "circle.fill")
-                        .foregroundColor(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
+                        .foregroundStyle(product.itemCurrencyType.rawValue == ItemCurrencyType.diamond.rawValue ? .cyan : .yellow)
                 }
                 
                 Text("\(product.itemPrice)")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
             }
         }
         .padding(8)
