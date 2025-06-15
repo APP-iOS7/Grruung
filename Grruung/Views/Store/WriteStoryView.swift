@@ -143,13 +143,14 @@ struct WriteStoryView: View {
         .interactiveDismissDisabled(isUploading)
         .toolbar {
             // 왼쪽(뒤로가기) 버튼 추가
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("취소") {
-                    dismiss()
+            if currentMode == .create {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                    .foregroundStyle(GRColor.mainColor6_2)
                 }
-                .foregroundStyle(GRColor.mainColor6_2)
             }
-            
             // 오른쪽(저장/수정) 버튼
             ToolbarItem(placement: .navigationBarTrailing) {
                 if currentMode == .read {
