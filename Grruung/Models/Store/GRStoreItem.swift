@@ -158,7 +158,7 @@ let products = [
 // 놀이
 let playProducts = [
     GRStoreItem(itemName: "캐치볼 놀이",
-               itemType: .permanent,
+               itemType: .consumable,
                itemImage: "volleyball",
                itemQuantity: 1,
                limitedQuantity: 10,
@@ -209,7 +209,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "달콤한 아이스크림 한 입으로 기분 전환!",
                itemEffectDescription: "체력\t + 10\n건강\t + 15",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .purple.opacity(0.4)),
     
     GRStoreItem(itemName: "햄버거",
@@ -222,7 +222,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "든든한 햄버거 한 입으로 에너지 충전!",
                itemEffectDescription: "포만감\t + 20\n건강\t + 5",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .mint.opacity(0.4)),
     
     GRStoreItem(itemName: "팬케이크",
@@ -248,7 +248,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "달콤한 복숭아로 기분 좋은 회복을!",
                itemEffectDescription: "체력\t + 20\n청결도\t + 7",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .mint.opacity(0.4)),
     
     GRStoreItem(itemName: "배 먹기",
@@ -261,7 +261,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "시원한 배로 수분과 기분을 동시에 채워요!",
                itemEffectDescription: "포만감\t + 12\n건강\t + 13",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .purple.opacity(0.4)),
 
     GRStoreItem(itemName: "수박 먹기",
@@ -274,7 +274,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "더운 날엔 역시 수박이죠!",
                itemEffectDescription: "포만감\t + 10\n체력\t + 15\n청결도\t + 5",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .mint.opacity(0.4)),
     
     GRStoreItem(itemName: "쉐이크",
@@ -287,7 +287,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "달콤한 쉐이크로 스트레스를 잠시 잊어보세요.",
                itemEffectDescription: "포만감\t + 100\n체력\t + 100\n활동량\t + 100",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .mint.opacity(0.4)),
     
     GRStoreItem(itemName: "초밥 먹기",
@@ -300,7 +300,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "신선한 초밥으로 여유로운 힐링 타임!",
                itemEffectDescription: "포만감\t + 10\n활동량\t + 10\n건강\t + 8",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .purple.opacity(0.4)),
     
     GRStoreItem(itemName: "와플 먹기",
@@ -313,7 +313,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "바삭한 와플로 달콤한 에너지를 충전해요!",
                itemEffectDescription: "경험치\t + 100",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .mint.opacity(0.4))
 ]
 

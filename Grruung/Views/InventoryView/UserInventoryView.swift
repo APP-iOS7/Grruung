@@ -34,11 +34,11 @@ struct UserInventoryView: View {
         GridItem(.flexible())
     ]
     
-    @State private var sortItemCategory: SortItemCategory = .all
+    @State private var sortItemCategory: SortItemCategory = .food
     @State private var sortItemType: SortItemType = .all
     
     enum SortItemCategory: String, CaseIterable {
-        case all = "전체"
+        case food = "음식"
         case drug = "약품"
         case toy = "장난감"
         case etc = "기타"
@@ -54,8 +54,8 @@ struct UserInventoryView: View {
         let itemsToSort = userInventoryViewModel.inventories
         
         switch sortItemCategory {
-        case .all:
-            return itemsToSort
+        case .food:
+            return itemsToSort.filter { $0.userItemCategory == .food}
         case .drug:
             return itemsToSort.filter { $0.userItemCategory == .drug }
         case .toy:
