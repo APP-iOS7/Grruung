@@ -113,10 +113,6 @@ struct ScreenView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 80)
                     .foregroundStyle(.gray)
-                
-                Text("캐릭터 생성")
-                    .font(.caption)
-                    .foregroundStyle(.gray)
             }
         }
     }

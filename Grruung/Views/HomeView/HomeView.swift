@@ -388,7 +388,7 @@ struct HomeView: View {
                             // 배경 바 (전체 너비)
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(height: 12)
-                                .foregroundStyle(Color.gray.opacity(0.1))
+                                .foregroundStyle(Color.white.opacity(0.2))
                             
                             // 진행 바
                             RoundedRectangle(cornerRadius: 10)
