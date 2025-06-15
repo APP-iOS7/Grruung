@@ -141,6 +141,8 @@ struct AlertView: View {
         .alert("구매 완료", isPresented: $showPurchaseSuccessAlert) {
             Button("확인", role: .cancel) {
                 isPresented = false
+                
+                NotificationCenter.default.post(name: Notification.Name("ReturnToStoreView"), object: nil)
             }
         } message: {
             Text("아이템이 성공적으로 구매되었습니다.")
@@ -154,7 +156,6 @@ struct AlertView: View {
         }
     }
     
-    // FIXME: - Start 결제 내역
     private func savePurchaseRecord(userId: String, item: GRStoreItem, quantity: Int, price: Int) {
         print("💰 결제 기록 저장 시작: \(item.itemName), 가격: \(price)")
         
@@ -185,7 +186,6 @@ struct AlertView: View {
             }
         }
     }
-    // FIXME: - End
     
     // MARK: - 구매 처리 메서드
     private func handlePurchase() async {
@@ -273,14 +273,12 @@ struct AlertView: View {
             return
         }
 
-        // FIXME: - Start 결제 내역
         // 성공 시 결제 기록 저장 (원화 결제만)
         if product.itemCurrencyType == .won &&
            (product.itemName.contains("다이아") || product.itemName.contains("동산 잠금해제")) {
             print("💰 원화 결제 기록 저장: \(product.itemName), 가격: \(totalPrice)")
             savePurchaseRecord(userId: realUserId, item: product, quantity: quantity, price: totalPrice)
         }
-        // FIXME: - End
 
         print("✅ StoreKit 결제 완료. 아이템 저장 시작.")
         await completePurchaseWithoutStoreKit(user: user, totalPrice: totalPrice, isStored: isStored)

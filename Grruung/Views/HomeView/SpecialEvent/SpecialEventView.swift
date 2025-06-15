@@ -5,7 +5,6 @@
 //  Created by KimJunsoo on 6/10/25.
 //
 
-// FIXME: - Start 수정내용 - 스탯 수치 제거 및 레이아웃 안정화
 import SwiftUI
 
 struct SpecialEventView: View {
@@ -302,7 +301,6 @@ struct SpecialEventView: View {
         }
     }
 }
-// FIXME: - END
 
 // MARK: - Preview
 #Preview {

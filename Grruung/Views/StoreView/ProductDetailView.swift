@@ -26,6 +26,7 @@ struct ProductDetailView: View {
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) var dismiss
+    @State private var shouldDismiss = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -72,7 +73,7 @@ struct ProductDetailView: View {
                             .fill(Color.black.opacity(0.1))
                             .frame(width: 140, height: 20)
                             .offset(y: 90)
-
+                        
                         // 메인 이미지
                         Image(product.itemImage)
                             .resizable()
@@ -113,7 +114,7 @@ struct ProductDetailView: View {
                     }
                     
                     Text("\(quantity)")
-                        
+                    
                         .font(.title)
                         .padding(.horizontal, 16)
                     
@@ -154,7 +155,7 @@ struct ProductDetailView: View {
                         )
                         .foregroundStyle(.white)
                         .cornerRadius(10)
-                        
+                    
                 })
                 Spacer()
                 Button(action: {
@@ -176,8 +177,12 @@ struct ProductDetailView: View {
         }
         .scrollContentBackground(.hidden) // 기본 배경을 숨기고
         .background(
-                LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [GRColor.mainColor2_1, GRColor.mainColor2_2], startPoint: .top, endPoint: .bottom)
         ) // 원하는 색상 지정
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReturnToStoreView"))) { _ in
+            // 알림을 받으면 뷰를 닫아 StoreView로 돌아가기
+            dismiss()
+        }
         .sheet(isPresented: $showAlert) {
             AlertView(product: product, quantity: quantity, isPresented: $showAlert)
                 .environmentObject(userInventoryViewModel)

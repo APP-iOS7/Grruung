@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// FIXME: - Start 수정내용 - 색상 및 스타일 통일
 struct UserInventoryView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var userInventoryViewModel = UserInventoryViewModel()
@@ -270,7 +269,6 @@ struct UserInventoryView: View {
         }
     }
 }
-// FIXME: - END
 
 // MARK: - Preview
 #Preview {

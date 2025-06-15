@@ -21,9 +21,7 @@ struct CharDexView: View {
     @State private var isLoading: Bool = true
     @State private var errorMessage: String? = nil
     
-    // FIXME: - Start 실시간 리스너를 위한 속성 추가
     @State private var charactersListener: ListenerRegistration?
-    // FIXME: - End
     
     // 정렬 옵션
     @State private var sortType: SortType = .original
@@ -191,7 +189,7 @@ struct CharDexView: View {
                 ],
                                startPoint: .top, endPoint: .bottom)
             ) 
-            .navigationTitle("캐릭터 동산")
+//            .navigationTitle("캐릭터 동산")
             .toolbar {
                 // 검색 버튼
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -203,7 +201,6 @@ struct CharDexView: View {
                 
                 // 정렬 옵션 메뉴
                 ToolbarItem(placement: .navigationBarTrailing) {
-//                    sortOptionsMenu
                     Menu {
                         Button {
                             sortType = .original
@@ -534,7 +531,6 @@ struct CharDexView: View {
         }
     }
     
-    // FIXME: - Start 실시간 캐릭터 리스너 설정
     /// Firebase 실시간 리스너를 설정하여 캐릭터 변화를 감지
     private func setupRealtimeCharacterListener() {
         guard let userID = authService.user?.uid else {
@@ -659,7 +655,6 @@ struct CharDexView: View {
             status: status
         )
     }
-    // FIXME: - End
     
     /// 동산 데이터 업데이트
     private func updateCharDexData() async {

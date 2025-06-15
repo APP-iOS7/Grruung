@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// FIXME: - Start 수정내용 - 마이너스/플러스 버튼 추가 및 UI 개선
 struct UserInventoryDetailView: View {
     @State var item: GRUserInventory
     @State var realUserId: String
@@ -371,7 +370,6 @@ struct UserInventoryDetailView: View {
         dismiss()
     }
 }
-// FIXME: - END
 
 // MARK: - Preview
 #Preview {

@@ -120,7 +120,6 @@ struct ProfileDetailView: View {
                     
                     // MARK: - 설정 섹션
                     VStack(spacing: 30) {
-                        // FIXME: - Start 결제 내역
                         ForEach(settingSections) { section in
                             VStack {
                                 ForEach(section.items) { item in
@@ -152,7 +151,6 @@ struct ProfileDetailView: View {
                             )
                             .padding(.horizontal)
                         }
-                        // FIXME: - End
                         
                         // 로그아웃 버튼
                         Button(action: {

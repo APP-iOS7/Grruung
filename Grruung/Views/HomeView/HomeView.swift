@@ -31,7 +31,6 @@ struct HomeView: View {
     var body: some View {
             NavigationStack {
                 ZStack {
-                    // FIXME: - Start 배경 이미지 전체 화면에 적용
                     // 배경 이미지 설정
                     GeometryReader { geometry in
                         Image("roomBasic1Big")
@@ -41,7 +40,6 @@ struct HomeView: View {
                             .edgesIgnoringSafeArea(.all)
                     }
                     .edgesIgnoringSafeArea(.all)
-                    // FIXME: - END
                     
                     // 원래 콘텐츠는 그대로 유지
                     if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {

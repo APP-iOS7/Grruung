@@ -16,7 +16,7 @@ struct AnimatedConfirmButton: View {
             // 즉시 실행
             onConfirm()
         }) {
-            Text("Yes")
+            Text("구매")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 130, height: 50)
@@ -90,7 +90,7 @@ struct AnimatedCancelButton: View {
                 }
             }
         }) {
-            Text("No")
+            Text("취소")
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 130, height: 50)
