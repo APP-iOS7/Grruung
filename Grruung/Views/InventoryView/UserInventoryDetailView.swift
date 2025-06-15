@@ -18,6 +18,12 @@ struct UserInventoryDetailView: View {
     @State private var showAlert = false
     @State private var alertType: AlertType = .itemCount
     
+    // 랜덤박스 관련 변수
+    @State private var selectedItems: [GRStoreItem] = []
+    @State private var currentIndex = 0
+    @State private var showPopup = false
+    @State private var showAnimation: Bool = false
+    
     @FocusState private var isFocused: Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authService: AuthService
@@ -57,17 +63,41 @@ struct UserInventoryDetailView: View {
     private var basicDetailView: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // 아이템 기본 정보
-                itemBasicInfoView
-                
-                // 아이템 효과 설명
-//                itemEffectView
-                
-                // 아이템 타입에 따라 다른 UI
-                if item.userItemType == .consumable {
-                    consumableItemView
+                if showPopup, currentIndex < selectedItems.count {
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                    
+                    ItemPopupView(
+                        item: selectedItems[currentIndex],
+                        userId: realUserId,
+                        isPresented: Binding(
+                            get: { showPopup },
+                            set: { newValue in
+                                if !newValue {
+                                    // 다음 아이템으로 넘어감
+                                    if currentIndex + 1 < selectedItems.count {
+                                        currentIndex += 1
+                                        showAnimation = true
+                                    } else {
+                                        showPopup = false
+                                        dismiss()
+                                    }
+                                }
+                            }
+                        ),
+                        animate: $showAnimation)
                 } else {
-                    permanentItemView
+                    // 아이템 기본 정보
+                    itemBasicInfoView
+                    
+                    // 아이템 효과 설명
+                    //                itemEffectView
+                    
+                    // 아이템 타입에 따라 다른 UI
+                    if item.userItemType == .consumable {
+                        consumableItemView
+                    } else {
+                        permanentItemView
+                    }
                 }
             }
             .padding()
@@ -360,6 +390,16 @@ struct UserInventoryDetailView: View {
             item.userItemQuantity -= Int(useItemCount)
             isEdited = true
             
+            // 랜덤박스선물 아이템일 경우 팝업 창 띄움
+            if item.userItemName == "랜덤박스선물" {
+                // 놀이 + 회복 아이템 합치고 랜덤 선택
+                let allItems = playProducts + recoveryProducts
+                let randomItems = (0..<Int(useItemCount)).compactMap { _ in allItems.randomElement() } // 예: 3개 사용
+                selectedItems = randomItems
+                currentIndex = 0
+                showPopup = true
+            }
+            
             // 데이터베이스 업데이트
             Task {
                 // 아이템 수량 업데이트 - 기존 파이어베이스 구조 유지
@@ -377,7 +417,9 @@ struct UserInventoryDetailView: View {
             print("❌ 아이템 효과 적용 실패: \(effectResult.message)")
         }
         
-        dismiss()
+        if selectedItems.isEmpty {
+            dismiss()
+        }
     }
     
     // 아이템 삭제 메서드
