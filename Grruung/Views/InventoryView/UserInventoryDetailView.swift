@@ -192,18 +192,15 @@ struct UserInventoryDetailView: View {
                     .disabled(useItemCount <= 1)
                     
                     // 텍스트 필드
-                    TextField("1", text: $typeItemCount)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.center)
+                    Text("\(Int(useItemCount))")
                         .frame(width: 60)
                         .padding(8)
-                        .background(Color.white)
+//                        .background(Color.white)
                         .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
-                        .focused($isFocused)
+//                        .overlay(
+//                            RoundedRectangle(cornerRadius: 8)
+//                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+//                        )
                     
                     // 플러스 버튼
                     Button(action: {
@@ -384,7 +381,7 @@ struct UserInventoryDetailView: View {
     private func useItem() {
         // ItemEffectApplier를 통해 아이템 효과 적용
         let effectResult = ItemEffectApplier.shared.applyItemEffect(item: item, quantity: Int(useItemCount))
-        
+        realUserId = authService.currentUserUID
         if effectResult.success {
             // 아이템 수량 감소
             item.userItemQuantity -= Int(useItemCount)
