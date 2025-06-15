@@ -203,7 +203,36 @@ struct CharDexView: View {
                 
                 // 정렬 옵션 메뉴
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    sortOptionsMenu
+//                    sortOptionsMenu
+                    Menu {
+                        Button {
+                            sortType = .original
+                        } label: {
+                            Label("기본", systemImage: sortType == .original ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .alphabet
+                        } label: {
+                            Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdAscending
+                        } label: {
+                            Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
+                        }
+                        
+                        Button {
+                            sortType = .createdDescending
+                        } label: {
+                            Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
+                        }
+                    } label: {
+                        Label("정렬", systemImage: "line.3.horizontal")
+                            .tint(GRColor.buttonColor_2)
+                    }
+                    .tint(GRColor.buttonColor_2)
                 }
                 
 #if DEBUG
@@ -282,38 +311,6 @@ struct CharDexView: View {
                     .frame(width: 30, height: 30)
                     .foregroundStyle(Color.brown.opacity(0.5))
             }
-        }
-    }
-    
-    // 정렬 옵션 메뉴
-    private var sortOptionsMenu: some View {
-        Menu {
-            Button {
-                sortType = .original
-            } label: {
-                Label("기본", systemImage: sortType == .original ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .alphabet
-            } label: {
-                Label("가나다 순", systemImage: sortType == .alphabet ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .createdAscending
-            } label: {
-                Label("생성 순 ↑", systemImage: sortType == .createdAscending ? "checkmark" : "")
-            }
-            
-            Button {
-                sortType = .createdDescending
-            } label: {
-                Label("생성 순 ↓", systemImage: sortType == .createdDescending ? "checkmark" : "")
-            }
-        } label: {
-            Label("정렬", systemImage: "line.3.horizontal")
-                .foregroundStyle(GRColor.buttonColor_2)
         }
     }
     
@@ -429,6 +426,7 @@ struct CharDexView: View {
                 .frame(height: 180)
                 .frame(maxWidth: .infinity)
                 .background(Color.brown.opacity(0.5))
+                .foregroundStyle(GRColor.buttonColor_2)
                 .cornerRadius(20)
         }
         .padding(.bottom, 16)

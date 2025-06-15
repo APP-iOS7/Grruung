@@ -358,7 +358,7 @@ struct CharacterDetailView: View {
                     
                     Text("총 활동량")
                         .font(.caption)
-                        .foregroundStyle(.textSecondary)
+                        .foregroundStyle(.black)
                 }
                 
                 Divider()
@@ -398,7 +398,7 @@ struct CharacterDetailView: View {
                 if !viewModel.posts.isEmpty {
                     Text("\(viewModel.posts.count)개")
                         .font(.caption)
-                        .foregroundStyle(.textSecondary)
+                        .foregroundStyle(.black)
                 }
             }
             .padding(.horizontal, UIConstants.horizontalPadding)
@@ -720,13 +720,13 @@ struct InfoRow: View {
         HStack {
             Text(title + ":")
                 .font(.caption)
-                .foregroundStyle(.textSecondary)
+                .foregroundStyle(.black)
                 .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundStyle(.textPrimary)
+                .foregroundStyle(.black)
             
             Spacer()
         }
@@ -743,7 +743,7 @@ struct StatRow: View {
         HStack {
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.textSecondary)
+                .foregroundStyle(.black)
                 .frame(width: 50, alignment: .leading)
             
             Text("\(value)")
@@ -754,7 +754,7 @@ struct StatRow: View {
             
             Text("/ \(maxValue)")
                 .font(.caption)
-                .foregroundStyle(.textSecondary)
+                .foregroundStyle(.black)
             
             Spacer()
         }
@@ -816,11 +816,11 @@ struct StoryRowView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                        .foregroundStyle(.textPrimary)
+                        .foregroundStyle(.black)
                     
                     Text(formatDate(post.createdAt))
                         .font(.caption)
-                        .foregroundStyle(.textSecondary)
+                        .foregroundStyle(.black)
                 }
                 
                 Spacer()
