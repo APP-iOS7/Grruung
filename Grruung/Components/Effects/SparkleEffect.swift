@@ -72,7 +72,7 @@ struct SparkleEffect: View {
         
         Text("✨")
             .font(.title2)
-            .foregroundColor(colors.randomElement() ?? .yellow)
+            .foregroundStyle(colors.randomElement() ?? .yellow)
             .offset(
                 x: cos(angle * .pi / 180) * distance,
                 y: sin(angle * .pi / 180) * distance
@@ -155,7 +155,7 @@ extension SparkleEffect {
                     }
                     .padding()
                     .background(Color.blue)
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .cornerRadius(10)
                 }
             }

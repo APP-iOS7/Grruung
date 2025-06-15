@@ -33,14 +33,14 @@ struct CustomerCenterView: View {
                         
                         Text("궁금한 내용을 빠르게 찾아보세요")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .padding(.bottom, 8)
                     
                     // 검색 바
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                         
                         TextField("질문을 입력해주세요.", text: $searchText)
                             .textFieldStyle(PlainTextFieldStyle())
@@ -48,7 +48,7 @@ struct CustomerCenterView: View {
                         if !searchText.isEmpty {
                             Button(action: { searchText = "" }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.black)
+                                    .foregroundStyle(.black)
                             }
                         }
                     }
@@ -65,14 +65,14 @@ struct CustomerCenterView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 48))
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                             
                             Text("검색 결과가 없습니다")
                                 .font(.headline)
                             
                             Text("다른 키워드로 검색해보세요")
                                 .font(.subheadline)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         .padding(.vertical, 40)
                         .frame(maxWidth: .infinity)
@@ -107,13 +107,13 @@ struct CustomerCenterView: View {
                             NavigationLink(destination: InquiryView()) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "square.and.pencil")
-                                        .foregroundColor(.orange)
+                                        .foregroundStyle(.orange)
                                         .font(.title2)
                                     
                                     Text("문의하기")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -125,13 +125,13 @@ struct CustomerCenterView: View {
                             NavigationLink(destination: InquiryHistoryView()) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "doc.text")
-                                        .foregroundColor(.orange)
+                                        .foregroundStyle(.orange)
                                         .font(.title2)
                                     
                                     Text("문의내역")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -165,7 +165,7 @@ struct FAQItemView: View {
                 HStack {
                     Text(faq.question)
                         .font(.body)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .multilineTextAlignment(.leading)
                     
                     Spacer()
@@ -173,7 +173,7 @@ struct FAQItemView: View {
                     Image(
                         systemName: isExpanded ? "chevron.up" : "chevron.down"
                     )
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .font(.system(size: 14, weight: .medium))
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     .animation(.easeInOut(duration: 0.2), value: isExpanded)
@@ -185,7 +185,7 @@ struct FAQItemView: View {
             if isExpanded {
                 Text(faq.answer)
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .lineSpacing(4)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
@@ -218,7 +218,7 @@ struct InquiryView: View {
                     
                     Text("궁금한 점이나 문제가 있으시면 아래에 자세히 적어주세요.")
                         .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
                 
                 // 제목 입력
@@ -258,7 +258,7 @@ struct InquiryView: View {
                             Text(
                                 "문의내용을 입력해주세요.\n\n예시:\n- 앱 사용 중 발생한 문제\n- 기능 관련 질문\n- 개선사항 제안"
                             )
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .font(.subheadline)
                             .padding(16)
                             .allowsHitTesting(false)
@@ -286,7 +286,7 @@ struct InquiryView: View {
                         Text("문의하기")
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(isFormValid ? Color.orange : Color.gray)
@@ -322,14 +322,14 @@ struct InquiryHistoryView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 48))
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     
                     Text("문의 내역이 없습니다")
                         .font(.headline)
                     
                     Text("궁금한 점이 있으시면 문의하기를 이용해주세요")
                         .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .multilineTextAlignment(.center)
                 }
             } else {
@@ -378,21 +378,21 @@ struct InquiryItemView: View {
                         Text(inquiry.title)
                             .font(.body)
                             .fontWeight(.medium)
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                             .multilineTextAlignment(.leading)
                             .lineLimit(isExpanded ? nil : 1)
                         
                         if isExpanded {
                             Text(inquiry.content)
                                 .font(.subheadline)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                                 .lineSpacing(4)
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, 16)
                             
                             Text(inquiry.date)
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                     }
                     
@@ -408,7 +408,7 @@ struct InquiryItemView: View {
                                     .opacity(0.2) : Color.gray
                                     .opacity(0.2)
                             )
-                            .foregroundColor(
+                            .foregroundStyle(
                                 inquiry.status == "답변 완료" ? .orange : .gray
                             )
                             .cornerRadius(6)
@@ -416,7 +416,7 @@ struct InquiryItemView: View {
                         Image(
                             systemName: isExpanded ? "chevron.up" : "chevron.down"
                         )
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .font(.system(size: 14, weight: .medium))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                         .animation(.easeInOut(duration: 0.2), value: isExpanded)

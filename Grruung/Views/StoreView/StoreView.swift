@@ -24,42 +24,45 @@ struct StoreView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Text("상점")
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.largeTitle)
-                    .foregroundStyle(.black)
-                    .bold()
+//                Text("")
+//                    .padding()
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//                    .font(.largeTitle)
+//                    .foregroundStyle(.black)
+//                    .bold()
+//                Spacer()
+                Spacer()
+                
                 HStack {
-                    HStack {
-                        // 다이아
-                        HStack(spacing: 8) {
-                            Image(systemName: "diamond.fill")
-                                .resizable()
-                                .frame(width: 20, height: 25)
-                                .foregroundColor(.cyan)
-                            Text("\(diamond)")
-                                .lineLimit(1)
-                                .font(.title3)
-                                .foregroundStyle(.black)
-                        }
-                        
-                        Spacer()
-                        
-                        // 골드
-                        HStack(spacing: 8) {
-                            Image(systemName: "circle.fill")
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.yellow)
-                            Text("\(gold)")
-                                .lineLimit(1)
-                                .font(.title3)
-                                .foregroundStyle(.black)
-                        }
+                    // 다이아
+                    HStack(spacing: 8) {
+                        Image(systemName: "diamond.fill")
+                            .resizable()
+                            .frame(width: 20, height: 25)
+                            .foregroundStyle(.cyan)
+                        Text("\(diamond)")
+                            .lineLimit(1)
+                            .font(.title3)
+                            .foregroundStyle(.black)
                     }
+                    .padding(.leading, 20)
+                    
+                    Spacer()
+                    
+                    // 골드
+                    HStack(spacing: 8) {
+                        Image(systemName: "circle.fill")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundStyle(.yellow)
+                        Text("\(gold)")
+                            .lineLimit(1)
+                            .font(.title3)
+                            .foregroundStyle(.black)
+                    }
+                    .padding(.trailing, 20)
                 }
-                .padding(.top, 8)
+                .padding(.top, 20)
                 .padding(.leading, 50)
                 .padding(.trailing, 50)
                 // 상단 탭
@@ -74,7 +77,7 @@ struct StoreView: View {
                                 VStack {
                                     Text(tabs[index])
                                         .font(.headline)
-                                        .foregroundColor(selectedTab == index ? .black : .gray)
+                                        .foregroundStyle(selectedTab == index ? .black : .gray)
                                     Capsule()
                                         .fill(selectedTab == index ? GRColor.buttonColor_2 : Color.clear)
                                         .frame(height: 3)
@@ -179,7 +182,7 @@ struct SectionView: View {
                 Text(title)
                     .font(.title2)
                     .bold()
-                    .foregroundColor(.black)
+                    .foregroundStyle(.black)
             }
             .id(id)
             .padding(.horizontal)
