@@ -1600,6 +1600,12 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // ✨5 포만감이 가득 찼을 때, 포만감을 올리는 액션을 막는 로직 추가
+        if let satietyEffect = action.effects["satiety"], satietyEffect > 0, self.satietyValue >= 100 {
+            showActionMessage("너무 배불러요...")
+            return // 액션 실행 중단
+        }
+        
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
