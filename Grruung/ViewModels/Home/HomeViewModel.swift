@@ -11,6 +11,17 @@ import Combine
 import FirebaseFirestore
 import SwiftData 
 
+// ✨1 애니메이션 재생 계기를 명확히 하기 위한 열거형 추가
+enum AnimationTrigger: Equatable {
+    case appLaunch // 앱 첫 실행
+    case userWakeUp // 사용자가 '깨우기' 버튼 누름
+    case navigation // 다른 화면에서 홈으로 복귀
+    case levelUp // 레벨업 발생
+    case action(type: String, phase: CharacterPhase, id: String) // '우유먹기' 같은 특정 액션 애니메이션
+    case sleep // 재우기 애니메이션 시작
+    case returnToNormal // 일반 액션 완료 후 등, 기본 상태로 돌아가기
+}
+
 class HomeViewModel: ObservableObject {
     // MARK: - Properties
     // 컨트롤러
@@ -60,6 +71,13 @@ class HomeViewModel: ObservableObject {
     // 애니메이션 업데이트 관련
     @Published var needsAnimationUpdate: Bool = false // 애니메이션 업데이트 필요 여부
     @Published var showUpdateScreen: Bool = false // 애니메이션 업데이트 화면 여부
+    
+    // ✨1 우유 먹기 액션 상태 관리를 위한 프로퍼티 추가
+    @Published var isFeeding: Bool = false
+    @Published var feedingProgress: CGFloat = 0.0
+    
+    // ✨1 ScreenView에 애니메이션 재생을 요청하기 위한 통합 트리거
+    @Published var animationTrigger: AnimationTrigger?
     
     // Firebase 연동 상태
     @Published var isFirebaseConnected: Bool = false
@@ -994,6 +1012,9 @@ class HomeViewModel: ObservableObject {
         // 모든 타이머 다시 시작
         startStatDecreaseTimers()
         
+        // ✨1 앱이 활성화될 때 애니메이션 트리거 설정
+        animationTrigger = .appLaunch
+        
 #if DEBUG
         print("📱 앱이 포그라운드로 복귀 - 모든 타이머 재시작")
 #endif
@@ -1256,6 +1277,9 @@ class HomeViewModel: ObservableObject {
         let goldReward = calculateLevelUpGoldReward()
         addGold(goldReward)
         
+        // ✨1 레벨업 시 애니메이션 트리거 설정
+        animationTrigger = .levelUp
+        
 #if DEBUG
         print("🎉 레벨업! Lv.\(level) - \(character?.status.phase.rawValue ?? "") (경험치 0으로 초기화)")
 #endif
@@ -1420,6 +1444,8 @@ class HomeViewModel: ObservableObject {
             // 이미 자고 있으면 깨우기
             isSleeping = false
             showActionMessage("일어났어요! 이제 활동할 수 있어요!")
+            // ✨1 사용자가 직접 깨웠으므로 애니메이션 트리거 설정
+            animationTrigger = .userWakeUp
         } else {
             // 자고 있지 않으면 재우기
             isSleeping = true
@@ -1428,6 +1454,8 @@ class HomeViewModel: ObservableObject {
             activityValue = min(100, activityValue + sleepBonus)
             
             showActionMessage("쿨쿨... 잠을 자고 있어요.")
+            // ✨1 재우기 애니메이션을 시작하도록 트리거 설정
+            animationTrigger = .sleep
         }
         
         // 수면 상태 변경 시 액션 버튼 갱신
@@ -1451,6 +1479,12 @@ class HomeViewModel: ObservableObject {
     // 인덱스를 기반으로 액션을 실행합니다.
     /// - Parameter index: 실행할 액션의 인덱스
     func performAction(at index: Int) {
+        // ✨1 isFeeding 상태일 때 다른 액션 방지
+        guard !isFeeding else {
+            print("🥛 우유를 먹는 중에는 다른 액션을 할 수 없습니다.")
+            return
+        }
+        
         // 애니메이션 중이면 액션 수행하지 않음
         guard !isAnimationRunning else {
             print("🚫 애니메이션 실행 중: 액션 무시됨")
@@ -1477,6 +1511,12 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // ✨1 '우유먹기'가 아닌 다른 액션일 때만 기본 애니메이션 시작
+        if getActionId(for: action.icon) != "milk_feeding" {
+            let animationDuration = 1.0
+            startAnimation(duration: animationDuration)
+        }
+        
         // 애니메이션 시작 (액션에 따라 적절한 지속 시간 설정)
         let animationDuration = 1.0 // 기본 1초
         startAnimation(duration: animationDuration)
@@ -1494,6 +1534,11 @@ class HomeViewModel: ObservableObject {
             } else {
                 print("❓ 알 수 없는 액션: \(action.name), 아이콘: \(action.icon)")
             }
+        }
+        
+        // ✨1 '우유먹기' 중이 아닐 때만 버튼 즉시 갱신
+        if !isFeeding {
+            refreshActionButtons()
         }
         
         // 액션 실행 후 액션 버튼 갱신
@@ -1515,6 +1560,17 @@ class HomeViewModel: ObservableObject {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
             // 실패 메시지 표시
             showActionMessage(action.failMessage.isEmpty ? "너무 지쳐서 할 수 없어요..." : action.failMessage)
+            return
+        }
+        
+        // ✨1 '우유먹기' 액션 특별 처리
+        if actionId == "milk_feeding" {
+            isFeeding = true
+            feedingProgress = 0.0
+            // ✨1 ScreenView가 애니메이션을 재생하도록 트리거 설정
+            animationTrigger = .action(type: "eating", phase: .infant, id: "milk_feeding")
+            
+            // 스탯 적용은 애니메이션이 끝난 후 completeAction에서 처리하므로 여기서는 종료
             return
         }
         
@@ -1556,14 +1612,19 @@ class HomeViewModel: ObservableObject {
             }
         }
         
-        // 경험치 획득 - 디버그 모드 배수 적용은 addExp() 메서드에서 처리
+        // ✨2 경험치 획득 및 레벨업 체크 로직 수정 (중복 코드 제거)
+        let oldLevel = self.level
         if action.expGain > 0 {
             let oldExp = expValue
             addExp(action.expGain)
-            
     #if DEBUG
             print("⭐ 액션 경험치 획득: \(action.name) - \(oldExp) → \(expValue)")
     #endif
+        }
+        
+        // ✨2 레벨업이 발생하지 않은 경우에만 .returnToNormal 트리거 설정
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
         }
         
         // 성공 메시지 표시
@@ -1591,6 +1652,90 @@ class HomeViewModel: ObservableObject {
         print("📊 현재 스탯 - 포만감: \(satietyValue), 운동량: \(staminaValue), 활동량: \(activityValue)")
         print("📊 히든 스탯 - 건강: \(healthyValue), 청결: \(cleanValue), 주간 애정도: \(weeklyAffectionValue)")
     #endif
+    }
+    
+    // ✨1 애니메이션이 끝난 후 스탯을 적용하기 위한 새로운 메소드
+    func completeAction(actionId: String) {
+        guard let action = actionManager.getAction(id: actionId) else {
+            print("❌ 완료할 액션을 찾을 수 없습니다: \(actionId)")
+            return
+        }
+        
+        print("✅ '\(action.name)' 액션 완료 처리 시작")
+
+        var statChanges: [String: Int] = [:]
+
+        // 활동량 소모
+        let oldActivity = activityValue
+        activityValue = max(0, activityValue - action.activityCost)
+        statChanges["activity"] = activityValue - oldActivity
+        
+        // 액션 효과 적용
+        for (statName, value) in action.effects {
+            let adjustedValue = isDebugMode ? (value * debugSpeedMultiplier) : value
+            
+            switch statName {
+            case "satiety":
+                let oldValue = satietyValue
+                satietyValue = max(0, min(100, satietyValue + adjustedValue))
+                statChanges["satiety"] = satietyValue - oldValue
+            case "stamina":
+                let oldValue = staminaValue
+                staminaValue = max(0, min(100, staminaValue + adjustedValue))
+                statChanges["stamina"] = staminaValue - oldValue
+            case "happiness", "affection":
+                let oldValue = weeklyAffectionValue
+                weeklyAffectionValue = max(0, min(100, weeklyAffectionValue + abs(adjustedValue)))
+                statChanges["affection"] = weeklyAffectionValue - oldValue
+            case "clean":
+                let oldValue = cleanValue
+                cleanValue = max(0, min(100, cleanValue + adjustedValue))
+                statChanges["clean"] = cleanValue - oldValue
+            case "healthy":
+                let oldValue = healthyValue
+                healthyValue = max(0, min(100, healthyValue + adjustedValue))
+                statChanges["healthy"] = healthyValue - oldValue
+            default:
+                break
+            }
+        }
+        
+        // 경험치 획득
+        /// ✨3 경험치 획득 후 다음 애니메이션을 재생시키기 위한 트리거 설정 로직 추가
+        let oldLevel = self.level
+        if action.expGain > 0 {
+            addExp(action.expGain)
+        }
+        
+        // ✨3 레벨업이 일어나지 않았다면, normal 애니메이션 재생 신호를 보냄
+        if self.level == oldLevel {
+            animationTrigger = .returnToNormal
+        }
+        
+        // 성공 메시지 표시
+        if !action.successMessage.isEmpty {
+            showActionMessage(action.successMessage)
+        }
+        
+        // UI 업데이트 및 저장
+        updateAllPercentsWithoutMessageUpdate()
+        updateCharacterStatus()
+        updateLastActivityDate()
+        recordAndSaveStatChanges(statChanges, reason: "action_complete_\(actionId)")
+        
+        // 골드 획득
+        let goldReward = calculateGoldReward(for: actionId)
+        if goldReward > 0 {
+            addGold(goldReward)
+        }
+        
+        // ✨1 isFeeding 상태 해제
+        if actionId == "milk_feeding" {
+            isFeeding = false
+        }
+        
+        // 버튼 갱신
+        refreshActionButtons()
     }
     
     private func updateAllPercentsWithoutMessageUpdate() {

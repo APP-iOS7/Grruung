@@ -24,7 +24,7 @@ struct MyPageView: View {
                 .padding()
             }
             .background(
-                LinearGradient(colors: [Color(hex: "#FFF5D2"), Color(hex: "FFE38B")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: [Color(hex: "FEF9EA"), Color(hex: "FDE0CA")], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
         }
     }

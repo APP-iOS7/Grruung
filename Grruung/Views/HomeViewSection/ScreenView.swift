@@ -9,6 +9,9 @@ import SwiftUI
 
 // 캐릭터 스크린 뷰
 struct ScreenView: View {
+    // ✨1 HomeViewModel을 @ObservedObject로 받도록 변경
+    @ObservedObject var viewModel: HomeViewModel
+    
     // HomeView에서 필요한 데이터를 받아옴
     let character: GRCharacter?
     let isSleeping: Bool
@@ -65,13 +68,17 @@ struct ScreenView: View {
             setupControllers()
             startAppropriateAnimation()
         }
-        .onChange(of: isSleeping) { _, isNowSleeping in
-            // 잠자기 상태가 변경될 때 애니메이션 전환
-            handleSleepStateChange(isSleeping: isNowSleeping)
+        // ✨1 분산되어 있던 애니메이션 로직을 animationTrigger를 통해 하나로 통합하여 관리
+        .onChange(of: viewModel.animationTrigger) { _, newTrigger in
+            guard let trigger = newTrigger else { return }
+            
+            handleAnimation(for: trigger)
+            
+            // 트리거 사용 후 초기화하여 중복 실행 방지
+            viewModel.animationTrigger = nil
         }
         .onTapGesture {
             handleTap()
-            // handleTapWithEffect() // 이펙트 탭
         }
     }
     
@@ -253,6 +260,86 @@ struct ScreenView: View {
     }
     
     // MARK: - 헬퍼 메서드
+    // ✨1 애니메이션 재생 로직을 중앙에서 처리하는 함수
+    private func handleAnimation(for trigger: AnimationTrigger) {
+        guard let character = character, character.species == .quokka else { return }
+        guard let currentVisualPhase = self.visualPhase else { return }
+        
+        // infant 단계에서만 수면/기상 애니메이션이 다르므로 분기
+        let hasSpecialSleepAnimation = (currentVisualPhase == .infant)
+
+        switch trigger {
+        case .appLaunch, .userWakeUp:
+            if hasSpecialSleepAnimation {
+                handleWakeUpSequence()
+            } else {
+                handleReturnToNormal() // 일반 기상
+            }
+            
+            
+        case .navigation, .levelUp, .returnToNormal:
+            // 다른 화면에서 복귀, 레벨업, 일반 액션 완료 시
+            handleReturnToNormal() // normal 애니메이션 바로 재생
+
+            
+        case .sleep:
+            // 재우기
+            // ✨2 isSleeping 조건 확인을 제거. 트리거를 신뢰하고 애니메이션 재생
+            if hasSpecialSleepAnimation {
+                handleSleepSequence()
+            } else {
+                // ✨2 유아기 외 단계에서는 재울 때도 일반(normal) 애니메이션 재생
+                handleReturnToNormal() // 일반 수면 (일단은 normal로 대체)
+            }
+            
+        case .action(let type, let phase, let id):
+            // '우유먹기'와 같은 특정 액션 애니메이션 재생
+            playActionAnimation(type: type, phase: phase, id: id)
+        }
+    }
+    
+    // ✨1 액션 애니메이션을 재생하는 함수
+    private func playActionAnimation(type: String, phase: CharacterPhase, id: String) {
+        quokkaController.playAnimation(
+            type: type,
+            phase: phase,
+            mode: .once,
+            progressUpdate: { progress in
+                // HomeViewModel의 진행률 상태를 업데이트
+                viewModel.feedingProgress = CGFloat(progress.percentage)
+                
+                // 이곳에서 특정 프레임에 대한 로직을 추가할 수 있습니다.
+                // 예: if progress.currentIndex == 150 { viewModel.doSomething() }
+            },
+            completion: {
+                // 애니메이션 완료 후 HomeViewModel에 완료 사실을 알림
+                viewModel.completeAction(actionId: id)
+            }
+        )
+    }
+    
+    // ✨1 재우기 애니메이션 시퀀스
+    private func handleSleepSequence() {
+        print("😴 재우기 애니메이션 시퀀스 시작")
+        quokkaController.playAnimation(type: "sleep1Start", phase: .infant, mode: .once, completion:  {
+            self.quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
+        })
+    }
+    
+    // ✨1 기상 애니메이션 시퀀스 (특별한 경우)
+    private func handleWakeUpSequence() {
+        print("☀️ 특별 기상 애니메이션 시퀀스 시작")
+        quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once, completion:  {
+            self.handleReturnToNormal()
+        })
+    }
+    
+    // ✨1 기본 상태(normal) 애니메이션으로 돌아가는 함수
+    private func handleReturnToNormal() {
+        guard let character = character, let phase = visualPhase else { return }
+        print("▶️ \(phase.rawValue) 단계의 normal 애니메이션 재생")
+        quokkaController.playAnimation(type: "normal", phase: phase, mode: .pingPong)
+    }
     
     // 컨트롤러들 설정
     private func setupControllers() {
@@ -279,41 +366,10 @@ struct ScreenView: View {
             eggController.startAnimation()
             print("운석 애니메이션 시작")
         } else if character.species == .quokka {
-            // isSleeping 상태를 확인하여 초기 애니메이션 결정
-            handleSleepStateChange(isSleeping: self.isSleeping)
-        }
-    }
-    
-    // isSleeping 상태 변화에 따른 애니메이션 처리
-    private func handleSleepStateChange(isSleeping: Bool) {
-        guard let character = character, character.species == .quokka else { return }
-        
-        guard let currentVisualPhase = self.visualPhase else { return }
-        
-        // 현재는 infant 단계만 특별한 수면/기상 애니메이션을 가짐
-        if currentVisualPhase == .infant {
-            if isSleeping {
-                // 재우기: sleep1Start (once) -> sleep2Pingpong (pingPong)
-                print("😴 재우기 애니메이션 시퀀스 시작")
-                quokkaController.playAnimation(type: "sleep1Start", phase: .infant, mode: .once) {
-                    // sleep1Start가 끝나면 실행됨
-                    print(" transitioning to sleep2Pingpong")
-                    quokkaController.playAnimation(type: "sleep2Pingpong", phase: .infant, mode: .pingPong)
-                }
-            } else {
-                // 깨우기: sleep4WakeUp (once) -> normal (pingPong)
-                print("☀️ 깨우기 애니메이션 시퀀스 시작")
-                quokkaController.playAnimation(type: "sleep4WakeUp", phase: .infant, mode: .once) {
-                    // sleep4WakeUp이 끝나면 실행
-                    print(" --> normal 애니메이션으로 전환")
-                    self.quokkaController.playAnimation(type: "normal", phase: .infant, mode: .pingPong)
-                }
-            }
-        } else {
-            // 일단 child 단계 이상에서는 isSleeping 상태와 관계없이 항상 normal 애니메이션 재생
-            // 추후 애니메이션이 추가되는대로 업데이트 예정
-             print("▶️ \(currentVisualPhase) 단계의 normal 애니메이션 재생")
-            quokkaController.playAnimation(type: "normal", phase: currentVisualPhase, mode: .pingPong)
+            // ✨2 뷰가 나타날 때의 애니메이션 로직을 통합된 handleAnimation으로 변경
+            // ✨2 isSleeping 상태에 따라 초기 트리거 결정
+            let initialTrigger: AnimationTrigger = self.isSleeping ? .sleep : .appLaunch
+            handleAnimation(for: initialTrigger)
         }
     }
     
@@ -364,21 +420,21 @@ struct ScreenView: View {
     }
 }
 
-#Preview {
-    ScreenView(
-        character: GRCharacter(
-            species: .CatLion,
-            name: "테스트",
-            imageName: "CatLion",
-            birthDate: Date()
-        ),
-        isSleeping: false,
-        onCreateCharacterTapped: {
-            print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
-        }
-    )
-    .padding()
-}
-
+//#Preview {
+//    ScreenView(
+//        character: GRCharacter(
+//            species: .CatLion,
+//            name: "테스트",
+//            imageName: "CatLion",
+//            birthDate: Date()
+//        ),
+//        isSleeping: false,
+//        onCreateCharacterTapped: {
+//            print("프리뷰에서 캐릭터 생성 버튼이 눌렸습니다!")
+//        }
+//    )
+//    .padding()
+//}
+//
 
 
