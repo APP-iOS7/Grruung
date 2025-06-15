@@ -235,7 +235,7 @@ let recoveryProducts: [GRStoreItem] = [
                itemDescription: "폭신한 팬케이크로 달콤한 휴식을 즐겨요!",
                itemEffectDescription: "체력\t + 10\n활동량\t + 15",
                itemTag: .normal,
-               itemCategory: .toy,
+               itemCategory: .food,
                bgColor: .purple.opacity(0.4)),
     
     GRStoreItem(itemName: "복숭아 먹기",

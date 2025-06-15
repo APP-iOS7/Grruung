@@ -16,6 +16,8 @@ struct ItemPopupView: View {
     @EnvironmentObject var userInventoryViewModel: UserInventoryViewModel
     @Environment(\.dismiss) var dismiss
     
+    @Binding var animate: Bool
+    
     var body: some View {
         VStack(spacing: 16) {
             Text("획득한 아이템")
@@ -31,9 +33,17 @@ struct ItemPopupView: View {
                 .font(.headline)
 
             Button("확인") {
-//                dismiss()
-                saveItemToFirebase()
-                isPresented = false
+                Task {
+                    await saveItemToFirebase() // 먼저 저장 완료 보장
+
+                    withAnimation {
+                        animate = false
+                    }
+
+                    try? await Task.sleep(nanoseconds: 300_000_000) // 0.3초 대기
+
+                    isPresented = false
+                }
             }
             .padding()
             .background(GRColor.buttonColor_1)
@@ -52,9 +62,16 @@ struct ItemPopupView: View {
         )
         .padding()
         .shadow(radius: 10)
+        .scaleEffect(animate ? 1.0 : 0.5)
+        .opacity(animate ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                animate = true
+            }
+        }
     }
     
-    private func saveItemToFirebase() {
+    private func saveItemToFirebase() async {
             // 🔁 기존 인벤토리에서 같은 아이템이 있는지 확인
             if let existingItem = userInventoryViewModel.inventories.first(where: {
                 $0.userItemName == item.itemName

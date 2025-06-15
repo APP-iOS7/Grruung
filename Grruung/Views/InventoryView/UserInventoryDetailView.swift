@@ -39,6 +39,7 @@ struct UserInventoryDetailView: View {
     @State private var selectedItems: [GRStoreItem] = []
     @State private var currentIndex = 0
     @State private var showPopup = false
+    @State private var showAnimation: Bool = false
     
     // 키보드 내리기 변수
     @FocusState private var isFocused: Bool
@@ -62,13 +63,15 @@ struct UserInventoryDetailView: View {
                                     // 다음 아이템으로 넘어감
                                     if currentIndex + 1 < selectedItems.count {
                                         currentIndex += 1
+                                        showAnimation = true
                                     } else {
                                         showPopup = false
                                         dismiss()
                                     }
                                 }
                             }
-                        )
+                        ),
+                        animate: $showAnimation
                     )
                 } else {
                 VStack {
