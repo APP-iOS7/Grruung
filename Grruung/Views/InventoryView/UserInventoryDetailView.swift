@@ -352,15 +352,29 @@ struct UserInventoryDetailView: View {
     
     // 아이템 사용 메서드
     private func useItem() {
-        // 아이템 수량 감소
-        item.userItemQuantity -= Int(useItemCount)
-        isEdited = true
+        // ItemEffectApplier를 통해 아이템 효과 적용
+        let effectResult = ItemEffectApplier.shared.applyItemEffect(item: item, quantity: Int(useItemCount))
         
-        // 최소한의 데이터베이스 작업
-        // 에러가 발생했던 부분을 제거하고 간단하게 처리
-        Task {
-            // 데이터베이스 업데이트 코드를 여기에 추가할 수 있음
-            // 지금은 화면 이동만 처리
+        if effectResult.success {
+            // 아이템 수량 감소
+            item.userItemQuantity -= Int(useItemCount)
+            isEdited = true
+            
+            // 데이터베이스 업데이트
+            Task {
+                // 아이템 수량 업데이트 - 기존 파이어베이스 구조 유지
+                UserInventoryViewModel().updateItemQuantity(
+                    userId: realUserId,  // 전달받은 realUserId 사용
+                    item: item,
+                    newQuantity: item.userItemQuantity
+                )
+            }
+            
+            // 적용된 효과 메시지를 표시할 수 있는 알림창 추가 (선택사항)
+            // 여기서는 콘솔에만 출력
+            print("✅ 아이템 효과 적용: \(effectResult.message)")
+        } else {
+            print("❌ 아이템 효과 적용 실패: \(effectResult.message)")
         }
         
         dismiss()
@@ -368,11 +382,17 @@ struct UserInventoryDetailView: View {
     
     // 아이템 삭제 메서드
     private func deleteItem() {
+        // 아이템 삭제 로직 구현
         isEdited = true
         
-        // 최소한의 데이터베이스 작업
+        // 데이터베이스에서 아이템 삭제 - 기존 파이어베이스 구조 유지
         Task {
-            // 데이터베이스 삭제 코드를 여기에 추가할 수 있음
+            // 아이템 완전히 삭제
+            UserInventoryViewModel().deleteItem(
+                userId: realUserId,  // 전달받은 realUserId 사용
+                item: item
+            )
+            print("🗑️ 아이템 삭제 요청 완료: \(item.userItemName)")
         }
         
         dismiss()
