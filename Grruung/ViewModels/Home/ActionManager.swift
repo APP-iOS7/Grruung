@@ -369,14 +369,6 @@ class ActionManager {
                 timeRestriction: TimeRestriction(startHour: 9, endHour: 17, isInverted: false) // 훈련소 운영시간
             ),
             
-            // 다음 액션들은 제거 (특수 이벤트로 이동):
-            // - 파티하기 (party)
-            // - 온천가기 (hot_spring)
-            // - 캠핑가기
-            // - 놀이공원
-            // - 해변여행
-            // - 등산하기
-            
             PetAction(
                 id: "stretch_exercise",
                 icon: "yogaIcon",

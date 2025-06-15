@@ -25,6 +25,7 @@ struct HomeView: View {
     @State private var showSpecialEvent = false // 특수 이벤트 표시 여부
     @State private var showHealthCare = false // 건강관리 화면 표시 여부
     @State private var showUpdateScreen = false // 업데이트 화면 표시 상태
+    @State private var showAllActionsSheet = false
 
     // MARK: - Body
     var body: some View {
@@ -129,10 +130,12 @@ struct HomeView: View {
                 )
             }
         }
-        
         // 온보딩 화면 시트
         .sheet(isPresented: $isShowingOnboarding) {
             OnboardingView()
+        }
+        .sheet(isPresented: $showAllActionsSheet) {
+            AllActionsDebugView()
         }
         // 부화 팝업 오버레이
         .overlay {
@@ -479,6 +482,36 @@ struct HomeView: View {
                 }
                 .disabled(!unlocked)
             )
+        } else if systemName == "lock.fill" {
+            // SF Symbol(시스템 아이콘)인 경우 처리
+            return AnyView(
+                Button(action: {
+                    handleButtonAction(systemName: systemName)
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
+                            .frame(width: 60, height: 60)
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        VStack(spacing: 3) {
+                            Image(systemName: "lock.fill")  // 시스템 심볼 사용
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 28, height: 28)
+                                .foregroundColor(unlocked ? .orange : .gray)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            Text(name)
+                                .font(.system(size: 9))
+                                .bold()
+                                .foregroundColor(unlocked ? .white : .gray)
+                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
+                    }
+                }
+                .disabled(!unlocked)
+            )
         } else {
             // 기존 아이콘 버튼 코드 유지 (다른 버튼들)
             return AnyView(
@@ -551,8 +584,13 @@ struct HomeView: View {
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
         case "lock.fill": // 설정
-            // 설정 시트 표시
+#if DEBUG
+            // 디버그 모드에서는 액션을 표시하는 시트와 업데이트 알림창 모두 표시
+            showAllActionsSheet = true
+#else
+            // 릴리즈 모드에서는 업데이트 알림창만 표시
             showUpdateAlert = true
+#endif
         default:
             break
         }
