@@ -106,8 +106,20 @@ struct CharacterDetailView: View {
                            startPoint: .top, endPoint: .bottom)
         )
         .navigationTitle(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)
+        .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left")
+                                .foregroundColor(GRColor.buttonColor_2)
+                        }
+                    }
+                }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 characterActionsMenu
             }
@@ -207,6 +219,7 @@ struct CharacterDetailView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.title2)
+                .foregroundColor(GRColor.buttonColor_2)
         }
     }
     
@@ -245,7 +258,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundColor(GRColor.buttonColor_2)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -267,7 +280,7 @@ struct CharacterDetailView: View {
                             Text(getPhaseNameFor(index: index))
                                 .font(.caption)
                                 .fontWeight(index == currentStageIndex ? .semibold : .regular)
-                                .foregroundColor(index == currentStageIndex ? GRColor.pointColor : .textSecondary)
+                                .foregroundColor(index == currentStageIndex ? GRColor.buttonColor_2 : .gray)
                         }
                         
                         // 화살표 (마지막이 아닌 경우)
@@ -299,7 +312,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundColor(GRColor.buttonColor_2)
             }
             
             Spacer()
@@ -316,7 +329,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.right")
                     .font(.title2)
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundColor(GRColor.buttonColor_2)
             }
         }
         .padding(.horizontal, UIConstants.horizontalPadding)
@@ -341,7 +354,7 @@ struct CharacterDetailView: View {
                 VStack {
                     Image(systemName: "pawprint.circle.fill")
                         .font(.system(size: UIIconSize.large))
-                        .foregroundColor(GRColor.grColorOrange)
+                        .foregroundColor(GRColor.buttonColor_2)
                     
                     Text("총 활동량")
                         .font(.caption)
