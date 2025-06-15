@@ -30,7 +30,8 @@ struct AlertView: View {
     @State private var showPurchaseSuccessAlert = false
     @State private var showPurchaseCancelAlert = false
     @Binding var isPresented: Bool // 팝업 제어용
-    
+    @Binding var refreshTrigger: Bool
+
     private let db = Firestore.firestore() // // FIXME: - Start 결제 내여
 
     var body: some View {
@@ -141,7 +142,7 @@ struct AlertView: View {
         .alert("구매 완료", isPresented: $showPurchaseSuccessAlert) {
             Button("확인", role: .cancel) {
                 isPresented = false
-                
+                refreshTrigger.toggle()
                 NotificationCenter.default.post(name: Notification.Name("ReturnToStoreView"), object: nil)
             }
         } message: {

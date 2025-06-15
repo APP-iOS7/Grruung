@@ -76,6 +76,11 @@ struct ItemPopupView: View {
             if let existingItem = userInventoryViewModel.inventories.first(where: {
                 $0.userItemName == item.itemName
             }) {
+                
+                print("===========")
+                print(item.itemName)
+                print("===========")
+                
                 print("🟡 기존 아이템 발견 → 수량 증가")
 
                 let newQuantity = existingItem.userItemQuantity + item.itemQuantity
