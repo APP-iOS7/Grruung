@@ -181,10 +181,11 @@ struct ProductDetailView: View {
         ) // 원하는 색상 지정
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReturnToStoreView"))) { _ in
             // 알림을 받으면 뷰를 닫아 StoreView로 돌아가기
+//            refreshTrigger.toggle()
             dismiss()
         }
         .sheet(isPresented: $showAlert) {
-            AlertView(product: product, quantity: quantity, isPresented: $showAlert)
+            AlertView(product: product, quantity: quantity, isPresented: $showAlert, refreshTrigger: $refreshTrigger)
                 .environmentObject(userInventoryViewModel)
                 .environmentObject(userViewModel)
                 .environmentObject(authService)
