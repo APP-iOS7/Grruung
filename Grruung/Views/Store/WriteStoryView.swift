@@ -218,7 +218,30 @@ struct WriteStoryView: View {
             if isImageLoading {
                 loadingIndicator
             } else if let displayedImage = displayedImage {
-                diaryImageView(uiImage: displayedImage)
+                if currentMode == .read {
+                    diaryImageView(uiImage: displayedImage)
+                } else {
+                    diaryImageView(uiImage: displayedImage)
+                        .overlay(
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        self.selectedImageData = nil
+                                        self.displayedImage = nil
+                                        self.selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                    }
+                                    .padding(16)
+                                }
+                                Spacer()
+                            }
+                        )
+                }
             } else if currentMode != .read {
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                     imagePickerPlaceholder
