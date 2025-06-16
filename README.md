@@ -2,7 +2,7 @@
 
 ---
 
-[![목업](file:///Users/sim-yeon-a/Untitled%20(1)/mockups.png)](https://rrpe.github.io/Grruung-webpf/ "구르릉 프로젝트 상세 사이트")
+[![목업]([file:///Users/sim-yeon-a/Untitled%20(1)/mockups.png](https://github.com/user-attachments/assets/4d2974c1-8a7c-4eaa-b0ad-afd9577935fc))](https://rrpe.github.io/Grruung-webpf/ "구르릉 프로젝트 상세 사이트")
 
 ## 🐾 소개
 
