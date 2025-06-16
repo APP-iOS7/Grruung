@@ -195,12 +195,12 @@ struct UserInventoryDetailView: View {
                     Text("\(Int(useItemCount))")
                         .frame(width: 60)
                         .padding(8)
-//                        .background(Color.white)
+                    //                        .background(Color.white)
                         .cornerRadius(8)
-//                        .overlay(
-//                            RoundedRectangle(cornerRadius: 8)
-//                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-//                        )
+                    //                        .overlay(
+                    //                            RoundedRectangle(cornerRadius: 8)
+                    //                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+                    //                        )
                     
                     // 플러스 버튼
                     Button(action: {
@@ -303,7 +303,7 @@ struct UserInventoryDetailView: View {
         case .useItem:
             return "아이템을 사용합니다"
         case .deleteItem:
-            return "아이템을 버리시겠습니까?"
+            return "해당 아이템을 모두 버립니다."
         case .reDeleteItem:
             return "정말로 모든 수량을 버리시겠습니까?"
         case .noDeleteItem:
@@ -339,10 +339,13 @@ struct UserInventoryDetailView: View {
             Button("확인", role: .destructive) {
                 if item.userItemType == .permanent {
                     alertType = .noDeleteItem
-                    showAlert = true
+                    
+                    showAlert = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showAlert = true
+                    }
                 } else {
-                    alertType = .reDeleteItem
-                    showAlert = true
+                    deleteItem()
                 }
             }
             

@@ -141,15 +141,27 @@ struct WriteStoryView: View {
             }
         }
         .interactiveDismissDisabled(isUploading)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             // 왼쪽(뒤로가기) 버튼 추가
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("취소") {
-                    dismiss()
+            if currentMode == .create {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                    .foregroundStyle(GRColor.mainColor6_2)
                 }
-                .foregroundStyle(GRColor.mainColor6_2)
+            } else {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
             }
-            
             // 오른쪽(저장/수정) 버튼
             ToolbarItem(placement: .navigationBarTrailing) {
                 if currentMode == .read {
@@ -217,7 +229,30 @@ struct WriteStoryView: View {
             if isImageLoading {
                 loadingIndicator
             } else if let displayedImage = displayedImage {
-                diaryImageView(uiImage: displayedImage)
+                if currentMode == .read {
+                    diaryImageView(uiImage: displayedImage)
+                } else {
+                    diaryImageView(uiImage: displayedImage)
+                        .overlay(
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        self.selectedImageData = nil
+                                        self.displayedImage = nil
+                                        self.selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                    }
+                                    .padding(16)
+                                }
+                                Spacer()
+                            }
+                        )
+                }
             } else if currentMode != .read {
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                     imagePickerPlaceholder
