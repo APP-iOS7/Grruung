@@ -141,6 +141,7 @@ struct WriteStoryView: View {
             }
         }
         .interactiveDismissDisabled(isUploading)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             // 왼쪽(뒤로가기) 버튼 추가
             if currentMode == .create {
@@ -149,6 +150,16 @@ struct WriteStoryView: View {
                         dismiss()
                     }
                     .foregroundStyle(GRColor.mainColor6_2)
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                            .font(.system(size: 18, weight: .semibold))
+                    }
                 }
             }
             // 오른쪽(저장/수정) 버튼
