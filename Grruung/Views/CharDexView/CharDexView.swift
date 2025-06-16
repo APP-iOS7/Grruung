@@ -133,14 +133,15 @@ struct CharDexView: View {
                                     // 수집 현황 정보
                                     HStack {
                                         Text("\(sortedCharacters.count)")
-                                            .foregroundStyle(.yellow)
+                                            .foregroundStyle(.brown)
                                         Text("/ \(maxDexCount) 수집")
                                     }
                                     .frame(maxWidth: 180)
-                                    .font(.title)
+                                    .font(.title2)
+                                    .bold()
                                     .background(alignment: .center) {
                                         Capsule()
-                                            .fill(Color.brown.opacity(0.5))
+                                            .fill(Color.brown.opacity(0.0))
                                     }
                                     
                                     // 티켓 수량 표시

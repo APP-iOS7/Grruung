@@ -18,6 +18,12 @@ struct UserInventoryDetailView: View {
     @State private var showAlert = false
     @State private var alertType: AlertType = .itemCount
     
+    // 랜덤박스 관련 변수
+    @State private var selectedItems: [GRStoreItem] = []
+    @State private var currentIndex = 0
+    @State private var showPopup = false
+    @State private var showAnimation: Bool = false
+    
     @FocusState private var isFocused: Bool
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authService: AuthService
@@ -57,17 +63,41 @@ struct UserInventoryDetailView: View {
     private var basicDetailView: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // 아이템 기본 정보
-                itemBasicInfoView
-                
-                // 아이템 효과 설명
-//                itemEffectView
-                
-                // 아이템 타입에 따라 다른 UI
-                if item.userItemType == .consumable {
-                    consumableItemView
+                if showPopup, currentIndex < selectedItems.count {
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                    
+                    ItemPopupView(
+                        item: selectedItems[currentIndex],
+                        userId: realUserId,
+                        isPresented: Binding(
+                            get: { showPopup },
+                            set: { newValue in
+                                if !newValue {
+                                    // 다음 아이템으로 넘어감
+                                    if currentIndex + 1 < selectedItems.count {
+                                        currentIndex += 1
+                                        showAnimation = true
+                                    } else {
+                                        showPopup = false
+                                        dismiss()
+                                    }
+                                }
+                            }
+                        ),
+                        animate: $showAnimation)
                 } else {
-                    permanentItemView
+                    // 아이템 기본 정보
+                    itemBasicInfoView
+                    
+                    // 아이템 효과 설명
+                    //                itemEffectView
+                    
+                    // 아이템 타입에 따라 다른 UI
+                    if item.userItemType == .consumable {
+                        consumableItemView
+                    } else {
+                        permanentItemView
+                    }
                 }
             }
             .padding()
@@ -162,18 +192,15 @@ struct UserInventoryDetailView: View {
                     .disabled(useItemCount <= 1)
                     
                     // 텍스트 필드
-                    TextField("1", text: $typeItemCount)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.center)
+                    Text("\(Int(useItemCount))")
                         .frame(width: 60)
                         .padding(8)
-                        .background(Color.white)
+//                        .background(Color.white)
                         .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                        )
-                        .focused($isFocused)
+//                        .overlay(
+//                            RoundedRectangle(cornerRadius: 8)
+//                                .stroke(Color.gray.opacity(0.5), lineWidth: 1)
+//                        )
                     
                     // 플러스 버튼
                     Button(action: {
@@ -352,27 +379,59 @@ struct UserInventoryDetailView: View {
     
     // 아이템 사용 메서드
     private func useItem() {
-        // 아이템 수량 감소
-        item.userItemQuantity -= Int(useItemCount)
-        isEdited = true
-        
-        // 최소한의 데이터베이스 작업
-        // 에러가 발생했던 부분을 제거하고 간단하게 처리
-        Task {
-            // 데이터베이스 업데이트 코드를 여기에 추가할 수 있음
-            // 지금은 화면 이동만 처리
+        // ItemEffectApplier를 통해 아이템 효과 적용
+        let effectResult = ItemEffectApplier.shared.applyItemEffect(item: item, quantity: Int(useItemCount))
+        realUserId = authService.currentUserUID
+        if effectResult.success {
+            // 아이템 수량 감소
+            item.userItemQuantity -= Int(useItemCount)
+            isEdited = true
+            
+            // 랜덤박스선물 아이템일 경우 팝업 창 띄움
+            if item.userItemName == "랜덤박스선물" {
+                // 놀이 + 회복 아이템 합치고 랜덤 선택
+                let allItems = playProducts + recoveryProducts
+                let randomItems = (0..<Int(useItemCount)).compactMap { _ in allItems.randomElement() } // 예: 3개 사용
+                selectedItems = randomItems
+                currentIndex = 0
+                showPopup = true
+            }
+            
+            // 데이터베이스 업데이트
+            Task {
+                // 아이템 수량 업데이트 - 기존 파이어베이스 구조 유지
+                UserInventoryViewModel().updateItemQuantity(
+                    userId: realUserId,  // 전달받은 realUserId 사용
+                    item: item,
+                    newQuantity: item.userItemQuantity
+                )
+            }
+            
+            // 적용된 효과 메시지를 표시할 수 있는 알림창 추가 (선택사항)
+            // 여기서는 콘솔에만 출력
+            print("✅ 아이템 효과 적용: \(effectResult.message)")
+        } else {
+            print("❌ 아이템 효과 적용 실패: \(effectResult.message)")
         }
         
-        dismiss()
+        if selectedItems.isEmpty {
+            dismiss()
+        }
     }
     
     // 아이템 삭제 메서드
     private func deleteItem() {
+        // 아이템 삭제 로직 구현
         isEdited = true
         
-        // 최소한의 데이터베이스 작업
+        // 데이터베이스에서 아이템 삭제 - 기존 파이어베이스 구조 유지
         Task {
-            // 데이터베이스 삭제 코드를 여기에 추가할 수 있음
+            // 아이템 완전히 삭제
+            UserInventoryViewModel().deleteItem(
+                userId: realUserId,  // 전달받은 realUserId 사용
+                item: item
+            )
+            print("🗑️ 아이템 삭제 요청 완료: \(item.userItemName)")
         }
         
         dismiss()

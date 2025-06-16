@@ -422,7 +422,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
         actionButtons = [
-            ("plus.circle", true, "캐릭터 생성"),
+            ("IconEgg", true, "캐릭터 생성"),
             ("playIcon", false, "놀아주기"),
             ("soapIcon", false, "씻기기"),
             ("nightIcon", false, "재우기")
@@ -813,6 +813,21 @@ class HomeViewModel: ObservableObject {
     
     // 활동량(피로도) 회복 처리 - 15분마다 실행
     private func recoverActivity() {
+        // 캐릭터가 없으면 아무 동작도 하지 않음
+        guard character != nil else {
+            // 캐릭터가 없는 경우 모든 스탯을 0으로 고정
+            if activityValue != 0 || satietyValue != 0 || staminaValue != 0 ||
+               healthyValue != 0 || cleanValue != 0 {
+                activityValue = 0
+                satietyValue = 0
+                staminaValue = 0
+                healthyValue = 0
+                cleanValue = 0
+                updateAllPercents()
+            }
+            return
+        }
+        
         let baseRecoveryAmount = isSleeping ? 15 : 10
         let finalRecoveryAmount = isDebugMode ? (baseRecoveryAmount * debugSpeedMultiplier) : baseRecoveryAmount
         
@@ -827,14 +842,29 @@ class HomeViewModel: ObservableObject {
             let recoveryChanges = ["activity": activityValue - oldValue]
             recordAndSaveStatChanges(recoveryChanges, reason: "timer_recovery")
             
-#if DEBUG
+    #if DEBUG
             print("⚡ 디버그 모드 활동량 회복: +\(finalRecoveryAmount)" + (isSleeping ? " (수면 보너스)" : ""))
-#endif
+    #endif
         }
     }
     
     // 보이는 스탯 감소 (포만감, 활동량)
     private func decreaseVisibleStats() {
+        // 캐릭터가 없으면 아무 동작도 하지 않음
+        guard character != nil else {
+            // 캐릭터가 없는 경우 모든 스탯을 0으로 고정
+            if activityValue != 0 || satietyValue != 0 || staminaValue != 0 ||
+               healthyValue != 0 || cleanValue != 0 {
+                activityValue = 0
+                satietyValue = 0
+                staminaValue = 0
+                healthyValue = 0
+                cleanValue = 0
+                updateAllPercents()
+            }
+            return
+        }
+        
         // 잠자는 중에는 감소 속도 절반
         let satietyDecrease = isSleeping ? 1 : 2
         let staminaDecrease = isSleeping ? 1 : 2
@@ -867,13 +897,28 @@ class HomeViewModel: ObservableObject {
             recordAndSaveStatChanges(statChanges, reason: "timer_decrease")
         }
         
-#if DEBUG
+    #if DEBUG
         print("📉 디버그 모드 보이는 스탯 감소: \(statChanges)" + (isSleeping ? " (수면 중)" : ""))
-#endif
+    #endif
     }
     
     // 히든 스탯 감소 (건강, 청결)
     private func decreaseHiddenStats() {
+        // 캐릭터가 없으면 아무 동작도 하지 않음
+        guard character != nil else {
+            // 캐릭터가 없는 경우 모든 스탯을 0으로 고정
+            if activityValue != 0 || satietyValue != 0 || staminaValue != 0 ||
+               healthyValue != 0 || cleanValue != 0 {
+                activityValue = 0
+                satietyValue = 0
+                staminaValue = 0
+                healthyValue = 0
+                cleanValue = 0
+                updateAllPercents()
+            }
+            return
+        }
+        
         let healthDecrease = isDebugMode ? debugSpeedMultiplier : 1
         let cleanDecrease = isDebugMode ? (2 * debugSpeedMultiplier) : 2
         
@@ -901,9 +946,9 @@ class HomeViewModel: ObservableObject {
             recordAndSaveStatChanges(statChanges, reason: "timer_hidden_decrease")
         }
         
-#if DEBUG
+    #if DEBUG
         print("🔍 디버그 모드 히든 스탯 감소: \(statChanges)")
-#endif
+    #endif
     }
     
     // 주간 애정도 체크 - 매주 월요일 00시에 주간 애정도를 누적 애정도에 추가
@@ -1555,6 +1600,12 @@ class HomeViewModel: ObservableObject {
             return
         }
         
+        // ✨5 포만감이 가득 찼을 때, 포만감을 올리는 액션을 막는 로직 추가
+        if let satietyEffect = action.effects["satiety"], satietyEffect > 0, self.satietyValue >= 100 {
+            showActionMessage("너무 배불러요...")
+            return // 액션 실행 중단
+        }
+        
         // 활동량 확인 (활동량이 부족하면 실행 불가)
         if activityValue < action.activityCost {
             print("⚡ '\(action.name)' 액션을 하기에 활동량이 부족합니다 (필요: \(action.activityCost), 현재: \(activityValue))")
@@ -1879,6 +1930,16 @@ class HomeViewModel: ObservableObject {
     
     @MainActor
     func loadCharacter() {
+        // 캐릭터가 없으면 모든 스탯을 0으로 초기화
+        if character == nil {
+            activityValue = 0
+            satietyValue = 0
+            staminaValue = 0
+            healthyValue = 0
+            cleanValue = 0
+            updateAllPercents()
+        }
+        
         // Firebase에서 로드하도록 변경
         if firebaseService.getCurrentUserID() != nil {
             loadMainCharacterFromFirebase()
