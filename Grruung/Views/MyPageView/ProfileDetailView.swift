@@ -200,6 +200,7 @@ struct ProfileDetailView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
+                )
         
         // MARK: - 닉네임 편집 팝업
         if isShowingNameEditorPopup {
