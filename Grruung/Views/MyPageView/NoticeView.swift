@@ -19,6 +19,7 @@ struct NoticeItem: Identifiable {
 // MARK: - 공지사항 뷰
 
 struct NoticeView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var expandedNoticeID: UUID? = nil
     
     let notices: [NoticeItem] = [
@@ -43,17 +44,17 @@ struct NoticeView: View {
                                 .multilineTextAlignment(.leading)
                             Spacer()
                             Image(systemName: expandedNoticeID == notice.id ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         
                         Text(notice.date)
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                         
                         if expandedNoticeID == notice.id {
                             Text(notice.content)
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                                 .padding(.top, 4)
                         }
                     }
@@ -70,7 +71,24 @@ struct NoticeView: View {
                 }
             }
         }
-        .navigationTitle("공지사항")
+//        .navigationTitle("공지사항")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Text("공지사항")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
     }
 }
 

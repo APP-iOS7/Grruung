@@ -67,7 +67,7 @@ struct CharDexSearchView: View {
                                     searchText = ""
                                 }, label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.gray)
+                                        .foregroundStyle(.gray)
                                 })
                                 .padding(.trailing, 20)
                             }
@@ -101,8 +101,19 @@ struct CharDexSearchView: View {
                 ],
                                startPoint: .top, endPoint: .bottom)
             )
-            .navigationTitle("캐릭터 검색")
+            .navigationBarBackButtonHidden(true)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left")
+                                .foregroundStyle(GRColor.buttonColor_2)
+                        }
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button {
@@ -131,7 +142,9 @@ struct CharDexSearchView: View {
                         
                     } label: {
                         Label("정렬", systemImage: "line.3.horizontal")
+                            .tint(GRColor.buttonColor_2)
                     }
+                    .tint(GRColor.buttonColor_2)
                 }
             }
             .alert("에러 발생", isPresented: $showingErrorAlert) {
@@ -219,7 +232,7 @@ struct CharDexSearchView: View {
         .frame(maxWidth: .infinity)
         .background(Color.brown.opacity(0.5))
         .cornerRadius(UIConstants.cornerRadius)
-        .foregroundColor(.gray)
+        .foregroundStyle(.gray)
         .padding(.bottom, 16)
     }
 }

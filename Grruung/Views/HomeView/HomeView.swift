@@ -25,12 +25,12 @@ struct HomeView: View {
     @State private var showSpecialEvent = false // 특수 이벤트 표시 여부
     @State private var showHealthCare = false // 건강관리 화면 표시 여부
     @State private var showUpdateScreen = false // 업데이트 화면 표시 상태
+    @State private var showAllActionsSheet = false
 
     // MARK: - Body
     var body: some View {
             NavigationStack {
                 ZStack {
-                    // FIXME: - Start 배경 이미지 전체 화면에 적용
                     // 배경 이미지 설정
                     GeometryReader { geometry in
                         Image("roomBasic1Big")
@@ -40,7 +40,6 @@ struct HomeView: View {
                             .edgesIgnoringSafeArea(.all)
                     }
                     .edgesIgnoringSafeArea(.all)
-                    // FIXME: - END
                     
                     // 원래 콘텐츠는 그대로 유지
                     if viewModel.isLoadingFromFirebase || !viewModel.isDataReady {
@@ -53,7 +52,8 @@ struct HomeView: View {
                             // 레벨 프로그레스 바
                             levelProgressBar
                             
-                            Spacer()
+                            // 말풍선 섹션
+                            speechBubbleSection
                             
                             // 메인 캐릭터 섹션
                             characterSection
@@ -78,18 +78,18 @@ struct HomeView: View {
                 .navigationBarBackButtonHidden(true)
             .onAppear {
                 viewModel.loadCharacter()
+                
+                // ✨1 홈 뷰가 다시 나타날 때 네비게이션 트리거 설정
+                // (데이터가 로드된 이후, 즉 최초 실행이 아닌 화면 전환 시에만)
+                if viewModel.isDataReady {
+                    viewModel.animationTrigger = .navigation
+                }
             }
         }
         .alert("안내", isPresented: $showUpdateAlert) {
             Button("확인", role: .cancel) {}
         } message: {
             Text("추후 업데이트 예정입니다.")
-        }
-        .sheet(isPresented: $showInventory) {
-            //            InventoryView(character: viewModel.character)
-        }
-        .sheet(isPresented: $showPetGarden) {
-            //            PetGardenView(character: viewModel.character)
         }
         .sheet(isPresented: $isShowingWriteStory) {
             if let character = viewModel.character {
@@ -113,9 +113,6 @@ struct HomeView: View {
                 ChatPetView(character: character, prompt: prompt)
             }
         }
-        .sheet(isPresented: $isShowingSettings) {
-            //            SettingsSheetView()
-        }
         
         // 진화 화면 시트
         .sheet(isPresented: $showEvolutionScreen) {
@@ -138,10 +135,12 @@ struct HomeView: View {
                 )
             }
         }
-        
         // 온보딩 화면 시트
         .sheet(isPresented: $isShowingOnboarding) {
             OnboardingView()
+        }
+        .sheet(isPresented: $showAllActionsSheet) {
+            AllActionsDebugView()
         }
         // 부화 팝업 오버레이
         .overlay {
@@ -169,11 +168,16 @@ struct HomeView: View {
             
             // 헬스케어
             if showHealthCare {
-                    HealthCareView(
-                        viewModel: viewModel,
-                        isPresented: $showHealthCare
-                    )
-                }
+                HealthCareView(
+                    viewModel: viewModel,
+                    isPresented: $showHealthCare
+                )
+            }
+            
+            // 인벤토리
+            if showInventory {
+                UserInventoryView(isPresented: $showInventory)
+            }
         }
     }
     
@@ -191,7 +195,7 @@ struct HomeView: View {
                     .font(.body)
                     .fontWeight(.medium)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
             .background(
@@ -218,7 +222,7 @@ struct HomeView: View {
                     .font(.body)
                     .fontWeight(.medium)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
             .background(
@@ -302,6 +306,15 @@ struct HomeView: View {
         .padding(.top, 10)
     }
     
+    // 말풍선 섹션
+    private var speechBubbleSection: some View {
+        // SpeechBubbleView는 항상 존재하지만, 메시지 유무에 따라 투명도만 조절
+        SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
+            .frame(height: 50, alignment: .bottom) // 말풍선이 차지할 고정 높이를 지정하여 레이아웃 밀림 방지
+            .opacity(!viewModel.statusMessage.isEmpty && !viewModel.isSleeping ? 1.0 : 0.0)
+            .animation(.easeInOut(duration: 0.4), value: viewModel.statusMessage.isEmpty)
+    }
+    
     // 캐릭터 섹션
     private var characterSection: some View {
         ZStack {
@@ -311,6 +324,7 @@ struct HomeView: View {
                 
                 ZStack {
                     ScreenView(
+                        viewModel: viewModel,
                         character: viewModel.character,
                         isSleeping: viewModel.isSleeping,
                         onCreateCharacterTapped: {
@@ -318,14 +332,6 @@ struct HomeView: View {
                             isShowingOnboarding = true
                         }
                     )
-                    
-                    // 상태 메시지 말풍선 (비어있지 않을 때만 표시)Add commentMore actions
-                    if !viewModel.statusMessage.isEmpty && !viewModel.isSleeping {
-                        SpeechBubbleView(message: viewModel.statusMessage, color: getMessageColor())
-                            .offset(y: -140) // 말풍선 위치 조정
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                            .animation(.easeInOut(duration: 0.5), value: viewModel.statusMessage)
-                    }
                 }
             }
             
@@ -373,7 +379,7 @@ struct HomeView: View {
                 HStack(spacing: 15) {
                     // 아이콘
                     Image(systemName: stat.icon)
-                        .foregroundColor(stat.iconColor)
+                        .foregroundStyle(stat.iconColor)
                         .frame(width: 30)
                     
                     // 상태 바
@@ -382,12 +388,12 @@ struct HomeView: View {
                             // 배경 바 (전체 너비)
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(height: 12)
-                                .foregroundColor(Color.gray.opacity(0.1))
+                                .foregroundStyle(Color.gray.opacity(0.1))
                             
                             // 진행 바
                             RoundedRectangle(cornerRadius: 10)
                                 .frame(width: geometry.size.width * stat.value, height: 12)
-                                .foregroundColor(stat.color)
+                                .foregroundStyle(stat.color)
                                 .animation(.easeInOut(duration: 0.6), value: stat.value)
                         }
                     }
@@ -400,156 +406,158 @@ struct HomeView: View {
     
     // 액션 버튼 그리드
     private var actionButtonsGrid: some View {
-        HStack(spacing: 15) {
-            ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
-                Button(action: {
-                    if action.icon == "plus.circle" {
-                        // 캐릭터 생성 버튼인 경우 온보딩 화면으로 이동
-                        isShowingOnboarding = true
-                    } else {
-                        viewModel.performAction(at: index)
-                    }
-                }) {
-                    ZStack {
-                        // 바깥쪽 배경 + 그림자
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(action.unlocked ? 0.25 : 0.15))
-                            .frame(width: 75, height: 75)
-                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-
-                        if !action.unlocked {
-                            Image(systemName: "lock.fill")
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                        } else {
-                            VStack(spacing: 5) {
-                                Image(action.icon)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 42, height: 42)
-                                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-
-                                Text(action.name)
-                                    .font(.caption2)
-                                    .bold()
-                                    .foregroundColor(.white)
-                                    .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+        ZStack {
+            if viewModel.isFeeding {
+                ActionProgressView(progress: viewModel.feedingProgress, text: "우유 먹는 중...")
+                    .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+            } else {
+                HStack(spacing: 15) {
+                    ForEach(Array(viewModel.actionButtons.enumerated()), id: \.offset) { index, action in
+                        Button(action: {
+                            if action.icon == "plus.circle" {
+                                // 캐릭터 생성 버튼인 경우 온보딩 화면으로 이동
+                                isShowingOnboarding = true
+                            } else {
+                                viewModel.performAction(at: index)
                             }
-                            .padding(8)
+                        }) {
+                            ZStack {
+                                // 바깥쪽 배경 + 그림자
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(action.unlocked ? 0.25 : 0.15))
+                                    .frame(width: 75, height: 75)
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+
+                                if !action.unlocked {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundStyle(.white)
+                                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                                } else {
+                                    VStack(spacing: 5) {
+                                        Image(action.icon)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 42, height: 42)
+                                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+
+                                        Text(action.name)
+                                            .font(.caption2)
+                                            .bold()
+                                            .foregroundStyle(.white)
+                                            .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                                    }
+                                    .padding(8)
+                                }
+                            }
+                            // 바깥 테두리 유지
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
                         }
+                        .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "nightIcon" && action.icon != "plus.circle"))
                     }
-                    // 바깥 테두리 유지
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
                 }
-                .disabled(viewModel.isAnimationRunning || (viewModel.isSleeping && action.icon != "nightIcon" && action.icon != "plus.circle"))
+                .transition(.opacity.animation(.easeInOut(duration: 0.3)))
             }
         }
+        .frame(height: 75) // ZStack 전체 높이를 고정하여 레이아웃 흔들림 방지
     }
     
     // 아이콘 버튼
     @ViewBuilder
-    func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
-        if !unlocked {
-            // 잠긴 버튼
-            ZStack {
-                Image("lockIcon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 75)
-                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-            }
-        } else {
-            if systemName == "cartIcon" {
-                NavigationLink(destination: StoreView()) {
-                    ZStack {
-                        // 배경 블러 효과와 불투명도 증가
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
-                            .frame(width: 60, height: 60)
-                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        
-                        VStack(spacing: 3) {
-                            // 아이콘 크기 증가 및 그림자 추가
-                            Image(systemName: systemName)
-                                .font(.system(size: 28))
-                                .foregroundColor(GRColor.buttonColor_2)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                            
-                            // 텍스트 추가
-                            Text(name)
-                                .font(.system(size: 9))
-                                .bold()
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
-                        }
-                    }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-                }
-            } else if systemName == "backpackIcon2" {
-                NavigationLink(destination: UserInventoryView()) {
+    private func iconButton(systemName: String, name: String, unlocked: Bool) -> some View {
+        // "backpackIcon2"가 인벤토리 아이콘 이름인 것으로 보입니다
+        if systemName == "backpackIcon2" {
+            return AnyView(
+                Button(action: {
+                    // 인벤토리 오버레이 표시
+                    showInventory = true
+                }) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
                             .frame(width: 60, height: 60)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
 
                         VStack(spacing: 3) {
-                            Image("backpackIcon2")
+                            Image(systemName)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 45, height: 45)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
 
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(.white)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
                 }
-            } else {
+                .disabled(!unlocked)
+            )
+        } else if systemName == "lock.fill" {
+            // SF Symbol(시스템 아이콘)인 경우 처리
+            return AnyView(
                 Button(action: {
                     handleButtonAction(systemName: systemName)
                 }) {
                     ZStack {
-                        // 배경 블러 효과와 불투명도 증가
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.25))
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
                             .frame(width: 60, height: 60)
                             .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                         
                         VStack(spacing: 3) {
-                            // 아이콘 크기 증가 및 그림자 추가
-                            Image(uiImage: UIImage(named: systemName) ?? UIImage(systemName: systemName)!)
+                            Image(systemName: "lock.fill")  // 시스템 심볼 사용
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 28, height: 28)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                                .font(.system(size: 28))
-                                .foregroundColor(GRColor.buttonColor_2)
+                                .foregroundStyle(unlocked ? .orange : .gray)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             
-                            // 텍스트 추가
                             Text(name)
                                 .font(.system(size: 9))
                                 .bold()
-                                .foregroundColor(.white)
+                                .foregroundStyle(unlocked ? .white : .gray)
                                 .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
                 }
-            }
+                .disabled(!unlocked)
+            )
+        } else {
+            // 기존 아이콘 버튼 코드 유지 (다른 버튼들)
+            return AnyView(
+                Button(action: {
+                    handleButtonAction(systemName: systemName)
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white.opacity(unlocked ? 0.25 : 0.1))
+                            .frame(width: 60, height: 60)
+                            .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        VStack(spacing: 3) {
+                            Image(systemName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 45, height: 45)
+                                .foregroundStyle(unlocked ? .white : .gray)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            Text(name)
+                                .font(.system(size: 9))
+                                .bold()
+                                .foregroundStyle(unlocked ? .white : .gray)
+                                .shadow(color: Color.black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
+                    }
+                }
+                .disabled(!unlocked)
+            )
         }
     }
     
@@ -592,8 +600,13 @@ struct HomeView: View {
                 viewModel.statusMessage = "먼저 캐릭터를 생성해주세요."
             }
         case "lock.fill": // 설정
-            // 설정 시트 표시
+#if DEBUG
+            // 디버그 모드에서는 액션을 표시하는 시트와 업데이트 알림창 모두 표시
+            showAllActionsSheet = true
+#else
+            // 릴리즈 모드에서는 업데이트 알림창만 표시
             showUpdateAlert = true
+#endif
         default:
             break
         }

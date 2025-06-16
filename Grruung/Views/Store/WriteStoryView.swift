@@ -129,9 +129,6 @@ struct WriteStoryView: View {
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        //        .navigationBarItems(
-        //            trailing: saveButton
-        //        )
         .onAppear {
             setupViewforCurrentMode()
             writingCountVM.initialize(with: authService)
@@ -144,7 +141,28 @@ struct WriteStoryView: View {
             }
         }
         .interactiveDismissDisabled(isUploading)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            // 왼쪽(뒤로가기) 버튼 추가
+            if currentMode == .create {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("취소") {
+                        dismiss()
+                    }
+                    .foregroundStyle(GRColor.mainColor6_2)
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
+            }
+            // 오른쪽(저장/수정) 버튼
             ToolbarItem(placement: .navigationBarTrailing) {
                 if currentMode == .read {
                     Menu {
@@ -163,18 +181,12 @@ struct WriteStoryView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(GRColor.mainColor6_2)
                     }
                 } else {
                     saveButton
                 }
             }
-            //            // MARK: - 키보드 툴바에 완료 버튼 추가 (선택 사항) 이 코드 사용시 화면을 더 가려서 일단 주석 처리
-            //            ToolbarItemGroup(placement: .keyboard) {
-            //                Spacer()
-            //                Button("완료") {
-            //                    isTextEditorFocused = false
-            //                }
-            //            }
         }
         .alert("이야기를 삭제하시겠습니까?", isPresented: $showDeleteAlert) {
             Button("취소", role: .cancel) {}
@@ -199,32 +211,72 @@ struct WriteStoryView: View {
         }
     }
     
-    // MARK: - UI Components
-    
+    // MARK: - 날짜 헤더 뷰
     private var dateHeaderView: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar.circle.fill")
-                        .foregroundColor(Color(GRColor.mainColor5_1))
-                        .font(.title3)
-                    
-                    Text(currentDateString)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                }
-            }
+            Text(currentDateString)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundStyle(GRColor.fontMainColor)
+            
             Spacer()
         }
     }
     
+    // MARK: - 이미지 섹션
     private var imageSection: some View {
-        Group {
-            if currentMode == .read {
-                readModeImageView
-            } else {
-                editModeImageView
+        VStack {
+            if isImageLoading {
+                loadingIndicator
+            } else if let displayedImage = displayedImage {
+                if currentMode == .read {
+                    diaryImageView(uiImage: displayedImage)
+                } else {
+                    diaryImageView(uiImage: displayedImage)
+                        .overlay(
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        self.selectedImageData = nil
+                                        self.displayedImage = nil
+                                        self.selectedPhotoItem = nil
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title2)
+                                            .foregroundColor(.white)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                    }
+                                    .padding(16)
+                                }
+                                Spacer()
+                            }
+                        )
+                }
+            } else if currentMode != .read {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    imagePickerPlaceholder
+                }
+                .onChange(of: selectedPhotoItem) { newItem in
+                    guard let newItem = newItem else { return }
+                    
+                    isImageLoading = true
+                    
+                    Task {
+                        if let data = try? await newItem.loadTransferable(type: Data.self) {
+                            selectedImageData = data
+                            if let uiImage = UIImage(data: data) {
+                                displayedImage = uiImage
+                            }
+                        } else {
+                            print("이미지 로딩 중 오류 발생")
+                            selectedImageData = nil
+                        }
+                        
+                        isImageLoading = false
+                    }
+                }
+                .padding(.horizontal)
             }
         }
     }
@@ -263,7 +315,7 @@ struct WriteStoryView: View {
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
                                             .font(.title2)
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(.white)
                                             .background(Circle().fill(Color.black.opacity(0.5)))
                                     }
                                     .padding(16)
@@ -284,7 +336,7 @@ struct WriteStoryView: View {
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
                                             .font(.title2)
-                                            .foregroundColor(.white)
+                                            .foregroundStyle(.white)
                                             .background(Circle().fill(Color.black.opacity(0.5)))
                                     }
                                     .padding(16)
@@ -323,17 +375,17 @@ struct WriteStoryView: View {
         VStack(spacing: 16) {
             Image(systemName: "camera.circle")
                 .font(.system(size: 50))
-                .foregroundColor(Color(GRColor.buttonColor_1))
+                .foregroundStyle(Color(GRColor.buttonColor_1))
             
             VStack(spacing: 4) {
                 Text("사진 보여주기")
                     .font(.headline)
                     .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 
                 Text("사진을 추가하여 \(charDetailVM.character.name)에게 들려줄 이야기를 더 풍성하게 만들어보세요!")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(height: 160)
@@ -366,7 +418,7 @@ struct WriteStoryView: View {
                 .font(.title2)
                 .fontWeight(.bold)
                 .lineLimit(nil)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
             
             // 구분선
             Rectangle()
@@ -378,7 +430,7 @@ struct WriteStoryView: View {
                 .font(.body)
                 .lineSpacing(6)
                 .lineLimit(nil)
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
         }
     }
     
@@ -389,11 +441,11 @@ struct WriteStoryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "pencil.circle.fill")
-                        .foregroundColor(Color(GRColor.buttonColor_1))
+                        .foregroundStyle(Color(GRColor.buttonColor_1))
                     Text("주제")
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                 }
                 
                 ZStack(alignment: .topLeading) {
@@ -409,7 +461,7 @@ struct WriteStoryView: View {
                     
                     if isTitlePlaceholderVisible {
                         Text("어떤 주제에 대해 이야기할까요?")
-                            .foregroundColor(Color(.placeholderText))
+                            .foregroundStyle(Color(.placeholderText))
                             .font(.title3)
                             .padding(16)
                             .allowsHitTesting(false)
@@ -421,11 +473,11 @@ struct WriteStoryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "heart.circle.fill")
-                        .foregroundColor(Color(GRColor.buttonColor_1))
+                        .foregroundStyle(Color(GRColor.buttonColor_1))
                     Text("이야기")
                         .font(.headline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                 }
                 
                 ZStack(alignment: .topLeading) {
@@ -443,7 +495,7 @@ struct WriteStoryView: View {
                     
                     if isPlaceholderVisible {
                         Text("오늘 하루 \(charDetailVM.character.name)에게 들려주고 싶은 이야기를 써보세요.\n\n어떤 일이 있었나요? 어떤 기분이었나요?\n소소한 일상도 좋아요 ✨")
-                            .foregroundColor(Color(.placeholderText))
+                            .foregroundStyle(Color(.placeholderText))
                             .font(.body)
                             .lineSpacing(4)
                             .padding(.horizontal, 16)
@@ -535,7 +587,7 @@ struct WriteStoryView: View {
         )
         .font(.headline)
         .fontWeight(.semibold)
-        .foregroundColor(.white)
+        .foregroundStyle(.white)
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
         .background(

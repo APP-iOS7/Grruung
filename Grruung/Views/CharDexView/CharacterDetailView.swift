@@ -106,8 +106,20 @@ struct CharacterDetailView: View {
                            startPoint: .top, endPoint: .bottom)
         )
         .navigationTitle(viewModel.character.name.isEmpty ? "캐릭터" : viewModel.character.name)
+        .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "chevron.left")
+                                .foregroundStyle(GRColor.buttonColor_2)
+                        }
+                    }
+                }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
                 characterActionsMenu
             }
@@ -207,6 +219,7 @@ struct CharacterDetailView: View {
         } label: {
             Image(systemName: "ellipsis.circle")
                 .font(.title2)
+                .foregroundStyle(GRColor.buttonColor_2)
         }
     }
     
@@ -245,7 +258,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding / 4) {
             HStack {
                 Image(systemName: "pawprint.fill")
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundStyle(GRColor.buttonColor_2)
                 Text("성장 과정")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -267,13 +280,13 @@ struct CharacterDetailView: View {
                             Text(getPhaseNameFor(index: index))
                                 .font(.caption)
                                 .fontWeight(index == currentStageIndex ? .semibold : .regular)
-                                .foregroundColor(index == currentStageIndex ? GRColor.pointColor : .textSecondary)
+                                .foregroundStyle(index == currentStageIndex ? GRColor.buttonColor_2 : .gray)
                         }
                         
                         // 화살표 (마지막이 아닌 경우)
                         if index != currentStageIndex {
                             Image(systemName: "arrow.right")
-                                .foregroundColor(GRColor.gray400)
+                                .foregroundStyle(GRColor.gray400)
                                 .font(.caption)
                         }
                     }
@@ -299,7 +312,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.title2)
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundStyle(GRColor.buttonColor_2)
             }
             
             Spacer()
@@ -316,7 +329,7 @@ struct CharacterDetailView: View {
             }) {
                 Image(systemName: "chevron.right")
                     .font(.title2)
-                    .foregroundColor(GRColor.pointColor)
+                    .foregroundStyle(GRColor.buttonColor_2)
             }
         }
         .padding(.horizontal, UIConstants.horizontalPadding)
@@ -329,7 +342,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "heart.fill")
-                    .foregroundColor(GRColor.grColorRed)
+                    .foregroundStyle(GRColor.grColorRed)
                 Text("함께 했던 순간")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -341,11 +354,11 @@ struct CharacterDetailView: View {
                 VStack {
                     Image(systemName: "pawprint.circle.fill")
                         .font(.system(size: UIIconSize.large))
-                        .foregroundColor(GRColor.grColorOrange)
+                        .foregroundStyle(GRColor.buttonColor_2)
                     
                     Text("총 활동량")
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.black)
                 }
                 
                 Divider()
@@ -376,7 +389,7 @@ struct CharacterDetailView: View {
         VStack(alignment: .leading, spacing: UIConstants.verticalPadding) {
             HStack {
                 Image(systemName: "book.fill")
-                    .foregroundColor(GRColor.grColorBrown)
+                    .foregroundStyle(GRColor.grColorBrown)
                 Text("들려준 이야기")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -385,7 +398,7 @@ struct CharacterDetailView: View {
                 if !viewModel.posts.isEmpty {
                     Text("\(viewModel.posts.count)개")
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.black)
                 }
             }
             .padding(.horizontal, UIConstants.horizontalPadding)
@@ -394,10 +407,10 @@ struct CharacterDetailView: View {
                 VStack(spacing: 10) {
                     Image(systemName: "book.closed")
                         .font(.system(size: UIIconSize.large))
-                        .foregroundColor(GRColor.gray400)
+                        .foregroundStyle(GRColor.gray400)
                     
                     Text("이번 달에 기록된 이야기가 없습니다")
-                        .foregroundColor(GRColor.gray500)
+                        .foregroundStyle(GRColor.gray500)
                         .font(.subheadline)
                 }
                 .frame(height: 100)
@@ -549,26 +562,36 @@ struct CharacterDetailView: View {
     private func setAsMainCharacter() {
         isProcessing = true
         
-        // 1단계: 먼저 메인 캐릭터로 설정
-        viewModel.setAsMainCharacter(characterUUID: characterUUID)
-        
-        // 2단계: 주소 변경은 메인 설정 완료 후 실행
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            viewModel.updateAddress(characterUUID: characterUUID, newAddress: .userHome)
-        }
-        
-        // 3단계: UI 업데이트를 위한 알림 발송
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            NotificationCenter.default.post(
-                name: NSNotification.Name("CharacterSetAsMain"),
-                object: nil,
-                userInfo: ["characterUUID": characterUUID]
-            )
+        FirebaseService.shared.setMainCharacterAndMoveOthersToParadise(characterID: characterUUID) { error in
             
-            // 4단계: 뷰 닫기
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isProcessing = false
-                dismiss()
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ 메인 캐릭터 설정 실패: \(error.localizedDescription)")
+                    viewModel.errorMessage = "메인 캐릭터 설정에 실패했습니다."
+                    isProcessing = false
+                } else {
+                    print("✅ 메인 캐릭터 설정 및 다른 캐릭터들을 동산으로 이동 완료")
+                    
+                    // UI 업데이트를 위한 알림 발송
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("CharacterSetAsMain"),
+                        object: nil,
+                        userInfo: ["characterUUID": characterUUID]
+                    )
+                    
+                    // 다른 캐릭터들의 주소 변경 알림
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("AllCharactersAddressUpdated"),
+                        object: nil,
+                        userInfo: ["mainCharacterUUID": characterUUID]
+                    )
+                    
+                    // 뷰 닫기
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        isProcessing = false
+                        dismiss()
+                    }
+                }
             }
         }
     }
@@ -697,13 +720,13 @@ struct InfoRow: View {
         HStack {
             Text(title + ":")
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.black)
                 .frame(width: 60, alignment: .leading)
             
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(.textPrimary)
+                .foregroundStyle(.black)
             
             Spacer()
         }
@@ -720,18 +743,18 @@ struct StatRow: View {
         HStack {
             Text(title)
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.black)
                 .frame(width: 50, alignment: .leading)
             
             Text("\(value)")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(color)
+                .foregroundStyle(color)
                 .frame(width: 30, alignment: .trailing)
             
             Text("/ \(maxValue)")
                 .font(.caption)
-                .foregroundColor(.textSecondary)
+                .foregroundStyle(.black)
             
             Spacer()
         }
@@ -771,7 +794,7 @@ struct StoryRowView: View {
                                 .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                                 .overlay(
                                     Image(systemName: "photo")
-                                        .foregroundColor(GRColor.gray500)
+                                        .foregroundStyle(GRColor.gray500)
                                 )
                         @unknown default:
                             EmptyView()
@@ -783,7 +806,7 @@ struct StoryRowView: View {
                         .frame(width: UIIconSize.avatar / 1.06, height: UIIconSize.avatar / 1.06)
                         .overlay(
                             Image(systemName: "photo")
-                                .foregroundColor(GRColor.gray500)
+                                .foregroundStyle(GRColor.gray500)
                         )
                 }
                 
@@ -793,18 +816,18 @@ struct StoryRowView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
-                        .foregroundColor(.textPrimary)
+                        .foregroundStyle(.black)
                     
                     Text(formatDate(post.createdAt))
                         .font(.caption)
-                        .foregroundColor(.textSecondary)
+                        .foregroundStyle(.black)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(GRColor.gray400)
+                    .foregroundStyle(GRColor.gray400)
             }
             .padding(.vertical, UIConstants.verticalPadding / 2)
             .padding(.horizontal, UIConstants.horizontalPadding)
@@ -836,7 +859,7 @@ struct LoadingOverlay: View {
                     .tint(.white)
                 
                 Text("로딩 중...")
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .font(.subheadline)
             }
             .padding(UIConstants.horizontalPadding)

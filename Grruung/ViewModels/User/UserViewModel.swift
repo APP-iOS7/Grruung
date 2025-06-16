@@ -9,7 +9,11 @@ import Foundation
 import FirebaseFirestore
 import Combine
 
-class UserViewModel: ObservableObject {
+class UserViewModel: ObservableObject, Equatable {
+    static func == (lhs: UserViewModel, rhs: UserViewModel) -> Bool {
+        return lhs.user?.gold == rhs.user?.gold && lhs.user?.diamond == rhs.user?.diamond
+    }
+    
     @Published var user: GRUser?
     @Published var isLoading = false
     @Published var errorMessage: String?

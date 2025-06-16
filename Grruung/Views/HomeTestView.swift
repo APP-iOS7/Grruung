@@ -143,7 +143,7 @@ struct HomeTestView: View {
                                     
                                     Text("Lv.\(character.status.level) \(character.species.rawValue) - \(character.status.phase.rawValue)")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 
                                 Spacer()
@@ -151,7 +151,7 @@ struct HomeTestView: View {
                                 // 현재 선택된 캐릭터 표시
                                 if viewModel.selectedCharacter?.id == character.id {
                                     Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(.blue)
                                 }
                             }
                         }
@@ -166,7 +166,7 @@ struct HomeTestView: View {
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(.green)
                         Text("새 캐릭터 생성하기")
                             .fontWeight(.medium)
                     }
@@ -291,7 +291,7 @@ struct HomeTestView: View {
             } else {
                 Text("펫이 없습니다")
                     .font(.title)
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .padding()
                 
                 Button("펫 생성하기") {

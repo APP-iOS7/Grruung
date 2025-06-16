@@ -1373,5 +1373,64 @@ class FirebaseService: ObservableObject {
             print("💰 보상 획득: 경험치 \(exp), 골드 \(gold)")
         }
     }
+    
+    // MARK: - 메인 캐릭터 관리에 추가할 메서드
+
+    /// 캐릭터를 메인으로 설정하고 나머지 캐릭터들을 동산으로 이동시킵니다.
+    /// - Parameters:
+    ///   - characterID: 메인으로 설정할 캐릭터 ID
+    ///   - completion: 완료 콜백
+    func setMainCharacterAndMoveOthersToParadise(characterID: String, completion: @escaping (Error?) -> Void) {
+        guard let userID = getCurrentUserID() else {
+            completion(NSError(domain: "FirebaseService", code: 401, userInfo: [NSLocalizedDescriptionKey: "사용자 인증이 필요합니다."]))
+            return
+        }
+        
+        // 1. 먼저 모든 캐릭터를 가져와서 주소를 paradise로 변경
+        fetchUserCharacters { [weak self] characters, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            guard let characters = characters else {
+                completion(NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "캐릭터 목록을 찾을 수 없습니다."]))
+                return
+            }
+            
+            // 2. 배치 작업으로 모든 캐릭터의 주소를 paradise로 변경
+            let batch = self.db.batch()
+            
+            for character in characters {
+                // space 주소는 제외 (이미 삭제된 캐릭터)
+                if character.status.address != "space" {
+                    let characterRef = self.db.collection("users").document(userID)
+                        .collection("characters").document(character.id)
+                    
+                    // 선택된 캐릭터는 userHome, 나머지는 paradise로 설정
+                    let newAddress = character.id == characterID ? "userHome" : "paradise"
+                    
+                    batch.updateData([
+                        "status.address": newAddress,
+                        "updatedAt": Timestamp(date: Date())
+                    ], forDocument: characterRef)
+                }
+            }
+            
+            // 3. 사용자 문서의 chosenCharacterUUID 업데이트
+            let userRef = self.db.collection("users").document(userID)
+            batch.updateData([
+                "chosenCharacterUUID": characterID,
+                "lastUpdatedAt": Timestamp(date: Date())
+            ], forDocument: userRef)
+            
+            // 4. 배치 커밋
+            batch.commit { error in
+                completion(error)
+            }
+        }
+    }
 
 }

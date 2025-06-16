@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MyPageAlarmView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var permissionManager = AlarmPermissionManager()
     
     @AppStorage("generalNotification") private var generalNotification = false
@@ -22,7 +23,7 @@ struct MyPageAlarmView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(.orange)
                             Text("알림 비활성화")
                                 .font(.headline)
                                 .bold()
@@ -37,7 +38,7 @@ struct MyPageAlarmView: View {
                             HStack {
                                 Text("시스템 설정 열기")
                             }
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .padding()
                             .frame(maxWidth: .infinity)
                             .background(
@@ -60,7 +61,7 @@ struct MyPageAlarmView: View {
                     
                     Text("Grruung에서 보내는 푸시 알림을 설정합니다.")
                         .font(.footnote)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
                 
                 // 알림 스위치 (항상 활성화)
@@ -80,7 +81,24 @@ struct MyPageAlarmView: View {
             }
             .padding()
         }
-        .navigationTitle("알림")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("알림")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .onAppear {
             permissionManager.checkNotificationPermission()
         }

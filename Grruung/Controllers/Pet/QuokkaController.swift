@@ -9,6 +9,17 @@ import SwiftUI
 import SwiftData
 import FirebaseStorage
 
+// 애니메이션 진행 상태 정보를 담을 구조체 정의
+struct AnimationProgress {
+    let currentIndex: Int // 현재 프레임 번호
+    let totalFrames: Int  // 전체 프레임 수
+    
+    // 진행률(%)은 필요할 때마다 계산해서 사용
+    var percentage: Double {
+        return totalFrames > 0 ? Double(currentIndex) / Double(totalFrames) : 0
+    }
+}
+
 // 간단한 쿼카 애니메이션 컨트롤러
 @MainActor
 class QuokkaController: ObservableObject {
@@ -37,15 +48,17 @@ class QuokkaController: ObservableObject {
     private var currentPlayMode: PlayMode = .pingPong
     private var onComplete: (() -> Void)? = nil
     
+    private var onProgressUpdate: ((AnimationProgress) -> Void)? = nil // 진행률 업데이트를 위한 콜백 핸들러 타입을 AnimationProgress로 변경
+    
     // MARK: - 고정 설정 (quokka만 처리)
     private let characterType = "quokka"
     
-    // MARK: - 애니메이션 타입별 프레임 수 (infant 단계만)
+    // MARK: - 애니메이션 타입별 프레임 수
     private let frameCountMap: [CharacterPhase: [String: Int]] = [
         .infant: [
             "normal": 122,
             "sleeping": 1,  // 임시 값
-            "eating": 1,     // 임시 값
+            "eating": 307,
             "sleep1Start": 204,
             "sleep2Pingpong": 60,
             "sleep3mouth": 54,
@@ -528,13 +541,15 @@ extension QuokkaController {
     ///   - type: 재생할 애니메이션 종류 (e.g., "normal", "sleep1Start")
     ///   - phase: 캐릭터 성장 단계
     ///   - mode: 재생 방식 (.once 또는 .pingPong)
+    ///   - progressUpdate: 프레임 진행 상태
     ///   - completion: .once 모드에서 재생이 끝났을 때 호출될 클로저
-    func playAnimation(type: String, phase: CharacterPhase, mode: PlayMode, completion: (() -> Void)? = nil) {
+    func playAnimation(type: String, phase: CharacterPhase, mode: PlayMode, progressUpdate: ((AnimationProgress) -> Void)? = nil, completion: (() -> Void)? = nil) {
         print("🎬 요청: \(phase.rawValue) - \(type), 모드: \(mode)")
         stopAnimation() // 기존 애니메이션 중지
         
         self.currentPlayMode = mode
         self.onComplete = completion
+        self.onProgressUpdate = progressUpdate
         
         // 프레임 로드
         loadAllAnimationFrames(phase: phase, animationType: type)
@@ -543,7 +558,7 @@ extension QuokkaController {
         if !animationFrames.isEmpty {
             currentFrameIndex = 0
             isReversing = false
-            currentFrame = animationFrames[currentFrameIndex]
+            currentFrame = animationFrames[0]
             startAnimationTimer()
         } else {
             print("⚠️ \(phase.rawValue) - \(type) 애니메이션 프레임이 없어 재생할 수 없습니다.")
@@ -567,6 +582,7 @@ extension QuokkaController {
         isAnimating = false
         isReversing = false
         onComplete = nil // 완료 핸들러 초기화
+        onProgressUpdate = nil // 진행률 핸들러 초기화
         print("⏹️ 애니메이션 정지")
     }
     
@@ -592,10 +608,18 @@ extension QuokkaController {
     
     // .once 모드 프레임 업데이트
     private func updateOnceFrame() {
+        // AnimationProgress 구조체를 생성하여 콜백으로 전달
+        let progress = AnimationProgress(currentIndex: currentFrameIndex, totalFrames: animationFrames.count)
+        onProgressUpdate?(progress)
+        
         currentFrameIndex += 1
         
         // 마지막 프레임에 도달하면 애니메이션 중지 및 완료 핸들러 호출
         if currentFrameIndex >= animationFrames.count {
+            // 완료 직전에 마지막 상태를 전달 (currentIndex가 totalFrames와 같아짐)
+            let finalProgress = AnimationProgress(currentIndex: animationFrames.count, totalFrames: animationFrames.count)
+            onProgressUpdate?(finalProgress)
+            
             let completionHandler = onComplete
             stopAnimation()
             completionHandler?()

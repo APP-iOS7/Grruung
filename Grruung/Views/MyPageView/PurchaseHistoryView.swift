@@ -109,7 +109,7 @@ struct PurchaseHistoryView: View {
                 VStack {
                     Spacer()
                     Text("구매 내역이 없습니다")
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                     Spacer()
                 }
                 .frame(maxHeight: .infinity)
@@ -125,25 +125,23 @@ struct PurchaseHistoryView: View {
                 .scrollContentBackground(.hidden)
             }
         }
-        .navigationBarBackButtonHidden(true) // 기본 뒤로가기 버튼 숨기기
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
                     dismiss()
                 }) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(GRColor.subColorOne) // 갈색으로 변경
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
                         .font(.system(size: 18, weight: .semibold))
                 }
             }
             
-            // 중앙에 타이틀 배치
-            /*
             ToolbarItem(placement: .principal) {
                 Text("결제 내역")
-                    .font(.headline) // 작은 글씨로 설정
-                    .foregroundColor(.black)
-            }*/
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
         }
         .toolbarRole(.browser) // 간격을 더 줄이는 역할
 
@@ -276,7 +274,7 @@ struct TabButton: View {
                 .fontWeight(isSelected ? .bold : .regular)
                 .padding(.vertical, 6)
                 .padding(.horizontal, 15)
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? .white : .primary)
                 .background(
                     Capsule()
                         .fill(isSelected ? GRColor.buttonColor_2 : Color.white.opacity(0.6))
@@ -298,7 +296,7 @@ struct PurchaseHistoryItem: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 40, height: 40)
-                    .foregroundColor(.cyan)
+                    .foregroundStyle(.cyan)
                     .padding(8)
                     .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
@@ -307,7 +305,7 @@ struct PurchaseHistoryItem: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 40, height: 40)
-                    .foregroundColor(.purple)
+                    .foregroundStyle(.purple)
                     .padding(8)
                     .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
@@ -316,7 +314,7 @@ struct PurchaseHistoryItem: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 40, height: 40)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(.blue)
                     .padding(8)
                     .background(Color.white.opacity(0.5))
                     .cornerRadius(10)
@@ -331,7 +329,7 @@ struct PurchaseHistoryItem: View {
                     // 아이템 수량
                     Text("\(record.quantity)개")
                         .font(.footnote)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .padding(.vertical, 3)
                         .padding(.horizontal, 8)
                         .cornerRadius(5)
@@ -341,7 +339,7 @@ struct PurchaseHistoryItem: View {
                     // 구매 날짜 (오른쪽 패딩 추가)
                     Text(formattedDate(record.purchaseDate))
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .padding(.trailing, 10) // 날짜 오른쪽 패딩 추가
                 }
             }

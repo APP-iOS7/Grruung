@@ -138,7 +138,6 @@ struct GRCharacterStatus {
     }
 }
 
-// FIXME: - Start CharacterPhase enum Comparable 구현
 // 펫 성장 단계 - Comparable 프로토콜 추가로 단계별 비교 가능하게 수정
 enum CharacterPhase: String, Codable, Comparable, CaseIterable {
     case egg = "운석"

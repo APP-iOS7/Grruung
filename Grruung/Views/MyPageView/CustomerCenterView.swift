@@ -7,6 +7,7 @@ import SwiftUI
 // MARK: - FAQ 뷰
 
 struct CustomerCenterView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var expandedFAQs: Set<UUID> = []
     @State private var searchText = ""
     
@@ -33,14 +34,14 @@ struct CustomerCenterView: View {
                         
                         Text("궁금한 내용을 빠르게 찾아보세요")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                     }
                     .padding(.bottom, 8)
                     
                     // 검색 바
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                         
                         TextField("질문을 입력해주세요.", text: $searchText)
                             .textFieldStyle(PlainTextFieldStyle())
@@ -48,7 +49,7 @@ struct CustomerCenterView: View {
                         if !searchText.isEmpty {
                             Button(action: { searchText = "" }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.black)
+                                    .foregroundStyle(.black)
                             }
                         }
                     }
@@ -65,14 +66,14 @@ struct CustomerCenterView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 48))
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                             
                             Text("검색 결과가 없습니다")
                                 .font(.headline)
                             
                             Text("다른 키워드로 검색해보세요")
                                 .font(.subheadline)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                         .padding(.vertical, 40)
                         .frame(maxWidth: .infinity)
@@ -107,13 +108,13 @@ struct CustomerCenterView: View {
                             NavigationLink(destination: InquiryView()) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "square.and.pencil")
-                                        .foregroundColor(.orange)
+                                        .foregroundStyle(.orange)
                                         .font(.title2)
                                     
                                     Text("문의하기")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -125,13 +126,13 @@ struct CustomerCenterView: View {
                             NavigationLink(destination: InquiryHistoryView()) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "doc.text")
-                                        .foregroundColor(.orange)
+                                        .foregroundStyle(.orange)
                                         .font(.title2)
                                     
                                     Text("문의내역")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -146,7 +147,24 @@ struct CustomerCenterView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .navigationTitle("고객센터")
+            .navigationBarBackButtonHidden(true) // 기본 뒤로가기 버튼 숨기기
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne)
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("고객센터")
+                        .font(.headline)
+                        .foregroundStyle(.black)
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -165,7 +183,7 @@ struct FAQItemView: View {
                 HStack {
                     Text(faq.question)
                         .font(.body)
-                        .foregroundColor(.black)
+                        .foregroundStyle(.black)
                         .multilineTextAlignment(.leading)
                     
                     Spacer()
@@ -173,7 +191,7 @@ struct FAQItemView: View {
                     Image(
                         systemName: isExpanded ? "chevron.up" : "chevron.down"
                     )
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .font(.system(size: 14, weight: .medium))
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     .animation(.easeInOut(duration: 0.2), value: isExpanded)
@@ -185,7 +203,7 @@ struct FAQItemView: View {
             if isExpanded {
                 Text(faq.answer)
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .lineSpacing(4)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
@@ -218,7 +236,7 @@ struct InquiryView: View {
                     
                     Text("궁금한 점이나 문제가 있으시면 아래에 자세히 적어주세요.")
                         .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                 }
                 
                 // 제목 입력
@@ -258,7 +276,7 @@ struct InquiryView: View {
                             Text(
                                 "문의내용을 입력해주세요.\n\n예시:\n- 앱 사용 중 발생한 문제\n- 기능 관련 질문\n- 개선사항 제안"
                             )
-                            .foregroundColor(.gray)
+                            .foregroundStyle(.gray)
                             .font(.subheadline)
                             .padding(16)
                             .allowsHitTesting(false)
@@ -286,7 +304,7 @@ struct InquiryView: View {
                         Text("문의하기")
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(isFormValid ? Color.orange : Color.gray)
@@ -297,7 +315,24 @@ struct InquiryView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .navigationTitle("문의하기")
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("문의하기")
+                        .font(.headline)
+                        .foregroundStyle(.black)
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .alert("문의 접수 완료", isPresented: $showingAlert) {
                 Button("확인", role: .cancel) {
@@ -313,6 +348,7 @@ struct InquiryView: View {
 // MARK: - 문의내역 뷰
 
 struct InquiryHistoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject private var inquiryManager = InquiryManager.shared
     @State private var expandedInquiries: Set<UUID> = []
     
@@ -322,14 +358,14 @@ struct InquiryHistoryView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "doc.text")
                         .font(.system(size: 48))
-                        .foregroundColor(.orange)
+                        .foregroundStyle(.orange)
                     
                     Text("문의 내역이 없습니다")
                         .font(.headline)
                     
                     Text("궁금한 점이 있으시면 문의하기를 이용해주세요")
                         .font(.subheadline)
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .multilineTextAlignment(.center)
                 }
             } else {
@@ -358,7 +394,24 @@ struct InquiryHistoryView: View {
                 }
             }
         }
-        .navigationTitle("문의내역")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+            
+            ToolbarItem(placement: .principal) {
+                Text("문의내역")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -378,21 +431,21 @@ struct InquiryItemView: View {
                         Text(inquiry.title)
                             .font(.body)
                             .fontWeight(.medium)
-                            .foregroundColor(.black)
+                            .foregroundStyle(.black)
                             .multilineTextAlignment(.leading)
                             .lineLimit(isExpanded ? nil : 1)
                         
                         if isExpanded {
                             Text(inquiry.content)
                                 .font(.subheadline)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                                 .lineSpacing(4)
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, 16)
                             
                             Text(inquiry.date)
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundStyle(.gray)
                         }
                     }
                     
@@ -408,7 +461,7 @@ struct InquiryItemView: View {
                                     .opacity(0.2) : Color.gray
                                     .opacity(0.2)
                             )
-                            .foregroundColor(
+                            .foregroundStyle(
                                 inquiry.status == "답변 완료" ? .orange : .gray
                             )
                             .cornerRadius(6)
@@ -416,7 +469,7 @@ struct InquiryItemView: View {
                         Image(
                             systemName: isExpanded ? "chevron.up" : "chevron.down"
                         )
-                        .foregroundColor(.gray)
+                        .foregroundStyle(.gray)
                         .font(.system(size: 14, weight: .medium))
                         .rotationEffect(.degrees(isExpanded ? 180 : 0))
                         .animation(.easeInOut(duration: 0.2), value: isExpanded)
