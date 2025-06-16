@@ -94,7 +94,7 @@ struct SeviceGrid: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 40, height: 40)
-                                .foregroundStyle(.black)
+                                .foregroundStyle(GRColor.mainColor6_2)
                                 .padding()
                             
                             Text(item.title)
@@ -124,6 +124,47 @@ private func SeviceDestination(for item: SeviceItem) -> some View {
         CharDexView()
     default:
         Text("준비중 입니다.")
+    }
+}
+
+// 평가 및 리뷰 전용 뷰
+struct AppStoreReviewView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        ZStack {
+            // 배경
+            Rectangle()
+                .fill(Color.clear)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .edgesIgnoringSafeArea(.all)
+            
+            // 앱스토어로 이동
+            Text("앱스토어로 이동합니다...")
+                .onAppear {
+                    // 앱스토어로 이동
+                    openAppStoreDirectly()
+                    
+                    // 0.5초 후 이전 화면으로 돌아가기
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        NotificationCenter.default.post(name: Notification.Name("ReturnToMyPageView"), object: nil)
+                    }
+                }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReturnToMyPageView"))) { _ in
+            // 알림 수신 시 MyPageView로 돌아가기
+            dismiss()
+        }
+    }
+    
+    // 앱스토어 이동 함수 복사
+    private func openAppStoreDirectly() {
+        let appStoreID = "YOUR_APP_ID" // 실제 앱 ID로 변경
+        let appStoreURL = "https://rrpe.github.io/Grruung-webpf/"
+        
+        if let url = URL(string: appStoreURL) {
+            UIApplication.shared.open(url)
+        }
     }
 }
 
@@ -201,10 +242,7 @@ private func settingsDestination(for item: SettingsItem) -> some View {
     case "고객센터":
         CustomerCenterView()
     case "평가 및 리뷰":
-        Color.clear
-                   .onAppear {
-                       openAppStoreDirectly()
-                   }
+        AppStoreReviewView()
     case "약관 및 정책":
         TermsPolicyView()
     default:

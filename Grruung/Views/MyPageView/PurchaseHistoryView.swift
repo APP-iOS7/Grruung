@@ -125,7 +125,7 @@ struct PurchaseHistoryView: View {
                 .scrollContentBackground(.hidden)
             }
         }
-        .navigationBarBackButtonHidden(true) // 기본 뒤로가기 버튼 숨기기
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
@@ -137,13 +137,11 @@ struct PurchaseHistoryView: View {
                 }
             }
             
-            // 중앙에 타이틀 배치
-            /*
             ToolbarItem(placement: .principal) {
                 Text("결제 내역")
-                    .font(.headline) // 작은 글씨로 설정
+                    .font(.headline)
                     .foregroundStyle(.black)
-            }*/
+            }
         }
         .toolbarRole(.browser) // 간격을 더 줄이는 역할
 

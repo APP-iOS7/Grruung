@@ -422,7 +422,7 @@ class HomeViewModel: ObservableObject {
         
         // 액션 버튼 비활성화 (캐릭터 생성 버튼만 활성화)
         actionButtons = [
-            ("plus.circle", true, "캐릭터 생성"),
+            ("IconEgg", true, "캐릭터 생성"),
             ("playIcon", false, "놀아주기"),
             ("soapIcon", false, "씻기기"),
             ("nightIcon", false, "재우기")

@@ -24,6 +24,7 @@ struct SettingSection: Identifiable {
 // MARK: - 메인 뷰
 
 struct ProfileDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authService: AuthService
     
     @State private var selectedItem: PhotosPickerItem? = nil
@@ -171,6 +172,24 @@ struct ProfileDetailView: View {
                 .padding(.horizontal)
             }
             .padding(.bottom, 50)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("내 정보 관리")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
         }
         .scrollContentBackground(.hidden)
         .background(
