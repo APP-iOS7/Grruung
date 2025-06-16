@@ -39,7 +39,7 @@ struct MainView: View {
                             .ignoresSafeArea(edges: .bottom)
                     case 3:
                         Rectangle()
-                            .fill(GRColor.mainColor2_2)
+                            .fill(GRColor.mainColor1_2)
                             .frame(height: 90)
                             .ignoresSafeArea(edges: .bottom)
                     default:

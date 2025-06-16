@@ -145,7 +145,7 @@ struct ProfileDetailView: View {
                         }
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.3)))
                     }
-
+                    
                     // FIXME: - End
                     
                     // 로그아웃 버튼
@@ -160,7 +160,7 @@ struct ProfileDetailView: View {
                     Button {
                         print("계정 삭제")
                     } label: {
-
+                        
                         HStack {
                             Image(systemName: "trash")
                             Text("계정 삭제")
@@ -170,7 +170,9 @@ struct ProfileDetailView: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.bottom, 50) // 하단 Safe Area 여백 추가
             }
+
             .padding(.bottom, 50)
         }
         .navigationBarBackButtonHidden(true)
@@ -193,12 +195,11 @@ struct ProfileDetailView: View {
         }
         .scrollContentBackground(.hidden)
         .background(
-            LinearGradient(
-                colors: [Color(hex: "#FEF9EA"), Color(hex: "#FDE0CA")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+                LinearGradient(
+                    colors: [Color(hex: "FFF6EE"), Color(hex: "FDE0CA")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
         
         // MARK: - 닉네임 편집 팝업
         if isShowingNameEditorPopup {
