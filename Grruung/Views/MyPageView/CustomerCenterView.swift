@@ -7,6 +7,7 @@ import SwiftUI
 // MARK: - FAQ 뷰
 
 struct CustomerCenterView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var expandedFAQs: Set<UUID> = []
     @State private var searchText = ""
     
@@ -146,7 +147,24 @@ struct CustomerCenterView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
-            .navigationTitle("고객센터")
+            .navigationBarBackButtonHidden(true) // 기본 뒤로가기 버튼 숨기기
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne)
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("고객센터")
+                        .font(.headline)
+                        .foregroundStyle(.black)
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -297,7 +315,24 @@ struct InquiryView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .navigationTitle("문의하기")
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                }
+                
+                ToolbarItem(placement: .principal) {
+                    Text("문의하기")
+                        .font(.headline)
+                        .foregroundStyle(.black)
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .alert("문의 접수 완료", isPresented: $showingAlert) {
                 Button("확인", role: .cancel) {
@@ -313,6 +348,7 @@ struct InquiryView: View {
 // MARK: - 문의내역 뷰
 
 struct InquiryHistoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject private var inquiryManager = InquiryManager.shared
     @State private var expandedInquiries: Set<UUID> = []
     
@@ -358,7 +394,24 @@ struct InquiryHistoryView: View {
                 }
             }
         }
-        .navigationTitle("문의내역")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+            
+            ToolbarItem(placement: .principal) {
+                Text("문의내역")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
 }

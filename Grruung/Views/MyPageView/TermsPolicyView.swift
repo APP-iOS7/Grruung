@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct TermsPolicyView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -52,8 +54,25 @@ struct TermsPolicyView: View {
                 
                 Spacer()
             }
-            .navigationTitle("이용약관 및 운영정책")
             .navigationBarTitleDisplayMode(.inline)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("이용약관 및 운영정책")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
         }
     }
 }
@@ -61,6 +80,8 @@ struct TermsPolicyView: View {
 // MARK: - 서비스 이용약관
 
 struct ServiceTermsView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -95,7 +116,24 @@ struct ServiceTermsView: View {
             }
             .padding()
         }
-        .navigationTitle("서비스 이용약관")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("서비스 이용약관")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
     
@@ -116,6 +154,8 @@ struct ServiceTermsView: View {
 // MARK: - 개인정보 처리 방침
 
 struct PrivacyPolicyView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -150,7 +190,24 @@ struct PrivacyPolicyView: View {
             }
             .padding()
         }
-        .navigationTitle("개인정보 처리 방침")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("개인정보 처리 방침")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
     
