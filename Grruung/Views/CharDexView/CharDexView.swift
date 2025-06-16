@@ -57,6 +57,8 @@ struct CharDexView: View {
     // 커스텀 알림창 상태 추가
     @State private var showingCustomAlert = false
     
+    @State private var plzCharacterMoveToParadise = false
+    
     // Grid 레이아웃 설정
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -155,11 +157,18 @@ struct CharDexView: View {
                                                 }
                                             case .add:
                                                 Button {
-                                                    // 슬롯이 가득 찼는지 확인
-                                                    if sortedCharacters.count >= unlockCount {
-                                                        showingNotEnoughAlert = true
+                                                    // userHome에 캐릭터가 있는지 확인
+                                                    let hasCharacterAtHome = characters.contains { $0.status.address == "userHome" }
+                                                    
+                                                    if hasCharacterAtHome {
+                                                        plzCharacterMoveToParadise = true
                                                     } else {
-                                                        showingOnboarding = true
+                                                        // 슬롯이 가득 찼는지 확인
+                                                        if sortedCharacters.count >= unlockCount {
+                                                            showingNotEnoughAlert = true
+                                                        } else {
+                                                            showingOnboarding = true
+                                                        }
                                                     }
                                                 } label: {
                                                     addSlot
@@ -269,6 +278,11 @@ struct CharDexView: View {
                 Button("확인", role: .cancel) {}
             } message: {
                 Text("알 수 없는 에러가 발생하였습니다!")
+            }
+            .alert("메인에 캐릭터가 있습니다.", isPresented: $plzCharacterMoveToParadise) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("메인으로 설정된 캐릭터가 있으면 \n캐릭터를 추가할 수 없습니다. \n메인에 있는 캐릭터를 동산으로 이동시켜주세요 \n(캐릭터 터치 > 오른쪽 상단 탭 버튼 > \"동산으로 보내기\").")
             }
             .sheet(isPresented: $showingOnboarding) {
                 OnboardingView()

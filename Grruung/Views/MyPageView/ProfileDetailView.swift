@@ -24,6 +24,7 @@ struct SettingSection: Identifiable {
 // MARK: - 메인 뷰
 
 struct ProfileDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authService: AuthService
     
     @State private var selectedItem: PhotosPickerItem? = nil
@@ -144,7 +145,7 @@ struct ProfileDetailView: View {
                         }
                         .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.3)))
                     }
-
+                    
                     // FIXME: - End
                     
                     // 로그아웃 버튼
@@ -159,7 +160,7 @@ struct ProfileDetailView: View {
                     Button {
                         print("계정 삭제")
                     } label: {
-
+                        
                         HStack {
                             Image(systemName: "trash")
                             Text("계정 삭제")
@@ -169,17 +170,36 @@ struct ProfileDetailView: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.bottom, 50) // 하단 Safe Area 여백 추가
             }
+
             .padding(.bottom, 50)
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("내 정보 관리")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
         }
         .scrollContentBackground(.hidden)
         .background(
-            LinearGradient(
-                colors: [Color(hex: "#FEF9EA"), Color(hex: "#FDE0CA")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+                LinearGradient(
+                    colors: [Color(hex: "FFF6EE"), Color(hex: "FDE0CA")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
         
         // MARK: - 닉네임 편집 팝업
         if isShowingNameEditorPopup {

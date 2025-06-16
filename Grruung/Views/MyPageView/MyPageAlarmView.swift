@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MyPageAlarmView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var permissionManager = AlarmPermissionManager()
     
     @AppStorage("generalNotification") private var generalNotification = false
@@ -80,7 +81,24 @@ struct MyPageAlarmView: View {
             }
             .padding()
         }
-        .navigationTitle("알림")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundStyle(GRColor.subColorOne) // 갈색으로 변경
+                        .font(.system(size: 18, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("알림")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+            }
+        }
         .onAppear {
             permissionManager.checkNotificationPermission()
         }
