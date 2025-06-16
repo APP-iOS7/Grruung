@@ -16,12 +16,11 @@
 
 |  고지용   |  김준수   |   천수빈   |   노성경   |   박민우   |   심연아   |
 | :-------: | :-------: | :--------: | :--------: | :--------: | :--------: |
+| ![Image](https://github.com/user-attachments/assets/1abf425b-f5e6-4f53-b5fe-16d33552b225)  | ![Image](https://github.com/user-attachments/assets/9fc3fe33-1527-426a-9892-8785ee9bbd39) |  ![Image](https://github.com/user-attachments/assets/8506c9a8-c449-4f45-825e-2b38072a279b)  | ![Image](https://github.com/user-attachments/assets/5b397ccb-dcfc-4e73-a62e-559cffe0095c)  | ![Image](https://github.com/user-attachments/assets/cf4fcc42-1290-436e-aae2-7bf82dbce208)  | ![Image](https://github.com/user-attachments/assets/2cb4072a-f271-4e1d-a695-a8350ccfe43a)  |
 |   팀장    |  부팀장   | iOS 개발자 | iOS 개발자 | iOS 개발자 | iOS 개발자 |
-| git diff  | git diff  |  git diff  | git reset  | git merge  | git stash  |
-| git add . | git add . | git add .  | git commit |  git push  | git fetch  |
+| 3D 모델링, Git 관리, 개발 지원 | 게임 로직 개발, AI 시스템 설계, 기술 지원  | 홈뷰, 마이페이지 뷰 개발  | 캐릭터 디테일 뷰, 이야기 뷰 개발 |  캐릭터 뷰, 엔벤토리 뷰 개발  | 아이콘 디자인, 상품 구성, 상품 뷰 개발 |
 
 ## 📱 프로젝트 소개
-
 ### 앱 아키텍쳐
 
 Swift와 SwiftUI를 기반으로 MVVM 패턴을 적용하여 코드의 유지보수성과 테스트 용이성을 높였습니다. 데이터 바인딩과 상태 관리를 효율적으로 구현했습니다.
