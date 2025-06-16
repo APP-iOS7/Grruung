@@ -24,13 +24,11 @@ struct MyPageView: View {
                 .padding()
             }
             .background(
-                LinearGradient(colors: [Color(hex: "FEF9EA"), Color(hex: "FDE0CA")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: [Color(hex: "FFF6EE"), Color(hex: "FDE0CA")], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
         }
     }
 }
-
-// MARK: - 프로필 섹션
 
 struct ProfileSection: View {
     var body: some View {
